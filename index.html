@@ -406,7 +406,7 @@
     <div class="set-row">
       <label>Actor (API authorization)</label>
       <input id="setActor" type="text" spellcheck="false">
-      <div class="hint">Sent as the <b>actor</b> query parameter. finn.com's own <b>/api</b> routes need none — leave empty (only the legacy Product-API hosts use it).</div>
+      <div class="hint">Sent as the required <b>x-finn-actor</b> request header (and as <b>actor</b> query parameter for legacy hosts). The API rejects requests without it.</div>
     </div>
     <div class="set-row">
       <label>CORS proxy</label>
@@ -450,7 +450,7 @@
    sort / search entirely client-side => filtering always works.
    ============================================================= */
 
-const LS_KEY = "finnvnext.v2"; // v2: fresh defaults after connection-logic rework
+const LS_KEY = "finnvnext.v3"; // v3: actor moved to the x-finn-actor request header
 const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#101722"/><text x="80" y="48" font-family="sans-serif" font-size="9" fill="#5c6b7d" text-anchor="middle">no image</text></svg>');
 
@@ -461,7 +461,7 @@ const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
    served via the bundled proxy.py (which forwards /api/* to www.finn.com). */
 const DEFAULTS = {
   base: "https://www.finn.com/api",
-  actor: "",
+  actor: "finn-vnext",                     // sent as x-finn-actor header (required by the API)
   proxy: "https://anycors.b0t.at/?{url}",  // company CORS proxy: whole query string = target URL
   view: "available_cars",
   limit: 200,
@@ -476,26 +476,19 @@ const DEFAULTS = {
    Probe order: saved config, own-origin /api (proxy.py), then the matrix below. */
 /* anycors.b0t.at (b0t-at/cors-proxy, Flask): only the ROOT route proxies, and the
    ENTIRE query string is the target URL -> https://anycors.b0t.at/?<target-url>.
-   (Path-prefix style 404s, ?url=<enc> style 500s — confirmed against app.py.) */
+   It forwards all request headers, so x-finn-actor passes through.
+   AUTH (confirmed live 2026-07-25): www.finn.com/api/cars answers
+   {"error":"x-finn-actor header is required"} -> the actor is an HTTP HEADER. */
 const ANYCORS = "https://anycors.b0t.at/?{url}";
-const ACTOR_GUESSES = ["finn-web","nextjs","web","webapp","website","frontend","finn",
-  "finn-auto","finnauto","finn-ui","ui","app","b2c","b2b","public","checkout","cp",
-  "docs","swagger","postman","internal","prod"];
+const ACTOR_TRIES = ["finn-vnext","finn-web","nextjs","web"];
 const CANDIDATE_COMBOS = (typeof location!=="undefined" && /^https?:$/.test(location.protocol) && !/finn\.com$/.test(location.hostname)
-    ? [[location.origin + "/api", "", ""]] : []).concat(
-  [
-   // 1) finn.com same-origin API through anycors (correct ?<target> format)
-   ["https://www.finn.com/api", "", ANYCORS],
-  ],
-  // 2) documented Product API, direct — it is CORS-open (answers 401 until the
-  //    actor is right), so scan plausible actor values with tiny probe requests
-  ACTOR_GUESSES.map(a=>["https://product-api.finn.com", a, ""]),
-  // 3) Product API actor scan again, but through anycors (dodges any IP/geo walls)
-  ACTOR_GUESSES.slice(0,6).map(a=>["https://product-api.finn.com", a, ANYCORS]),
-  [
-   // 4) finn.com /api direct — works only if served from a finn.com-allowed origin
-   ["https://www.finn.com/api", "", ""]
-  ]);
+    ? [[location.origin + "/api", "finn-vnext", ""]] : []).concat(
+  // 1) finn.com API through anycors, x-finn-actor header candidates
+  ACTOR_TRIES.map(a=>["https://www.finn.com/api", a, ANYCORS]),
+  // 2) documented Product API direct (CORS-open), same header candidates
+  ACTOR_TRIES.map(a=>["https://product-api.finn.com", a, ""]),
+  // 3) finn.com /api direct — works only from a finn.com-allowed origin
+  [["https://www.finn.com/api", "finn-vnext", ""]]);
 
 const state = {
   cfg: loadCfg(),
@@ -614,9 +607,15 @@ function extractResults(json){
   }
   return null;
 }
-async function tryFetch(url){
-  const res = await fetch(url, {headers:{accept:"application/json"}});
-  if(!res.ok) throw new Error("HTTP "+res.status+" from "+url.split("?")[0]);
+async function tryFetch(url, actor){
+  const headers = {accept:"application/json"};
+  if (actor) headers["x-finn-actor"] = actor;   // required by the FINN API
+  const res = await fetch(url, {headers});
+  if(!res.ok){
+    let hint = "";
+    try{ const j = await res.json(); if (j && (j.error||j.message)) hint = " — " + (j.error||j.message); }catch(e){}
+    throw new Error("HTTP "+res.status+hint);
+  }
   const json = await res.json();
   const results = extractResults(json);
   if(!results) throw new Error("Unexpected response shape from "+url.split("?")[0]);
@@ -632,7 +631,7 @@ async function probeEndpoint(){
   for(const [base,actor,proxy] of combos){
     const url = proxied(carsUrl(base, actor, {limit:1, view:"available_cars"}), proxy);
     try{
-      await tryFetch(url);
+      await tryFetch(url, actor);
       state.cfg.base = base; state.cfg.actor = actor; state.cfg.proxy = proxy; saveCfg();
       state.lastProbe = attempts;
       return true;
@@ -656,7 +655,7 @@ async function loadCatalog(){
         json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
           view: state.cfg.view, is_for_business: state.cfg.biz, pricing_type:"normal",
           limit, offset, sort:"desktop"
-        })));
+        })), state.cfg.actor);
       }catch(e){
         if (limit > 24){ limit = Math.max(24, Math.floor(limit/2)); continue; } // page size too big? shrink & retry
         throw e;
