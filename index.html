@@ -160,6 +160,13 @@
   .badge{font-size:.63rem;font-weight:700;padding:.22rem .5rem;border-radius:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);color:#fff;letter-spacing:.02em}
   .badge.ev{background:rgba(163,230,53,.9);color:#101800}
   .badge.soon{background:rgba(251,191,36,.9);color:#221a00}
+  .badge.drop{background:rgba(163,230,53,.92);color:#101800}
+  /* list density */
+  .grid.list{grid-template-columns:1fr}
+  .grid.list .card{flex-direction:row}
+  .grid.list .imgwrap{aspect-ratio:auto;inline-size:240px;min-inline-size:240px}
+  .grid.list .cbody{flex:1;padding:.7rem .95rem}
+  @media (max-width:700px){.grid.list .imgwrap{inline-size:132px;min-inline-size:132px}}
   .cmpbtn{
     position:absolute;inset-block-start:.5rem;inset-inline-end:.5rem;inline-size:30px;block-size:30px;border-radius:8px;
     display:grid;place-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:#cbd5e1;font-size:.85rem;transition:.15s;border:1px solid transparent
@@ -405,6 +412,7 @@
         <label class="checkrow"><input type="checkbox" id="fltHitch"> Towbar (AHK)</label>
         <label class="checkrow"><input type="checkbox" id="fltNow"> Available within 4 weeks</label>
         <label class="checkrow"><input type="checkbox" id="fltRealPics"> Real photos only</label>
+        <label class="checkrow"><input type="checkbox" id="fltDrops"> Price dropped recently</label>
       </div>
     </details>
     <button class="resetbtn" id="resetBtn">✕ &nbsp;Reset all filters</button>
@@ -415,12 +423,26 @@
       <div class="count"><span id="cnt">–</span><small id="cntSub"></small></div>
       <div class="statchips" id="stats"></div>
       <div class="grow"></div>
+      <div class="sortwrap" title="Monthly mileage package — surcharge is included in all displayed prices">
+        Km/mo
+        <select id="kmSel">
+          <option value="500">500</option>
+          <option value="1000">1.000</option>
+          <option value="1500">1.500</option>
+          <option value="2000">2.000</option>
+        </select>
+      </div>
+      <div class="seg" id="densitySeg" title="Layout">
+        <button data-den="grid" class="on" title="Grid view">▦</button>
+        <button data-den="list" title="List view">☰</button>
+      </div>
       <div class="sortwrap">
         Sort
         <select id="sort">
           <option value="reco">Recommended</option>
           <option value="price-asc">Price ↑</option>
           <option value="price-desc">Price ↓</option>
+          <option value="drop-desc">Price drop ↓</option>
           <option value="power-desc">Power ↓</option>
           <option value="range-desc">EV range ↓</option>
           <option value="avail-asc">Available soonest</option>
@@ -474,11 +496,11 @@
     <div class="set-row">
       <label>Vehicle view</label>
       <select id="setView">
-        <option value="available-and-coming-soon">Available + coming soon</option>
-        <option value="available_cars">Available only</option>
+        <option value="available_cars">Available cars (default)</option>
         <option value="displayed_cars">Displayed cars</option>
         <option value="coming-soon">Coming soon only</option>
       </select>
+      <div class="hint">"Coming soon" often returns an empty list from this API route — the "Available within 4 weeks" filter is usually what you want.</div>
     </div>
     <div class="set-row">
       <label>Page size per API request</label>
@@ -523,7 +545,9 @@ const DEFAULTS = {
   proxy: "https://anycors.b0t.at/?{url}",  // company CORS proxy: whole query string = target URL
   view: "available_cars",
   limit: 200,
-  biz: true
+  biz: true,
+  km: 500,                                 // monthly mileage package (500 is included in base price)
+  density: "grid"
 };
 /* Connection facts (verified via browser console, 2026-07-25):
    - product-api.finn.com is LIVE and CORS-open, but rejects unknown actors with 401
@@ -563,7 +587,7 @@ const state = {
 function freshFilters(){
   return { q:"", fuels:[], brands:[], types:[], gears:[], terms:[], seats:[], doors:[], colors:[],
            priceMin:null, priceMax:null, powerMin:0, rangeMin:0,
-           deals:false, hitch:false, soon:false, realPics:false };
+           deals:false, hitch:false, soon:false, realPics:false, drops:false };
 }
 function loadCfg(){
   try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
@@ -596,6 +620,7 @@ function pictureUrl(c){
    the documented available_price_list map is kept as a fallback. */
 function priceList(c){
   const p = c.price || {};
+  const kmFee = kmFeeFor(c, state.cfg.km);
   const terms = new Set((Array.isArray(c.available_terms)?c.available_terms:[]).map(Number));
   Object.keys(p).forEach(k=>{ const m = k.match(/^b2[bc]_(\d+)$/); if(m) terms.add(Number(m[1])); });
   const pref = state.cfg.biz ? "b2b_" : "b2c_", alt = state.cfg.biz ? "b2c_" : "b2b_";
@@ -604,15 +629,27 @@ function priceList(c){
     if(isNaN(t)||t<=0) continue;
     let v = Number(p[pref+t]);
     if(!isFinite(v)||v<=0) v = Number(p[alt+t]);
-    if(isFinite(v)&&v>0) out.push({term:t, price:v});
+    if(isFinite(v)&&v>0) out.push({term:t, price:v + kmFee});
   }
   if(!out.length && p.available_price_list && typeof p.available_price_list==="object"){
     for(const [k,v] of Object.entries(p.available_price_list)){
       const t = parseInt(k,10), n = Number(v);
-      if(!isNaN(t)&&t>0&&isFinite(n)&&n>0) out.push({term:t, price:n});
+      if(!isNaN(t)&&t>0&&isFinite(n)&&n>0) out.push({term:t, price:n + kmFee});
     }
   }
   return out.sort((a,b)=>a.term-b.term);
+}
+/* monthly surcharge for the selected km package (extra_500/extra_1000/…);
+   falls back to the closest available package when the exact one is missing */
+function kmFeeFor(c, km){
+  const p = c.price || {};
+  const v = Number(p["extra_"+km]);
+  if (isFinite(v)) return v;
+  const pk = kmPackages(c);
+  if (!pk.length) return 0;
+  let best = null;
+  for(const x of pk){ if (x.km<=km && (best==null||x.km>best.km)) best = x; }
+  return (best || pk[0]).fee || 0;
 }
 /* Optional extra-kilometer packages: price.extra_500 / extra_1000 / ... = fee/month */
 function kmPackages(c){
@@ -656,6 +693,35 @@ function finnLink(c){
   if(!p) return null;
   if(/^https?:/i.test(p)) return p;
   return "https://www.finn.com" + (p.startsWith("/")?p:"/"+p);
+}
+
+/* ---------------- price-drop tracking (persists across visits) ---------------- */
+const PRICE_LS = "finnvnext.prices.v1";
+function minBaseMode(c, mode){ // cheapest base term price, mode "b" (business) / "c" (private)
+  const p = c.price || {}, re = mode==="b" ? /^b2b_(\d+)$/ : /^b2c_(\d+)$/;
+  let best = null;
+  for(const k of Object.keys(p)) if (re.test(k)){
+    const v = Number(p[k]);
+    if (isFinite(v)&&v>0&&(best==null||v<best)) best = v;
+  }
+  return best;
+}
+function trackPrices(){
+  let db = {}; try{ db = JSON.parse(localStorage.getItem(PRICE_LS)||"{}"); }catch(e){}
+  const now = Date.now(), mode = state.cfg.biz ? "b" : "c";
+  for(const c of state.cars){
+    const rec = db[carKey(c)] || (db[carKey(c)] = {});
+    for(const m of ["b","c"]){
+      const cur = minBaseMode(c, m);
+      if (cur==null) continue;
+      const r = rec[m] || (rec[m] = {prev:null, cur:null, t:0});
+      if (r.cur==null){ r.cur = cur; r.t = now; }
+      else if (r.cur !== cur){ r.prev = r.cur; r.cur = cur; r.t = now; }
+    }
+    const r = rec[mode];
+    c._drop = (r && r.prev!=null && r.cur < r.prev) ? r.prev - r.cur : 0;
+  }
+  try{ localStorage.setItem(PRICE_LS, JSON.stringify(db)); }catch(e){}
 }
 
 /* ---------------- API layer ---------------- */
@@ -725,6 +791,8 @@ async function probeEndpoint(){
   throw new Error("All "+attempts.length+" connection attempts failed");
 }
 async function loadCatalog(){
+  // this view 500s on the finn.com /api route — migrate old saved configs away from it
+  if (state.cfg.view === "available-and-coming-soon"){ state.cfg.view = "available_cars"; saveCfg(); }
   state.loading = true;
   setStatus("busy", "Loading catalog…");
   renderSkeletons();
@@ -751,6 +819,7 @@ async function loadCatalog(){
       offset += limit;
     }
     state.cars = Array.from(seen.values());
+    trackPrices();
     state.facets = buildFacets(state.cars);
     buildFilterUI();
     // default filter: electric vehicles preselected on first load (EV-first tool)
@@ -890,6 +959,7 @@ function apply(){
     if (f.deals && !hasDeal(c)) return false;
     if (f.hitch && !hasHitch(c)) return false;
     if (f.realPics && !c.has_real_pictures) return false;
+    if (f.drops && !(c._drop>0)) return false;
     if (f.soon){
       const d = availDate(c);
       if (!d || (d - Date.now()) > 28*24*3600*1000) return false;
@@ -911,6 +981,7 @@ function sortCars(){
     "reco":       (a,b)=>(a.product_desktop_sorting??1e9)-(b.product_desktop_sorting??1e9),
     "price-asc":  (a,b)=>p(a)-p(b),
     "price-desc": (a,b)=>p(b)-p(a),
+    "drop-desc":  (a,b)=>(b._drop||0)-(a._drop||0),
     "power-desc": (a,b)=>(Number(b.power)||0)-(Number(a.power)||0),
     "range-desc": (a,b)=>(evRange(b)||0)-(evRange(a)||0),
     "avail-asc":  (a,b)=>(availDate(a)||new Date(8640000000000000))-(availDate(b)||new Date(8640000000000000)),
@@ -929,6 +1000,15 @@ const PAGE = 24;
 function renderGrid(reset){
   const grid = $("#grid");
   if (reset) grid.innerHTML = "";
+  if (!state.cars.length){
+    // the API answered, but this view has no vehicles at all (e.g. "coming soon" is often empty)
+    grid.innerHTML = `<div class="empty"><div class="big">📭</div>The API returned <b>no vehicles</b> for the view "<b>${esc(state.cfg.view)}</b>" — that bucket is currently empty on FINN's side.<br>
+      Tip: switch back to <b>Available cars</b> and use the <b>"Available within 4 weeks"</b> filter instead.<br><br>
+      <button class="chip" id="emptyView">⚙ Open Settings</button></div>`;
+    const s=$("#emptyView"); if(s) s.addEventListener("click", openSettings);
+    $("#moreBtn").hidden = true;
+    return;
+  }
   if (!state.filtered.length){
     grid.innerHTML = `<div class="empty"><div class="big">🔎</div>No vehicles match the current filters.<br><br>
       <button class="chip" id="emptyReset">Reset filters</button></div>`;
@@ -963,6 +1043,7 @@ function cardEl(c){
     <div class="imgwrap">
       <div class="badges">
         ${isEV(c)?'<span class="badge ev">EV</span>':""}
+        ${c._drop>0?`<span class="badge drop" title="Base price dropped since your previous visit">▼ ${fmtEur(c._drop)}</span>`:""}
         ${label?`<span class="badge">${esc(label)}</span>`:""}
         ${av.soon?'<span class="badge soon">soon</span>':""}
       </div>
@@ -975,7 +1056,7 @@ function cardEl(c){
       <div class="specrow">${specs.map(s=>`<span class="spec">${esc(s)}</span>`).join("")}</div>
       <div class="cfoot">
         <div class="price">
-          <div class="from">from</div>
+          <div class="from">from · ${fmtNum(state.cfg.km)} km/mo</div>
           <div class="val">${fmtEur(price)}<small> /month</small></div>
         </div>
         <div class="avail">${av.txt==="available now"?"<b>available now</b>":esc(av.txt)}<br><span style="opacity:.65">${Array.isArray(c.available_terms)&&c.available_terms.length?esc(c.available_terms.join(" / "))+" mo":""}</span></div>
@@ -999,11 +1080,13 @@ function renderStats(){
   const brands = new Set(state.filtered.map(brandName)).size;
   const cheapest = prices.length?Math.min(...prices):null;
   const median = prices.length ? prices.slice().sort((a,b)=>a-b)[Math.floor(prices.length/2)] : null;
+  const drops = state.filtered.filter(c=>c._drop>0).length;
   $("#stats").innerHTML = [
     cheapest!=null?`<span class="statchip">cheapest <b>${fmtEur(cheapest)}</b></span>`:"",
     median!=null?`<span class="statchip">median <b>${fmtEur(median)}</b></span>`:"",
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,
-    `<span class="statchip">brands <b>${brands}</b></span>`
+    `<span class="statchip">brands <b>${brands}</b></span>`,
+    drops?`<span class="statchip">▼ price drops <b>${drops}</b></span>`:""
   ].join("");
 }
 function renderActiveFilters(){
@@ -1026,6 +1109,7 @@ function renderActiveFilters(){
   if (f.hitch) add("towbar", ()=>{f.hitch=false;$("#fltHitch").checked=false;});
   if (f.soon) add("≤ 4 weeks", ()=>{f.soon=false;$("#fltNow").checked=false;});
   if (f.realPics) add("real photos", ()=>{f.realPics=false;$("#fltRealPics").checked=false;});
+  if (f.drops) add("▼ price drops", ()=>{f.drops=false;$("#fltDrops").checked=false;});
   $("#activeFilters").innerHTML = out.map((x,i)=>`<span class="af">${esc(x.label)}<button data-af="${i}">✕</button></span>`).join("");
   $$("#activeFilters [data-af]").forEach(btn=>btn.addEventListener("click", e=>{
     e.stopPropagation(); out[Number(btn.dataset.af)].undo(); syncChipStates(); apply();
@@ -1046,7 +1130,7 @@ function resetFilters(){
   $("#q").value=""; $("#priceMin").value=""; $("#priceMax").value="";
   const ps=$("#priceSlider"); ps.value=ps.max;
   $("#powerSlider").value=0; $("#rangeSlider").value=0;
-  ["fltDeals","fltHitch","fltNow","fltRealPics"].forEach(id=>{$("#"+id).checked=false;});
+  ["fltDeals","fltHitch","fltNow","fltRealPics","fltDrops"].forEach(id=>{$("#"+id).checked=false;});
   syncChipStates(); apply();
 }
 
@@ -1102,7 +1186,8 @@ function openDetail(c){
         <div>
           <div class="kv">${kv.map(([k,v])=>`<div class="cell"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
           <div class="sect">
-            <h3>Monthly price by term ${state.cfg.biz?"(business)":"(private)"}</h3>
+            <h3>Monthly price by term · ${state.cfg.biz?"business":"private"} · ${fmtNum(state.cfg.km)} km/mo</h3>
+            ${c._drop>0?`<div style="font-size:.78rem;color:var(--accent-2);margin-block-end:.5rem">▼ Base price dropped ${fmtEur(c._drop)} since your previous visit.</div>`:""}
             <table class="ptable"><thead><tr><th>Term</th><th>per month</th></tr></thead>
             <tbody>${plist.map(x=>`<tr><td>${x.term} months</td><td class="num">${fmtEur2(x.price)}</td></tr>`).join("") || '<tr><td colspan="2" style="color:var(--text-faint)">No price list returned.</td></tr>'}</tbody></table>
             ${(()=>{ const kmp = kmPackages(c);
@@ -1243,6 +1328,8 @@ function writeHash(){
   if (f.hitch) p.set("ahk","1");
   if (f.soon) p.set("soon","1");
   if (f.realPics) p.set("pics","1");
+  if (f.drops) p.set("dr","1");
+  if (state.cfg.km!==500) p.set("km", state.cfg.km);
   if (state.sort!=="reco") p.set("sort", state.sort);
   const h = p.toString();
   history.replaceState(null, "", h ? "#"+h : location.pathname + location.search);
@@ -1262,6 +1349,8 @@ function readHash(){
     f.rangeMin = Number(p.get("rng"))||0;
     f.deals = p.get("deals")==="1"; f.hitch = p.get("ahk")==="1";
     f.soon = p.get("soon")==="1"; f.realPics = p.get("pics")==="1";
+    f.drops = p.get("dr")==="1";
+    if (p.has("km")){ const km = Number(p.get("km")); if ([500,1000,1500,2000].includes(km)) state.cfg.km = km; }
     if (p.get("sort")) state.sort = p.get("sort");
     return [...p.keys()].length > 0;
   }catch(e){ return false; }
@@ -1275,6 +1364,8 @@ function restoreControls(){
   $("#powerSlider").value = f.powerMin||0; $("#rangeSlider").value = f.rangeMin||0;
   $("#fltDeals").checked=f.deals; $("#fltHitch").checked=f.hitch;
   $("#fltNow").checked=f.soon; $("#fltRealPics").checked=f.realPics;
+  $("#fltDrops").checked=f.drops;
+  $("#kmSel").value = String(state.cfg.km||500);
   $("#sort").value = state.sort;
   updateRangeOuts();
 }
@@ -1374,7 +1465,14 @@ function wireEvents(){
   }, 120));
   $("#powerSlider").addEventListener("input", debounce(e=>{ state.f.powerMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
   $("#rangeSlider").addEventListener("input", debounce(e=>{ state.f.rangeMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
-  [["fltDeals","deals"],["fltHitch","hitch"],["fltNow","soon"],["fltRealPics","realPics"]].forEach(([id,prop])=>{
+  $("#kmSel").addEventListener("change", e=>{ state.cfg.km = Number(e.target.value)||500; saveCfg(); updateRangeOuts(); apply(); });
+  $("#densitySeg").addEventListener("click", e=>{
+    const btn = e.target.closest("[data-den]"); if(!btn) return;
+    state.cfg.density = btn.dataset.den; saveCfg();
+    $$("#densitySeg button").forEach(b=>b.classList.toggle("on", b===btn));
+    $("#grid").classList.toggle("list", state.cfg.density==="list");
+  });
+  [["fltDeals","deals"],["fltHitch","hitch"],["fltNow","soon"],["fltRealPics","realPics"],["fltDrops","drops"]].forEach(([id,prop])=>{
     $("#"+id).addEventListener("change", e=>{ state.f[prop]=e.target.checked; apply(); });
   });
   $("#resetBtn").addEventListener("click", resetFilters);
@@ -1432,6 +1530,8 @@ function wireEvents(){
   // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
   if (readHash()) state.evDefaulted = true;
   $$("#bizSeg button").forEach(b=>b.classList.toggle("on", (b.dataset.biz==="true")===state.cfg.biz));
+  $("#grid").classList.toggle("list", state.cfg.density==="list");
+  $$("#densitySeg button").forEach(b=>b.classList.toggle("on", b.dataset.den===(state.cfg.density||"grid")));
   wireEvents();
   ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ state.userTouched = true; }, {once:true, capture:true}));
   loadCatalog();
