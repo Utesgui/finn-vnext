@@ -532,13 +532,37 @@ function pictureUrl(c){
   if (Array.isArray(c.pictures) && c.pictures[0] && c.pictures[0].url) return c.pictures[0].url;
   return null;
 }
+/* Real /cars price schema (verified against a live response, 2026-07-25):
+   price: { msrp, b2b_12: 407, b2c_12: 484, extra_500: 0, extra_1000: 29, ... }
+   -> monthly prices are per-term keys b2b_<term> / b2c_<term>;
+   the documented available_price_list map is kept as a fallback. */
 function priceList(c){
-  const pl = c.price && c.price.available_price_list;
-  if (!pl || typeof pl!=="object") return [];
-  return Object.entries(pl)
-    .map(([term,val])=>({term:parseInt(term,10), price:Number(val)}))
-    .filter(x=>!isNaN(x.term)&&isFinite(x.price)&&x.price>0)
-    .sort((a,b)=>a.term-b.term);
+  const p = c.price || {};
+  const terms = new Set((Array.isArray(c.available_terms)?c.available_terms:[]).map(Number));
+  Object.keys(p).forEach(k=>{ const m = k.match(/^b2[bc]_(\d+)$/); if(m) terms.add(Number(m[1])); });
+  const pref = state.cfg.biz ? "b2b_" : "b2c_", alt = state.cfg.biz ? "b2c_" : "b2b_";
+  const out = [];
+  for(const t of terms){
+    if(isNaN(t)||t<=0) continue;
+    let v = Number(p[pref+t]);
+    if(!isFinite(v)||v<=0) v = Number(p[alt+t]);
+    if(isFinite(v)&&v>0) out.push({term:t, price:v});
+  }
+  if(!out.length && p.available_price_list && typeof p.available_price_list==="object"){
+    for(const [k,v] of Object.entries(p.available_price_list)){
+      const t = parseInt(k,10), n = Number(v);
+      if(!isNaN(t)&&t>0&&isFinite(n)&&n>0) out.push({term:t, price:n});
+    }
+  }
+  return out.sort((a,b)=>a.term-b.term);
+}
+/* Optional extra-kilometer packages: price.extra_500 / extra_1000 / ... = fee/month */
+function kmPackages(c){
+  const p = c.price || {};
+  return Object.keys(p).filter(k=>/^extra_\d+$/.test(k))
+    .map(k=>({km:Number(k.slice(6)), fee:Number(p[k])}))
+    .filter(x=>isFinite(x.km)&&x.km>0&&isFinite(x.fee))
+    .sort((a,b)=>a.km-b.km);
 }
 function minPrice(c, terms){
   let list = priceList(c);
@@ -552,6 +576,8 @@ function hasDeal(c){
          Number(dp.downpayment_discount_percentage)>0 || Number(dp.downpayment_fixed_amount)>0;
 }
 function hasHitch(c){
+  const cf = c.closed_features_list;
+  if (cf && typeof cf==="object" && "Anhängerkupplung" in cf) return cf["Anhängerkupplung"]===true;
   const h=c.has_hitch;
   return h===true || (typeof h==="string" && h && !/^(nein|no|false|0)$/i.test(h));
 }
@@ -619,7 +645,7 @@ async function tryFetch(url, actor){
   const json = await res.json();
   const results = extractResults(json);
   if(!results) throw new Error("Unexpected response shape from "+url.split("?")[0]);
-  return {results};
+  return {results, total: (typeof json.total_results==="number" ? json.total_results : null)};
 }
 async function probeEndpoint(){
   // saved config first, then the candidate matrix. Probes always use
@@ -662,13 +688,20 @@ async function loadCatalog(){
       }
       for(const c of json.results) seen.set(carKey(c), c);
       pages++;
-      setStatus("busy", `Loading… ${seen.size} vehicles`);
-      if (json.results.length < limit || pages >= 40 || seen.size >= 4000) break;
+      setStatus("busy", `Loading… ${seen.size}${json.total?"/"+json.total:""} vehicles`);
+      if (json.results.length < limit || (json.total && seen.size >= json.total) || pages >= 40 || seen.size >= 4000) break;
       offset += limit;
     }
     state.cars = Array.from(seen.values());
     state.facets = buildFacets(state.cars);
     buildFilterUI();
+    // default filter: electric vehicles preselected on first load (EV-first tool)
+    if (!state.evDefaulted){
+      state.evDefaulted = true;
+      const ev = state.facets.fuels.find(([v])=>/elek|electr/i.test(v));
+      if (ev && !state.f.fuels.length) state.f.fuels.push(ev[0]);
+    }
+    syncChipStates();
     setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
     apply();
   }catch(err){
@@ -1005,7 +1038,9 @@ function openDetail(c){
             <h3>Monthly price by term ${state.cfg.biz?"(business)":"(private)"}</h3>
             <table class="ptable"><thead><tr><th>Term</th><th>per month</th></tr></thead>
             <tbody>${plist.map(x=>`<tr><td>${x.term} months</td><td class="num">${fmtEur2(x.price)}</td></tr>`).join("") || '<tr><td colspan="2" style="color:var(--text-faint)">No price list returned.</td></tr>'}</tbody></table>
-            ${c.price&&c.price.extra_km_price?`<div style="font-size:.74rem;color:var(--text-dim);margin-block-start:.5rem">Extra km: ${fmtEur2(c.price.extra_km_price)} / km</div>`:""}
+            ${(()=>{ const kmp = kmPackages(c);
+              if (kmp.length) return `<div style="font-size:.74rem;color:var(--text-dim);margin-block-start:.5rem">Extra-km packages (per month): ${kmp.map(x=>"+"+fmtNum(x.km)+" km · "+(x.fee?fmtEur(x.fee):"included")).join(" &nbsp;·&nbsp; ")}</div>`;
+              return c.price&&c.price.extra_km_price?`<div style="font-size:.74rem;color:var(--text-dim);margin-block-start:.5rem">Extra km: ${fmtEur2(c.price.extra_km_price)} / km</div>`:""; })()}
           </div>
           ${Array.isArray(c.color_list)&&c.color_list.length?`
           <div class="sect"><h3>Color variants (${c.color_list.length})</h3>
@@ -1084,7 +1119,11 @@ function openCompare(){
           ${row("CO₂", c=>c.co2emission!=null?fmtNum(c.co2emission)+" g/km":"–")}
           ${row("seats / doors", c=>`${esc(c.seats||"–")} / ${esc(c.doors||"–")}`)}
           ${row("available", c=>esc(availLabel(c).txt))}
-          ${row("extra km", c=>c.price&&c.price.extra_km_price?fmtEur2(c.price.extra_km_price)+"/km":"–")}
+          ${row("extra km", c=>{
+            const kp = kmPackages(c).filter(x=>x.fee>0);
+            if (kp.length) return "+"+fmtNum(kp[0].km)+" km: "+fmtEur(kp[0].fee)+"/mo";
+            return c.price&&c.price.extra_km_price?fmtEur2(c.price.extra_km_price)+"/km":"–";
+          })}
           ${row("MSRP", c=>c.price&&c.price.msrp?fmtEur(c.price.msrp):"–")}
         </tbody>
       </table>
