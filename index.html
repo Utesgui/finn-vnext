@@ -394,6 +394,11 @@
   <div class="dhead"><div class="t">Settings</div><button class="iconbtn x" data-close="settingsDlg">✕</button></div>
   <div class="dbody">
     <div class="set-row">
+      <label>Auto-configure from a request URL</label>
+      <input id="setPaste" type="text" spellcheck="false" placeholder="Paste a …/cars?… request URL copied from finn.com DevTools">
+      <div class="hint">Open finn.com → F12 → <b>Network</b> tab → reload → filter for <b>cars</b> → right-click the request → Copy URL → paste it here. Base URL and actor are extracted automatically.</div>
+    </div>
+    <div class="set-row">
       <label>API base URL</label>
       <input id="setBase" type="text" spellcheck="false">
       <div class="hint">FINN Product API host. Auto-detected on first load; change it if the service moves.</div>
@@ -401,7 +406,12 @@
     <div class="set-row">
       <label>Actor (API authorization)</label>
       <input id="setActor" type="text" spellcheck="false">
-      <div class="hint">Sent as the <b>actor</b> query parameter. Leave empty to send none.</div>
+      <div class="hint">Sent as the <b>actor</b> query parameter. finn.com's own <b>/api</b> routes need none — leave empty (only the legacy Product-API hosts use it).</div>
+    </div>
+    <div class="set-row">
+      <label>CORS proxy</label>
+      <input id="setProxy" type="text" spellcheck="false">
+      <div class="hint">Requests are routed through this proxy. Placeholders: <b>{url}</b> = target URL (path-prefix style), <b>{enc}</b> = URL-encoded target (?url= style). A plain address is used as prefix. Leave empty for direct calls. Default: the company anycors instance.</div>
     </div>
     <div class="set-row">
       <label>Vehicle view</label>
@@ -444,15 +454,31 @@ const LS_KEY = "finnvnext.v1";
 const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#101722"/><text x="80" y="48" font-family="sans-serif" font-size="9" fill="#5c6b7d" text-anchor="middle">no image</text></svg>');
 
+/* The finn.com frontend fetches vehicle data from same-origin Next.js routes:
+   https://www.finn.com/api/cars and /api/filters/cars — no actor parameter.
+   (Verified via DevTools on the live site, 2026-07.) The Product-API hosts are
+   kept as fallbacks, and a relative /api base is tried first when this app is
+   served via the bundled proxy.py (which forwards /api/* to www.finn.com). */
 const DEFAULTS = {
-  base: "https://product-api.finn.com",
-  actor: "finn-web",
-  view: "available-and-coming-soon",
+  base: "https://www.finn.com/api",
+  actor: "",
+  proxy: "https://anycors.b0t.at/{url}",   // company CORS proxy; {url} = target URL
+  view: "available_cars",
   limit: 200,
   biz: true
 };
-const CANDIDATE_BASES  = ["https://product-api.finn.com", "https://product-api.finn.auto"];
-const CANDIDATE_ACTORS = ["finn-web", "nextjs", "web", ""];
+/* Probe order: saved config first, then these [base, actor, proxyTemplate] combos.
+   The anycors instance is tried in both common formats (path-prefix and ?url=),
+   then direct calls, then the bundled proxy.py origin, then legacy hosts. */
+const CANDIDATE_COMBOS = (typeof location!=="undefined" && /^https?:$/.test(location.protocol) && !/finn\.com$/.test(location.hostname)
+    ? [[location.origin + "/api", "", ""]] : []).concat([
+  ["https://www.finn.com/api", "", "https://anycors.b0t.at/{url}"],
+  ["https://www.finn.com/api", "", "https://anycors.b0t.at/?url={enc}"],
+  ["https://www.finn.com/api", "", ""],
+  ["https://product-api.finn.com", "finn-web", "https://anycors.b0t.at/{url}"],
+  ["https://product-api.finn.com", "finn-web", ""],
+  ["https://product-api.finn.auto", "finn-web", ""]
+]);
 
 const state = {
   cfg: loadCfg(),
@@ -540,10 +566,21 @@ function finnLink(c){
 
 /* ---------------- API layer ---------------- */
 function carsUrl(base, actor, params){
-  const u = new URL(base.replace(/\/+$/,"") + "/cars");
+  const u = new URL(base.replace(/\/+$/,"") + "/cars", typeof location!=="undefined" ? location.href : "https://www.finn.com");
   Object.entries(params).forEach(([k,v])=>{ if(v!==null&&v!==undefined&&v!=="") u.searchParams.set(k,v); });
   if (actor) u.searchParams.set("actor", actor);
   return u.toString();
+}
+/* Wrap a target URL with the configured CORS proxy.
+   Template placeholders: {url} = raw target, {enc} = URL-encoded target.
+   A template without a placeholder is treated as a path prefix (cors-anywhere style).
+   Empty template = direct call. */
+function proxied(target, tpl){
+  const t = (tpl!==undefined ? tpl : state.cfg.proxy || "").trim();
+  if (!t) return target;
+  if (t.includes("{enc}")) return t.replace("{enc}", encodeURIComponent(target));
+  if (t.includes("{url}")) return t.replace("{url}", target);
+  return t.replace(/\/+$/,"") + "/" + target;
 }
 async function tryFetch(url){
   const res = await fetch(url, {headers:{accept:"application/json"}});
@@ -554,14 +591,14 @@ async function tryFetch(url){
 }
 async function probeEndpoint(){
   // saved config first, then the candidate matrix
-  const combos = [[state.cfg.base, state.cfg.actor]];
-  for(const b of CANDIDATE_BASES) for(const a of CANDIDATE_ACTORS)
-    if(!(b===state.cfg.base && a===state.cfg.actor)) combos.push([b,a]);
+  const combos = [[state.cfg.base, state.cfg.actor, state.cfg.proxy||""]];
+  for(const [b,a,p] of CANDIDATE_COMBOS)
+    if(!(b===state.cfg.base && a===state.cfg.actor && p===(state.cfg.proxy||""))) combos.push([b,a,p]);
   let lastErr = null;
-  for(const [base,actor] of combos){
+  for(const [base,actor,proxy] of combos){
     try{
-      await tryFetch(carsUrl(base, actor, {limit:1, view:state.cfg.view}));
-      state.cfg.base = base; state.cfg.actor = actor; saveCfg();
+      await tryFetch(proxied(carsUrl(base, actor, {limit:1, view:state.cfg.view}), proxy));
+      state.cfg.base = base; state.cfg.actor = actor; state.cfg.proxy = proxy; saveCfg();
       return true;
     }catch(e){ lastErr = e; }
   }
@@ -579,10 +616,10 @@ async function loadCatalog(){
     for(;;){
       let json;
       try{
-        json = await tryFetch(carsUrl(state.cfg.base, state.cfg.actor, {
+        json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
           view: state.cfg.view, is_for_business: state.cfg.biz, pricing_type:"normal",
           limit, offset, sort:"desktop"
-        }));
+        })));
       }catch(e){
         if (limit > 24){ limit = Math.max(24, Math.floor(limit/2)); continue; } // page size too big? shrink & retry
         throw e;
@@ -596,7 +633,7 @@ async function loadCatalog(){
     state.cars = Array.from(seen.values());
     state.facets = buildFacets(state.cars);
     buildFilterUI();
-    setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices`);
+    setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
     apply();
   }catch(err){
     state.cars = []; state.filtered = [];
@@ -616,10 +653,10 @@ function showBanner(err){
   const el = $("#banner");
   const cors = err instanceof TypeError;
   el.innerHTML =
-    `<b>Couldn't reach the FINN Product API.</b> ${cors
-      ? "The browser blocked the request (network/CORS). If you run this file from disk, try hosting it on your intranet or behind a proxy that forwards to the API."
+    `<b>Couldn't reach the FINN API.</b> ${cors
+      ? "The browser blocked or couldn't complete the request — this includes the configured CORS proxy. Check that <code>anycors.b0t.at</code> is reachable from your network, or run <code>python proxy.py</code> from the app folder and open <code>http://localhost:8020</code> as a fallback."
       : "The API answered with an error: <code>"+esc(err.message)+"</code>."}
-     <br>Endpoint tried: <code>${esc(state.cfg.base)}/cars</code> (actor: <code>${esc(state.cfg.actor||"none")}</code>) — adjust it in ⚙ Settings.
+     <br>Endpoint tried: <code>${esc(state.cfg.base)}/cars</code> (actor: <code>${esc(state.cfg.actor||"none")}</code>, proxy: <code>${esc(state.cfg.proxy||"direct")}</code>) — adjust in ⚙ Settings.
      <div class="actions"><button id="retryBtn">↻ Retry</button><button id="openSettings2">⚙ Settings</button></div>`;
   el.classList.add("show");
   $("#retryBtn").addEventListener("click", loadCatalog);
@@ -1045,6 +1082,7 @@ function exportCsv(){
 function openSettings(){
   $("#setBase").value = state.cfg.base;
   $("#setActor").value = state.cfg.actor;
+  $("#setProxy").value = state.cfg.proxy || "";
   $("#setView").value = state.cfg.view;
   $("#setLimit").value = String(state.cfg.limit);
   $("#settingsDlg").showModal();
@@ -1124,8 +1162,19 @@ function wireEvents(){
   $("#exportBtn").addEventListener("click", exportCsv);
   $("#settingsBtn").addEventListener("click", openSettings);
   $("#setSave").addEventListener("click", ()=>{
+    const pasted = $("#setPaste").value.trim();
+    if (pasted){
+      try{
+        const u = new URL(pasted);
+        const idx = u.pathname.indexOf("/cars");
+        $("#setBase").value = u.origin + (idx>0 ? u.pathname.slice(0, idx) : "");
+        if (u.searchParams.has("actor")) $("#setActor").value = u.searchParams.get("actor");
+        $("#setPaste").value = "";
+      }catch(e){ /* not a valid URL — ignore and use the manual fields */ }
+    }
     state.cfg.base  = $("#setBase").value.trim() || DEFAULTS.base;
     state.cfg.actor = $("#setActor").value.trim();
+    state.cfg.proxy = $("#setProxy").value.trim();
     state.cfg.view  = $("#setView").value;
     state.cfg.limit = Number($("#setLimit").value)||200;
     saveCfg();
