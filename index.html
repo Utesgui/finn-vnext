@@ -430,6 +430,9 @@
           <option value="1000">1.000</option>
           <option value="1500">1.500</option>
           <option value="2000">2.000</option>
+          <option value="2500">2.500</option>
+          <option value="3000">3.000</option>
+          <option value="3500">3.500</option>
         </select>
       </div>
       <div class="seg" id="densitySeg" title="Layout">
@@ -496,11 +499,11 @@
     <div class="set-row">
       <label>Vehicle view</label>
       <select id="setView">
-        <option value="available_cars">Available cars (default)</option>
+        <option value="available_cars">Available + coming soon (default)</option>
         <option value="displayed_cars">Displayed cars</option>
         <option value="coming-soon">Coming soon only</option>
       </select>
-      <div class="hint">"Coming soon" often returns an empty list from this API route — the "Available within 4 weeks" filter is usually what you want.</div>
+      <div class="hint">The default automatically merges FINN's coming-soon list (currently often empty) into the available cars — merged cars get a "coming soon" badge.</div>
     </div>
     <div class="set-row">
       <label>Page size per API request</label>
@@ -799,24 +802,34 @@ async function loadCatalog(){
   hideBanner();
   try{
     await probeEndpoint();
-    const seen = new Map();
-    let offset = 0, limit = Number(state.cfg.limit)||200, pages = 0;
-    for(;;){
-      let json;
-      try{
-        json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
-          view: state.cfg.view, is_for_business: state.cfg.biz, pricing_type:"normal",
-          limit, offset, sort:"desktop"
-        })), state.cfg.actor);
-      }catch(e){
-        if (limit > 24){ limit = Math.max(24, Math.floor(limit/2)); continue; } // page size too big? shrink & retry
-        throw e;
+    async function fetchView(view, seen, markSoon){
+      let offset = 0, limit = Number(state.cfg.limit)||200, pages = 0;
+      for(;;){
+        let json;
+        try{
+          json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
+            view, is_for_business: state.cfg.biz, pricing_type:"normal",
+            limit, offset, sort:"desktop"
+          })), state.cfg.actor);
+        }catch(e){
+          if (limit > 24){ limit = Math.max(24, Math.floor(limit/2)); continue; } // page size too big? shrink & retry
+          throw e;
+        }
+        for(const c of json.results){
+          if (markSoon) c._soonView = true;
+          if (!seen.has(carKey(c))) seen.set(carKey(c), c);
+        }
+        pages++;
+        setStatus("busy", `Loading… ${seen.size} vehicles`);
+        if (json.results.length < limit || (json.total && pages*limit >= json.total) || pages >= 40 || seen.size >= 6000) break;
+        offset += limit;
       }
-      for(const c of json.results) seen.set(carKey(c), c);
-      pages++;
-      setStatus("busy", `Loading… ${seen.size}${json.total?"/"+json.total:""} vehicles`);
-      if (json.results.length < limit || (json.total && seen.size >= json.total) || pages >= 40 || seen.size >= 4000) break;
-      offset += limit;
+    }
+    const seen = new Map();
+    await fetchView(state.cfg.view, seen, state.cfg.view==="coming-soon");
+    // the API's combined view 500s, so merge FINN's coming-soon list in ourselves
+    if (state.cfg.view === "available_cars"){
+      try{ await fetchView("coming-soon", seen, true); }catch(e){ /* supplemental — ignore failures */ }
     }
     state.cars = Array.from(seen.values());
     trackPrices();
@@ -1045,7 +1058,7 @@ function cardEl(c){
         ${isEV(c)?'<span class="badge ev">EV</span>':""}
         ${c._drop>0?`<span class="badge drop" title="Base price dropped since your previous visit">▼ ${fmtEur(c._drop)}</span>`:""}
         ${label?`<span class="badge">${esc(label)}</span>`:""}
-        ${av.soon?'<span class="badge soon">soon</span>':""}
+        ${c._soonView?'<span class="badge soon">coming soon</span>':(av.soon?'<span class="badge soon">soon</span>':"")}
       </div>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare">⇄</button>
       <img alt="${esc(carName(c))}" loading="lazy">
@@ -1086,7 +1099,9 @@ function renderStats(){
     median!=null?`<span class="statchip">median <b>${fmtEur(median)}</b></span>`:"",
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,
     `<span class="statchip">brands <b>${brands}</b></span>`,
-    drops?`<span class="statchip">▼ price drops <b>${drops}</b></span>`:""
+    drops?`<span class="statchip">▼ price drops <b>${drops}</b></span>`:"",
+    (()=>{ const cs = state.filtered.filter(c=>c._soonView).length;
+           return cs?`<span class="statchip">coming soon <b>${cs}</b></span>`:""; })()
   ].join("");
 }
 function renderActiveFilters(){
@@ -1350,7 +1365,7 @@ function readHash(){
     f.deals = p.get("deals")==="1"; f.hitch = p.get("ahk")==="1";
     f.soon = p.get("soon")==="1"; f.realPics = p.get("pics")==="1";
     f.drops = p.get("dr")==="1";
-    if (p.has("km")){ const km = Number(p.get("km")); if ([500,1000,1500,2000].includes(km)) state.cfg.km = km; }
+    if (p.has("km")){ const km = Number(p.get("km")); if ([500,1000,1500,2000,2500,3000,3500].includes(km)) state.cfg.km = km; }
     if (p.get("sort")) state.sort = p.get("sort");
     return [...p.keys()].length > 0;
   }catch(e){ return false; }
