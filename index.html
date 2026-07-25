@@ -271,6 +271,51 @@
   .dfoot{display:flex;gap:.6rem;justify-content:flex-end;padding:1rem 1.2rem;border-block-start:1px solid var(--stroke)}
   .primary{background:var(--accent-grad);color:#08131a;font-weight:750;border-radius:999px;padding:.55rem 1.3rem;font-size:.84rem}
 
+  /* ---------- polish: motion, a11y, feedback ---------- */
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  ::-webkit-scrollbar{inline-size:9px;block-size:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px;border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-track{background:transparent}
+  .chip,.iconbtn,.seg button,.morebtn{transition:transform .12s,background .15s,color .15s,border-color .15s}
+  .chip:active,.iconbtn:active{transform:scale(.93)}
+  .card{animation:cardIn .32s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .card .imgwrap img{opacity:0}
+  .card .imgwrap img.loaded{opacity:1;transition:opacity .35s ease,transform .25s}
+  .count{display:inline-block}
+  .count.pulse{animation:countPulse .45s ease}
+  @keyframes countPulse{40%{transform:scale(1.14);color:var(--accent)}}
+  .sclear{position:absolute;inset-inline-end:2.2rem;inset-block-start:50%;transform:translateY(-50%);color:var(--text-faint);font-size:.78rem;padding:.2rem;line-height:1}
+  .sclear:hover{color:var(--danger)}
+  .toast{
+    position:fixed;inset-block-end:4.4rem;inset-inline-start:50%;transform:translateX(-50%) translateY(16px);
+    background:rgba(16,23,34,.95);border:1px solid var(--stroke-2);border-radius:999px;padding:.6rem 1.2rem;
+    font-size:.8rem;opacity:0;pointer-events:none;transition:.25s;z-index:80;backdrop-filter:blur(10px)
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .fab{display:none}
+  #drawerBg{display:none}
+  @media (max-width:900px){
+    aside{
+      position:fixed;inset-block:0;inset-inline-start:0;inline-size:min(320px,86vw);z-index:70;max-block-size:100vh;
+      border-radius:0 var(--radius) var(--radius) 0;transform:translateX(-105%);
+      transition:transform .28s cubic-bezier(.2,.7,.3,1);background:#0e1520
+    }
+    body.drawer-open aside{transform:none}
+    #drawerBg{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:65}
+    body.drawer-open #drawerBg{opacity:1;pointer-events:auto}
+    .fab{
+      display:flex;align-items:center;gap:.45rem;position:fixed;inset-block-end:1.1rem;inset-inline-end:1.1rem;z-index:60;
+      background:var(--accent-grad);color:#08131a;font-weight:750;border-radius:999px;padding:.75rem 1.25rem;
+      font-size:.85rem;box-shadow:var(--shadow)
+    }
+    .fab .n{background:rgba(0,0,0,.25);border-radius:99px;padding:.05rem .5rem;font-size:.72rem}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+  }
+
   footer{padding:1.6rem 1.25rem 2.2rem;text-align:center;font-size:.7rem;color:var(--text-faint)}
   footer a{color:var(--text-dim)}
 </style>
@@ -288,6 +333,7 @@
   <div class="searchwrap">
     <span class="icon">⌕</span>
     <input id="q" type="search" placeholder="Search brand, model, trim, engine …" autocomplete="off">
+    <button class="sclear" id="qClear" hidden aria-label="Clear search">✕</button>
     <kbd>/</kbd>
   </div>
   <div class="hspacer"></div>
@@ -296,6 +342,7 @@
     <button data-biz="false">Private</button>
   </div>
   <div class="pill busy" id="status"><span class="dot"></span><span id="statusTxt">Connecting…</span></div>
+  <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)">🔗</button>
   <button class="iconbtn" id="exportBtn" title="Export current results as CSV">⤓</button>
   <button class="iconbtn" id="settingsBtn" title="Settings">⚙</button>
 </header>
@@ -322,6 +369,12 @@
         </div>
         <input type="range" id="priceSlider" min="0" max="2000" step="10">
         <div class="rangeout" id="priceOut"></div>
+        <div class="chips" id="priceQuick" style="margin-block-start:.55rem">
+          <button class="chip" data-pq="200">≤ 200 €</button>
+          <button class="chip" data-pq="300">≤ 300 €</button>
+          <button class="chip" data-pq="400">≤ 400 €</button>
+          <button class="chip" data-pq="500">≤ 500 €</button>
+        </div>
       </div>
     </details>
     <details><summary>Gearshift</summary><div class="fbody"><div class="chips" id="gearChips"></div></div></details>
@@ -377,6 +430,7 @@
     </div>
     <div class="activef" id="activeFilters"></div>
     <div class="grid" id="grid"></div>
+    <div id="sentinel" aria-hidden="true"></div>
     <button class="morebtn" id="moreBtn" hidden>Show more</button>
   </main>
 </div>
@@ -386,6 +440,10 @@
   <button class="go" id="cmpGo">Compare</button>
   <button class="clr" id="cmpClear">Clear</button>
 </div>
+
+<button class="fab" id="fabFilters">⚲ Filters <span class="n" id="fabCount">0</span></button>
+<div id="drawerBg"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <dialog id="detailDlg"></dialog>
 <dialog id="cmpDlg"></dialog>
@@ -702,6 +760,7 @@ async function loadCatalog(){
       if (ev && !state.f.fuels.length) state.f.fuels.push(ev[0]);
     }
     syncChipStates();
+    restoreControls();
     setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
     apply();
   }catch(err){
@@ -794,6 +853,7 @@ function renderBrandList(filterText){
     .join("") || `<div style="font-size:.75rem;color:var(--text-faint);padding:.3rem">No brand matches</div>`;
 }
 function updateRangeOuts(){
+  syncPriceQuick();
   const f=state.f;
   $("#priceOut").textContent = `up to ${fmtEur(Number($("#priceSlider").value))} / month`;
   $("#powerOut").textContent = f.powerMin>0 ? `≥ ${f.powerMin} kW (${Math.round(f.powerMin*1.35962)} PS)` : "any";
@@ -841,6 +901,8 @@ function apply(){
   renderGrid(true);
   renderStats();
   renderActiveFilters();
+  writeHash();
+  if (state.userTouched && window.scrollY > 380) window.scrollTo({top:0, behavior:"smooth"});
 }
 function sortCars(){
   const terms = state.f.terms.map(Number);
@@ -890,6 +952,7 @@ function cardEl(c){
   const label = c.product_label && c.product_label.label;
   const el = document.createElement("article");
   el.className = "card"; el.dataset.key = key;
+  el.tabIndex = 0; el.setAttribute("role","button"); el.setAttribute("aria-label", carName(c));
   const specs = [
     c.cartype, c.gearshift,
     c.power ? `${c.power} kW · ${Math.round(c.power*1.35962)} PS` : null,
@@ -919,13 +982,16 @@ function cardEl(c){
       </div>
     </div>`;
   const img = el.querySelector("img");
-  img.src = pictureUrl(c) || PLACEHOLDER;
+  img.addEventListener("load", ()=>img.classList.add("loaded"));
   img.addEventListener("error", ()=>{ img.src = PLACEHOLDER; }, {once:true});
+  img.src = pictureUrl(c) || PLACEHOLDER;
   return el;
 }
 function renderStats(){
   const n = state.filtered.length;
-  $("#cnt").textContent = fmtNum(n);
+  const cnt = $("#cnt");
+  cnt.textContent = fmtNum(n);
+  cnt.classList.remove("pulse"); void cnt.offsetWidth; cnt.classList.add("pulse");
   $("#cntSub").textContent = n===1 ? "vehicle" : `vehicles of ${fmtNum(state.cars.length)}`;
   if(!n){ $("#stats").innerHTML=""; return; }
   const prices = state.filtered.map(c=>minPrice(c)).filter(p=>p!=null);
@@ -964,6 +1030,7 @@ function renderActiveFilters(){
   $$("#activeFilters [data-af]").forEach(btn=>btn.addEventListener("click", e=>{
     e.stopPropagation(); out[Number(btn.dataset.af)].undo(); syncChipStates(); apply();
   }));
+  $("#fabCount").textContent = out.length;
 }
 function syncChipStates(){
   const f=state.f;
@@ -1153,6 +1220,66 @@ function exportCsv(){
   a.download = "finn-vnext-export.csv";
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  toast(`${fmtNum(state.filtered.length)} vehicles exported as CSV`);
+}
+
+/* ---------------- toast & shareable URL state ---------------- */
+let toastT;
+function toast(msg){
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove("show"), 2200);
+}
+/* Filters live in the URL hash -> every view is bookmarkable & shareable. */
+function writeHash(){
+  const f = state.f, p = new URLSearchParams();
+  if (f.q) p.set("q", f.q);
+  const lists = [["fu",f.fuels],["br",f.brands],["ty",f.types],["ge",f.gears],["te",f.terms],["se",f.seats],["do",f.doors],["co",f.colors]];
+  for(const [k,arr] of lists) if (arr.length) p.set(k, arr.join(","));
+  if (f.priceMin!=null) p.set("pmin", f.priceMin);
+  if (f.priceMax!=null) p.set("pmax", f.priceMax);
+  if (f.powerMin>0) p.set("pow", f.powerMin);
+  if (f.rangeMin>0) p.set("rng", f.rangeMin);
+  if (f.deals) p.set("deals","1");
+  if (f.hitch) p.set("ahk","1");
+  if (f.soon) p.set("soon","1");
+  if (f.realPics) p.set("pics","1");
+  if (state.sort!=="reco") p.set("sort", state.sort);
+  const h = p.toString();
+  history.replaceState(null, "", h ? "#"+h : location.pathname + location.search);
+}
+function readHash(){
+  if (location.hash.length < 2) return false;
+  try{
+    const p = new URLSearchParams(location.hash.slice(1));
+    const f = state.f;
+    const list = k => { const v = p.get(k); return v ? v.split(",").filter(Boolean) : []; };
+    f.q = p.get("q") || "";
+    f.fuels=list("fu"); f.brands=list("br"); f.types=list("ty"); f.gears=list("ge");
+    f.terms=list("te"); f.seats=list("se"); f.doors=list("do"); f.colors=list("co");
+    f.priceMin = p.has("pmin") ? Number(p.get("pmin")) : null;
+    f.priceMax = p.has("pmax") ? Number(p.get("pmax")) : null;
+    f.powerMin = Number(p.get("pow"))||0;
+    f.rangeMin = Number(p.get("rng"))||0;
+    f.deals = p.get("deals")==="1"; f.hitch = p.get("ahk")==="1";
+    f.soon = p.get("soon")==="1"; f.realPics = p.get("pics")==="1";
+    if (p.get("sort")) state.sort = p.get("sort");
+    return [...p.keys()].length > 0;
+  }catch(e){ return false; }
+}
+/* push current state.f back into the visible controls (after load / restore) */
+function restoreControls(){
+  const f = state.f;
+  $("#q").value = f.q; $("#qClear").hidden = !f.q;
+  $("#priceMin").value = f.priceMin??""; $("#priceMax").value = f.priceMax??"";
+  const ps=$("#priceSlider"); ps.value = f.priceMax!=null ? f.priceMax : ps.max;
+  $("#powerSlider").value = f.powerMin||0; $("#rangeSlider").value = f.rangeMin||0;
+  $("#fltDeals").checked=f.deals; $("#fltHitch").checked=f.hitch;
+  $("#fltNow").checked=f.soon; $("#fltRealPics").checked=f.realPics;
+  $("#sort").value = state.sort;
+  updateRangeOuts();
+}
+function syncPriceQuick(){
+  $$("#priceQuick [data-pq]").forEach(b=>b.classList.toggle("on", state.f.priceMax===Number(b.dataset.pq)));
 }
 
 /* ---------------- settings ---------------- */
@@ -1166,30 +1293,70 @@ function openSettings(){
 }
 
 /* ---------------- events ---------------- */
-function chipGroup(sel, arr, after){
+/* key-based lookup (not a captured array reference), so the groups keep working
+   after resetFilters() replaces state.f */
+function chipGroup(sel, key){
   $(sel).addEventListener("click", e=>{
     const btn = e.target.closest("[data-chip]"); if(!btn) return;
+    const arr = state.f[key];
     const v = btn.dataset.chip;
     const i = arr.indexOf(v);
     if (i>=0) arr.splice(i,1); else arr.push(v);
     btn.classList.toggle("on", i<0);
-    if (after) after();
     apply();
   });
 }
 function wireEvents(){
-  $("#q").addEventListener("input", debounce(e=>{ state.f.q = e.target.value; apply(); }, 180));
+  $("#q").addEventListener("input", debounce(e=>{ state.f.q = e.target.value; $("#qClear").hidden = !e.target.value; apply(); }, 180));
+  $("#qClear").addEventListener("click", ()=>{ $("#q").value=""; state.f.q=""; $("#qClear").hidden=true; apply(); $("#q").focus(); });
   document.addEventListener("keydown", e=>{
     if (e.key==="/" && !/input|select|textarea/i.test(document.activeElement.tagName)){ e.preventDefault(); $("#q").focus(); }
-    if (e.key==="Escape") $$( "dialog[open]" ).forEach(d=>d.close());
+    if (e.key==="Escape"){ $$( "dialog[open]" ).forEach(d=>d.close()); document.body.classList.remove("drawer-open"); }
   });
-  chipGroup("#fuelChips", state.f.fuels);
-  chipGroup("#typeChips", state.f.types);
-  chipGroup("#gearChips", state.f.gears);
-  chipGroup("#termChips", state.f.terms);
-  chipGroup("#seatChips", state.f.seats);
-  chipGroup("#doorChips", state.f.doors);
-  chipGroup("#colorSwatches", state.f.colors);
+  // click on the dimmed backdrop closes a dialog
+  ["detailDlg","cmpDlg","settingsDlg"].forEach(id=>{
+    const d = $("#"+id);
+    d.addEventListener("click", e=>{ if (e.target === d) d.close(); });
+  });
+  // mobile filter drawer
+  const setDrawer = open => document.body.classList.toggle("drawer-open", open);
+  $("#fabFilters").addEventListener("click", ()=>setDrawer(!document.body.classList.contains("drawer-open")));
+  $("#drawerBg").addEventListener("click", ()=>setDrawer(false));
+  // quick price presets
+  $("#priceQuick").addEventListener("click", e=>{
+    const btn = e.target.closest("[data-pq]"); if(!btn) return;
+    const v = Number(btn.dataset.pq);
+    state.f.priceMax = (state.f.priceMax===v) ? null : v;
+    $("#priceMax").value = state.f.priceMax??"";
+    $("#priceSlider").value = state.f.priceMax??$("#priceSlider").max;
+    updateRangeOuts(); apply();
+  });
+  // share the current view (filters live in the URL)
+  $("#shareBtn").addEventListener("click", async ()=>{
+    try{ await navigator.clipboard.writeText(location.href); toast("Link to this view copied"); }
+    catch(e){ toast("Couldn't copy automatically — use the address bar URL"); }
+  });
+  // infinite scroll (Show more remains as fallback)
+  if ("IntersectionObserver" in window){
+    new IntersectionObserver(entries=>{
+      if (entries.some(en=>en.isIntersecting) && !$("#moreBtn").hidden && !state.loading) renderGrid(false);
+    }, {rootMargin:"600px 0px"}).observe($("#sentinel"));
+  }
+  // keyboard: open a focused card with Enter / Space
+  $("#grid").addEventListener("keydown", e=>{
+    if (e.key!=="Enter" && e.key!==" ") return;
+    const card = e.target.closest(".card"); if(!card || e.target.closest("button")) return;
+    e.preventDefault();
+    const c = state.cars.find(x=>carKey(x)===card.dataset.key);
+    if (c) openDetail(c);
+  });
+  chipGroup("#fuelChips", "fuels");
+  chipGroup("#typeChips", "types");
+  chipGroup("#gearChips", "gears");
+  chipGroup("#termChips", "terms");
+  chipGroup("#seatChips", "seats");
+  chipGroup("#doorChips", "doors");
+  chipGroup("#colorSwatches", "colors");
   $("#brandSearch").addEventListener("input", e=>renderBrandList(e.target.value));
   $("#brandList").addEventListener("change", e=>{
     const cb = e.target.closest("[data-brand]"); if(!cb) return;
@@ -1211,7 +1378,7 @@ function wireEvents(){
     $("#"+id).addEventListener("change", e=>{ state.f[prop]=e.target.checked; apply(); });
   });
   $("#resetBtn").addEventListener("click", resetFilters);
-  $("#sort").addEventListener("change", e=>{ state.sort=e.target.value; sortCars(); state.renderCount=0; renderGrid(true); });
+  $("#sort").addEventListener("change", e=>{ state.sort=e.target.value; sortCars(); state.renderCount=0; renderGrid(true); writeHash(); });
   $("#moreBtn").addEventListener("click", ()=>renderGrid(false));
   $("#bizSeg").addEventListener("click", e=>{
     const btn = e.target.closest("[data-biz]"); if(!btn) return;
@@ -1262,8 +1429,11 @@ function wireEvents(){
 
 /* ---------------- boot ---------------- */
 (function boot(){
+  // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
+  if (readHash()) state.evDefaulted = true;
   $$("#bizSeg button").forEach(b=>b.classList.toggle("on", (b.dataset.biz==="true")===state.cfg.biz));
   wireEvents();
+  ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ state.userTouched = true; }, {once:true, capture:true}));
   loadCatalog();
 })();
 </script>
