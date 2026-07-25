@@ -411,7 +411,7 @@
     <div class="set-row">
       <label>CORS proxy</label>
       <input id="setProxy" type="text" spellcheck="false">
-      <div class="hint">Requests are routed through this proxy. Placeholders: <b>{url}</b> = target URL (path-prefix style), <b>{enc}</b> = URL-encoded target (?url= style). A plain address is used as prefix. Leave empty for direct calls. Default: the company anycors instance.</div>
+      <div class="hint">Requests are routed through this proxy. Placeholders: <b>{url}</b> = raw target URL, <b>{enc}</b> = URL-encoded, <b>{bare}</b> = without https://. The company anycors instance expects <code>https://anycors.b0t.at/?{url}</code> (whole query string = target). Leave empty for direct calls.</div>
     </div>
     <div class="set-row">
       <label>Vehicle view</label>
@@ -450,7 +450,7 @@
    sort / search entirely client-side => filtering always works.
    ============================================================= */
 
-const LS_KEY = "finnvnext.v1";
+const LS_KEY = "finnvnext.v2"; // v2: fresh defaults after connection-logic rework
 const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#101722"/><text x="80" y="48" font-family="sans-serif" font-size="9" fill="#5c6b7d" text-anchor="middle">no image</text></svg>');
 
@@ -462,23 +462,40 @@ const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
 const DEFAULTS = {
   base: "https://www.finn.com/api",
   actor: "",
-  proxy: "https://anycors.b0t.at/{url}",   // company CORS proxy; {url} = target URL
+  proxy: "https://anycors.b0t.at/?{url}",  // company CORS proxy: whole query string = target URL
   view: "available_cars",
   limit: 200,
   biz: true
 };
-/* Probe order: saved config first, then these [base, actor, proxyTemplate] combos.
-   The anycors instance is tried in both common formats (path-prefix and ?url=),
-   then direct calls, then the bundled proxy.py origin, then legacy hosts. */
+/* Connection facts (verified via browser console, 2026-07-25):
+   - product-api.finn.com is LIVE and CORS-open, but rejects unknown actors with 401
+     -> we scan a list of plausible actor values (each check is one tiny request).
+   - www.finn.com/api hosts same-origin routes (filters/cars confirmed); /cars there
+     returned 404 via the proxy and 500 directly -> tried in several spellings, late.
+   - anycors.b0t.at works path-prefix style; the ?url= form returns 500.
+   Probe order: saved config, own-origin /api (proxy.py), then the matrix below. */
+/* anycors.b0t.at (b0t-at/cors-proxy, Flask): only the ROOT route proxies, and the
+   ENTIRE query string is the target URL -> https://anycors.b0t.at/?<target-url>.
+   (Path-prefix style 404s, ?url=<enc> style 500s — confirmed against app.py.) */
+const ANYCORS = "https://anycors.b0t.at/?{url}";
+const ACTOR_GUESSES = ["finn-web","nextjs","web","webapp","website","frontend","finn",
+  "finn-auto","finnauto","finn-ui","ui","app","b2c","b2b","public","checkout","cp",
+  "docs","swagger","postman","internal","prod"];
 const CANDIDATE_COMBOS = (typeof location!=="undefined" && /^https?:$/.test(location.protocol) && !/finn\.com$/.test(location.hostname)
-    ? [[location.origin + "/api", "", ""]] : []).concat([
-  ["https://www.finn.com/api", "", "https://anycors.b0t.at/{url}"],
-  ["https://www.finn.com/api", "", "https://anycors.b0t.at/?url={enc}"],
-  ["https://www.finn.com/api", "", ""],
-  ["https://product-api.finn.com", "finn-web", "https://anycors.b0t.at/{url}"],
-  ["https://product-api.finn.com", "finn-web", ""],
-  ["https://product-api.finn.auto", "finn-web", ""]
-]);
+    ? [[location.origin + "/api", "", ""]] : []).concat(
+  [
+   // 1) finn.com same-origin API through anycors (correct ?<target> format)
+   ["https://www.finn.com/api", "", ANYCORS],
+  ],
+  // 2) documented Product API, direct — it is CORS-open (answers 401 until the
+  //    actor is right), so scan plausible actor values with tiny probe requests
+  ACTOR_GUESSES.map(a=>["https://product-api.finn.com", a, ""]),
+  // 3) Product API actor scan again, but through anycors (dodges any IP/geo walls)
+  ACTOR_GUESSES.slice(0,6).map(a=>["https://product-api.finn.com", a, ANYCORS]),
+  [
+   // 4) finn.com /api direct — works only if served from a finn.com-allowed origin
+   ["https://www.finn.com/api", "", ""]
+  ]);
 
 const state = {
   cfg: loadCfg(),
@@ -572,37 +589,57 @@ function carsUrl(base, actor, params){
   return u.toString();
 }
 /* Wrap a target URL with the configured CORS proxy.
-   Template placeholders: {url} = raw target, {enc} = URL-encoded target.
+   Template placeholders: {url} = raw target, {bare} = target without the https://
+   prefix (avoids double-slash mangling in some proxies), {enc} = URL-encoded target.
    A template without a placeholder is treated as a path prefix (cors-anywhere style).
    Empty template = direct call. */
 function proxied(target, tpl){
   const t = (tpl!==undefined ? tpl : state.cfg.proxy || "").trim();
   if (!t) return target;
-  if (t.includes("{enc}")) return t.replace("{enc}", encodeURIComponent(target));
-  if (t.includes("{url}")) return t.replace("{url}", target);
+  if (t.includes("{enc}"))  return t.replace("{enc}", encodeURIComponent(target));
+  if (t.includes("{bare}")) return t.replace("{bare}", target.replace(/^https?:\/\//,""));
+  if (t.includes("{url}"))  return t.replace("{url}", target);
   return t.replace(/\/+$/,"") + "/" + target;
+}
+/* Accept several plausible wrappers around the car list, so a proxy or API
+   variant that nests the payload differently doesn't fail the probe. */
+function extractResults(json){
+  if (!json || typeof json!=="object") return null;
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json.results)) return json.results;
+  if (Array.isArray(json.cars)) return json.cars;
+  if (json.data && typeof json.data==="object"){
+    if (Array.isArray(json.data)) return json.data;
+    if (Array.isArray(json.data.results)) return json.data.results;
+  }
+  return null;
 }
 async function tryFetch(url){
   const res = await fetch(url, {headers:{accept:"application/json"}});
-  if(!res.ok) throw new Error("HTTP "+res.status);
+  if(!res.ok) throw new Error("HTTP "+res.status+" from "+url.split("?")[0]);
   const json = await res.json();
-  if(!json || !Array.isArray(json.results)) throw new Error("Unexpected response shape");
-  return json;
+  const results = extractResults(json);
+  if(!results) throw new Error("Unexpected response shape from "+url.split("?")[0]);
+  return {results};
 }
 async function probeEndpoint(){
-  // saved config first, then the candidate matrix
+  // saved config first, then the candidate matrix. Probes always use
+  // view=available_cars — the safest value (other views 500 on some routes).
   const combos = [[state.cfg.base, state.cfg.actor, state.cfg.proxy||""]];
   for(const [b,a,p] of CANDIDATE_COMBOS)
     if(!(b===state.cfg.base && a===state.cfg.actor && p===(state.cfg.proxy||""))) combos.push([b,a,p]);
-  let lastErr = null;
+  const attempts = [];
   for(const [base,actor,proxy] of combos){
+    const url = proxied(carsUrl(base, actor, {limit:1, view:"available_cars"}), proxy);
     try{
-      await tryFetch(proxied(carsUrl(base, actor, {limit:1, view:state.cfg.view}), proxy));
+      await tryFetch(url);
       state.cfg.base = base; state.cfg.actor = actor; state.cfg.proxy = proxy; saveCfg();
+      state.lastProbe = attempts;
       return true;
-    }catch(e){ lastErr = e; }
+    }catch(e){ attempts.push({url, msg:String((e&&e.message)||e)}); }
   }
-  throw lastErr || new Error("no endpoint reachable");
+  state.lastProbe = attempts;
+  throw new Error("All "+attempts.length+" connection attempts failed");
 }
 async function loadCatalog(){
   state.loading = true;
@@ -651,12 +688,14 @@ function setStatus(kind, txt){
 }
 function showBanner(err){
   const el = $("#banner");
-  const cors = err instanceof TypeError;
+  const attempts = state.lastProbe || [];
+  const rows = attempts.map(a =>
+    `<div style="margin-block-start:.35rem"><code style="word-break:break-all">${esc(a.url)}</code><br>→ <span style="color:var(--danger)">${esc(a.msg)}</span></div>`).join("");
   el.innerHTML =
-    `<b>Couldn't reach the FINN API.</b> ${cors
-      ? "The browser blocked or couldn't complete the request — this includes the configured CORS proxy. Check that <code>anycors.b0t.at</code> is reachable from your network, or run <code>python proxy.py</code> from the app folder and open <code>http://localhost:8020</code> as a fallback."
-      : "The API answered with an error: <code>"+esc(err.message)+"</code>."}
-     <br>Endpoint tried: <code>${esc(state.cfg.base)}/cars</code> (actor: <code>${esc(state.cfg.actor||"none")}</code>, proxy: <code>${esc(state.cfg.proxy||"direct")}</code>) — adjust in ⚙ Settings.
+    `<b>Couldn't reach the FINN API.</b> ${esc(err.message)}.
+     <br>Reading the log: <i>Failed to fetch</i> = network/CORS · <i>HTTP 401</i> = actor rejected · <i>HTTP 404</i> = wrong path · <i>HTTP 500</i> = server error / bad parameter.
+     Adjust base URL, actor or proxy in ⚙ Settings.
+     ${rows?`<details style="margin-block-start:.55rem"><summary style="cursor:pointer">Show all ${attempts.length} attempts</summary>${rows}</details>`:""}
      <div class="actions"><button id="retryBtn">↻ Retry</button><button id="openSettings2">⚙ Settings</button></div>`;
   el.classList.add("show");
   $("#retryBtn").addEventListener("click", loadCatalog);
