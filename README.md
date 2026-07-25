@@ -6,14 +6,22 @@ official **FINN Product API** — the same API that powers finn.com. Unlike the 
 
 ## Quick start
 
-1. Open `index.html` in any modern browser (Edge / Chrome / Firefox).
-2. The app auto-detects the API endpoint, loads the full catalog once, and everything after
-   that (search, filters, sort, compare, export) is instant and local.
+Open `index.html` in any modern browser — that's it.
 
-> If your browser blocks the API call (CORS) when opening the file directly from disk,
-> host the file on any intranet web server (e.g. `python -m http.server`) or put it behind
-> a small proxy. The app shows a clear banner with diagnostics if this happens, and the
-> endpoint + actor are editable under ⚙ Settings.
+By default all API requests are routed through the company CORS proxy
+**https://anycors.b0t.at/** to `https://www.finn.com/api/cars`. The app auto-detects
+whether the instance expects path-prefix style (`https://anycors.b0t.at/<target-url>`)
+or query style (`https://anycors.b0t.at/?url=<encoded>`), and falls back to direct
+calls if the proxy is unreachable. The proxy template, base URL and actor are all
+editable under ⚙ Settings (placeholders: `{url}` = raw target, `{enc}` = encoded target).
+
+**Fallback without anycors:** `proxy.py` (Python 3, no dependencies) serves the app and
+forwards `/api/*` to `www.finn.com` server-side:
+
+```
+cd <app folder>
+python proxy.py        # then open http://localhost:8020
+```
 
 ## Features
 
@@ -39,14 +47,30 @@ official **FINN Product API** — the same API that powers finn.com. Unlike the 
 Official documentation: **https://docs.product-api.finn.com/** — "Product API (1.0.0),
 serves all cars data consumed by our FINN UI".
 
-### Endpoint
+### Endpoints
+
+**Live endpoints used by the finn.com frontend itself** (confirmed via DevTools on the
+production site, July 2026 — same-origin Next.js routes, **no `actor` parameter needed**):
 
 ```
-GET /cars
+GET https://www.finn.com/api/cars            # vehicle listing (Product-API /cars shape)
+GET https://www.finn.com/api/filters/cars    # available filter values for the current filter set
+    e.g. ?fuels=Elektro&hide_related=true&is_for_business=true&pricing_type=downpayment&view=available_cars
 ```
 
-Authorization: an `actor` **query parameter** (API-key style). The app sends a configurable
-actor value (default `finn-web`, changeable in Settings) and also probes without it.
+**Authentication (confirmed live 2026-07-25):** requests must carry an **`x-finn-actor`
+HTTP header** — without it the API answers
+`{"message":"api call failed","error":"x-finn-actor header is required"}`.
+The app sends the configurable actor value (default `finn-vnext`) as this header on
+every request, and probes a few candidates on first load. Note `view=available_cars`
+works; `view=available-and-coming-soon` returned HTTP 500 on this route.
+
+**Documented (legacy/internal) host** from the official docs — kept as fallback in the app,
+but not reachable from outside:
+
+```
+GET https://product-api.finn.com/cars        # Authorization: `actor` query parameter
+```
 
 ### Query parameters (as documented)
 
@@ -89,10 +113,12 @@ That avoids the filter bugs on the public site and makes every interaction insta
 
 ### Known caveats
 
-- The base URL is auto-probed (`product-api.finn.com`, then `product-api.finn.auto`) and the
-  accepted `actor` value may change over time — both are editable in ⚙ Settings without
-  touching the code.
-- The API must be reachable from the browser (CORS). finn.com consumes it client-side, so
-  this normally works; if your setup blocks it, host the file or add a forwarding proxy.
+- Connection auto-probe order: `<own origin>/api` (when served via proxy.py) →
+  `www.finn.com/api` via anycors (path style, then `?url=` style) → direct →
+  legacy Product-API hosts. The first working combination is remembered; everything is
+  editable in ⚙ Settings without touching the code.
+- finn.com's `/api` routes are same-origin routes of their website; cross-origin browser
+  calls are handled by the anycors instance (or `proxy.py` as a local fallback).
+- Vehicle photos load directly from FINN's CDN (image tags aren't CORS-restricted).
 - Checkout/ordering APIs (`apis.finn.auto`) are internal-only (Schufa, Hubspot, Abilipay
   workflow) and are intentionally not used here.

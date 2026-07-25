@@ -1387,6 +1387,22 @@ function restoreControls(){
 function syncPriceQuick(){
   $$("#priceQuick [data-pq]").forEach(b=>b.classList.toggle("on", state.f.priceMax===Number(b.dataset.pq)));
 }
+/* prices shift when the km package changes -> rescale the slider bounds to match */
+function refreshPriceBounds(){
+  if (!state.cars.length || !state.facets) return;
+  let pMin=Infinity, pMax=0;
+  for(const c of state.cars){
+    const p = minPrice(c);
+    if (p!=null){ pMin=Math.min(pMin,p); pMax=Math.max(pMax,p); }
+  }
+  const F = state.facets;
+  F.priceMin = pMin===Infinity?0:Math.floor(pMin/10)*10;
+  F.priceMax = Math.ceil(pMax/10)*10 || 2000;
+  const ps = $("#priceSlider");
+  ps.min = F.priceMin; ps.max = F.priceMax;
+  ps.value = state.f.priceMax!=null ? Math.min(state.f.priceMax, F.priceMax) : F.priceMax;
+  updateRangeOuts();
+}
 
 /* ---------------- settings ---------------- */
 function openSettings(){
@@ -1480,7 +1496,15 @@ function wireEvents(){
   }, 120));
   $("#powerSlider").addEventListener("input", debounce(e=>{ state.f.powerMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
   $("#rangeSlider").addEventListener("input", debounce(e=>{ state.f.rangeMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
-  $("#kmSel").addEventListener("change", e=>{ state.cfg.km = Number(e.target.value)||500; saveCfg(); updateRangeOuts(); apply(); });
+  $("#kmSel").addEventListener("change", e=>{
+    state.cfg.km = Number(e.target.value)||500; saveCfg();
+    refreshPriceBounds();
+    apply();
+    if (state.f.priceMax!=null)
+      toast(`Prices now include ${fmtNum(state.cfg.km)} km/mo — your ≤ ${fmtEur(state.f.priceMax)} cap trims the list`);
+    else
+      toast(`Prices now include the ${fmtNum(state.cfg.km)} km/month package`);
+  });
   $("#densitySeg").addEventListener("click", e=>{
     const btn = e.target.closest("[data-den]"); if(!btn) return;
     state.cfg.density = btn.dataset.den; saveCfg();
