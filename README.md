@@ -35,6 +35,10 @@ python proxy.py        # then open http://localhost:8020
   Automatic, under 300 €, Available now, Deals), synced both ways with the sidebar.
 - **Automatic infinite scrolling** — cards render in fast batches and append as the user
   approaches the end; older browsers retain the manual fallback.
+- **Model explorer** — the visible **All cars / By model** switch groups only the currently
+  matching configurations. Both model cards and individual version cards retain their own
+  photo carousel; the version grid also exposes prices, specs, availability, favorites and
+  compare actions before entering full details.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos.
@@ -45,10 +49,14 @@ python proxy.py        # then open http://localhost:8020
   (or press `t`).
 - **Business ↔ Private pricing toggle** (uses the API's `is_for_business` pricing).
 - **Sorting**: recommended, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
-- **Detail view**: photo gallery, spec grid, price-per-term table, extra-km price, MSRP,
-  equipment (comfort / exterior / interior / multimedia / safety), color variants,
-  direct link to the finn.com product page — plus **←/→ prev-next navigation** through
-  the current result list without leaving the dialog.
+- **Modern detail view**: immersive photo gallery, prominent all-inclusive subscription
+  summary, and a live quote configurator: select real mileage packages and contract terms to
+  update monthly price, baseline delta, selected price-table row and full contract total.
+  It also includes key-spec highlights, technical pricing, a semantic category equipment
+  explorer, color availability, finn.com offer link, plus **Open PDF** and reliable
+  **Download PDF** actions. **←/→ navigation** stays within the selected model when opened
+  through the version picker, with a back-to-versions action; direct results continue to
+  navigate the full filtered list.
 - **Compare tray** — pick up to 3 cars, side-by-side spec table.
 - **Keyboard-first** — `/` search, `← →` navigate details, `f` favorite, `t` theme,
   `?` shows the shortcut overlay; full focus-visible states and screen-reader labels
@@ -116,6 +124,7 @@ GET https://product-api.finn.com/cars        # Authorization: `actor` query para
   `co2emission`, `co2_class`, `efficiency_class`, `seats`, `doors`, `engine`,
   `config_drive`, `vehicle_size { width_mm, height_mm, length_mm }`
 - Media: `picture.url`, `pictures[].url`, `has_real_pictures`, `brand.helper_brand_logo`
+- Documents: `config { link, name }` (the configuration PDF, when supplied)
 - Equipment: `equipment { comfort, exterior, interior, multimedia, safety }`,
   `equipment_delimiter`, `equipment_packages`
 - Merch: `product_label { label, label_color, … }`, `product_group[]`

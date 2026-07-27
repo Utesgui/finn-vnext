@@ -209,6 +209,8 @@
   .qf.on .ic{color:inherit}
   .toolbar{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-block-end:.7rem}
   .toolbar .tools{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;justify-content:flex-end}
+  .browse-seg button{display:inline-flex;align-items:center;gap:.35rem;white-space:nowrap}
+  .browse-seg .ic{font-size:.85rem}
   .count{font-size:1.35rem;font-weight:750;letter-spacing:-.3px}
   .count small{font-size:.78rem;font-weight:450;color:var(--text-dim);margin-inline-start:.4rem}
   .statchips{display:flex;gap:.45rem;flex-wrap:wrap;margin-block-end:.9rem}
@@ -222,6 +224,13 @@
     border:1px solid rgba(34,211,238,.35);color:var(--accent);border-radius:999px;padding:.28rem .6rem
   }
   .activef .af button{color:inherit;font-size:.8rem;line-height:1;padding:0}
+  @media (max-width:600px){
+    .toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:.55rem}
+    .toolbar .grow{display:none}
+    .toolbar .tools{inline-size:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-block-end:.25rem;scrollbar-width:none}
+    .toolbar .tools::-webkit-scrollbar{display:none}
+    .toolbar .tools>*{flex:none}
+  }
 
   /* ---------- Grid & cards ---------- */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:1.1rem}
@@ -247,7 +256,7 @@
   }
   .navarr.prev{inset-inline-start:.45rem}
   .navarr.next{inset-inline-end:.45rem}
-  .card:hover .navarr,.navarr:focus-visible{opacity:1}
+  .card:hover .navarr,.version-card:hover .navarr,.navarr:focus-visible{opacity:1}
   .navarr:hover{background:rgba(0,0,0,.75)}
   .dots{position:absolute;inset-block-end:.5rem;inset-inline:0;display:flex;justify-content:center;gap:.28rem;z-index:2;pointer-events:none}
   .dots i{inline-size:5px;block-size:5px;border-radius:50%;background:rgba(255,255,255,.45);transition:.15s}
@@ -265,12 +274,13 @@
   .grid.list .dots,.grid.list .shots{display:none}
   @media (max-width:700px){
     .grid.list .imgwrap{inline-size:132px;min-inline-size:132px}
-    .grid.list .navarr{display:none}
+    .grid.list .navarr{inline-size:26px;block-size:26px}
   }
   /* coarse pointers get a 40px target so the heart isn't a pixel hunt */
   @media (pointer:coarse){
     .favbtn,.cmpbtn{inline-size:40px;block-size:40px;font-size:1rem}
     .favbtn{inset-inline-end:3.4rem}
+    .navarr{opacity:1}
   }
   .cmpbtn{
     position:absolute;inset-block-start:.5rem;inset-inline-end:.5rem;inline-size:30px;block-size:30px;border-radius:8px;
@@ -304,6 +314,10 @@
   .avail .now{display:inline-flex;align-items:center;gap:.3rem;color:var(--ok);font-weight:650}
   .avail .now::before{content:"";inline-size:6px;block-size:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 7px var(--ok)}
   .avail .terms{color:var(--text-faint);font-size:.64rem}
+  .model-card .group-count{background:var(--accent-grad);color:var(--on-accent)}
+  .model-card .model-cta{display:inline-flex;align-items:center;gap:.35rem;color:var(--accent);font-size:.72rem;font-weight:700}
+  .model-card .model-cta .ic{transition:transform .15s}
+  .model-card:hover .model-cta .ic{transform:translateX(3px)}
   .morebtn{
     display:block;margin:1.4rem auto;padding:.7rem 2.2rem;border-radius:999px;border:1px solid var(--stroke-2);
     background:var(--panel);font-size:.85rem;color:var(--text);transition:.15s
@@ -396,6 +410,172 @@
   .set-row .hint{font-size:.7rem;color:var(--text-faint);line-height:1.5}
   .dfoot{display:flex;gap:.6rem;justify-content:flex-end;padding:1rem 1.2rem;border-block-start:1px solid var(--stroke)}
   .primary{background:var(--accent-grad);color:var(--on-accent);font-weight:750;border-radius:999px;padding:.55rem 1.3rem;font-size:.84rem}
+
+  /* ---------- Model versions ---------- */
+  #versionsDlg{inline-size:min(1120px,96vw);max-inline-size:min(1120px,96vw);max-block-size:92vh}
+  .versions-head .model-id{display:flex;align-items:center;gap:.7rem;min-inline-size:0}
+  .versions-head .blogo{inline-size:38px;block-size:38px}
+  .versions-head .t{font-size:1.18rem}
+  .versions-summary{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin-block-end:1rem;color:var(--text-dim);font-size:.78rem}
+  .versions-summary .pilllet{border:1px solid var(--stroke);border-radius:999px;padding:.3rem .65rem;background:var(--panel)}
+  .version-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:.85rem}
+  .version-card{position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--stroke);border-radius:14px;background:var(--card);cursor:pointer;transition:.16s}
+  .version-card:hover{transform:translateY(-2px);border-color:var(--stroke-2);box-shadow:var(--shadow)}
+  .version-card .vimg{aspect-ratio:16/9;background:var(--stage);overflow:hidden;position:relative}
+  .version-card .vimg>img{inline-size:100%;block-size:100%;object-fit:contain;padding:.25rem}
+  .version-card .vbody{display:flex;flex-direction:column;gap:.45rem;padding:.75rem .8rem .85rem;flex:1}
+  .version-card .vtitle{font-size:.9rem;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline-end:4.5rem}
+  .version-card .vmeta{font-size:.7rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .version-card .vchips{display:flex;gap:.35rem;flex-wrap:wrap}
+  .version-card .vchips span{font-size:.64rem;color:var(--text-dim);border:1px solid var(--stroke);border-radius:999px;padding:.2rem .4rem;background:var(--panel)}
+  .version-card .vfoot{display:flex;align-items:flex-end;justify-content:space-between;gap:.5rem;margin-block-start:auto;padding-block-start:.25rem}
+  .version-card .vprice{font-size:1.1rem;font-weight:800}
+  .version-card .vprice small{font-size:.64rem;color:var(--text-dim);font-weight:500}
+  .version-card .vavail{font-size:.65rem;color:var(--text-dim);text-align:end}
+  .version-card .favbtn{inset-inline-end:2.75rem}
+  @media (max-width:600px){.version-grid{grid-template-columns:1fr}.versions-head .s{display:none}}
+
+  /* ---------- Modern vehicle detail ---------- */
+  #detailDlg{inline-size:min(1180px,96vw);max-inline-size:min(1180px,96vw);max-block-size:92vh;overflow:hidden}
+  #detailDlg .detail-head{padding:.85rem 1rem;background:var(--bar-bg);backdrop-filter:blur(18px)}
+  .detail-head-main{display:flex;align-items:center;gap:.7rem;min-inline-size:0;flex:1}
+  .detail-head-main>.blogo{inline-size:42px;block-size:42px}
+  .detail-heading{min-inline-size:0}
+  .detail-heading .eyebrow{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin-block-end:.12rem}
+  .detail-heading .t{font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .detail-heading .trim{font-weight:450;color:var(--text-dim)}
+  .detail-back{display:inline-flex;align-items:center;gap:.35rem;padding:.48rem .72rem;flex:none}
+  .detail-body{padding:1rem;max-block-size:calc(92vh - 83px);scrollbar-gutter:stable}
+  .detail-hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.8fr);gap:1rem;align-items:start}
+  .detail-gallery .main{aspect-ratio:16/10;background:var(--stage);border-radius:16px;border:1px solid var(--stroke);overflow:hidden;position:relative}
+  .detail-gallery .main::after{content:"";position:absolute;inset:auto 12% 2% 12%;block-size:12%;background:radial-gradient(ellipse,var(--stroke-2),transparent 70%);filter:blur(10px);pointer-events:none}
+  .detail-gallery .main img{inline-size:100%;block-size:100%;object-fit:contain;padding:.5rem;position:relative;z-index:1}
+  .detail-gallery .thumbs{display:grid;grid-auto-flow:column;grid-auto-columns:76px;gap:.45rem;margin-block-start:.55rem;overflow-x:auto;padding:.08rem .08rem .3rem}
+  .detail-gallery .thumbs img{inline-size:76px;block-size:52px;object-fit:cover;border-radius:9px;border:1px solid var(--stroke);cursor:pointer;opacity:.62;transition:.13s;background:var(--stage)}
+  .detail-gallery .thumbs img.on,.detail-gallery .thumbs img:hover{opacity:1;border-color:var(--accent);box-shadow:0 0 0 2px var(--panel-2)}
+  .detail-summary{display:flex;flex-direction:column;gap:.75rem;border:1px solid var(--stroke);border-radius:16px;padding:1rem;background:var(--panel)}
+  .detail-availability{display:flex;align-items:center;justify-content:space-between;gap:.6rem;font-size:.72rem;color:var(--text-dim)}
+  .detail-availability .now{color:var(--ok);font-weight:700}
+  .detail-availability .now::before{content:"";display:inline-block;inline-size:7px;block-size:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);margin-inline-end:.35rem}
+  .detail-price-block{padding:.9rem;border-radius:13px;background:var(--bg-2);border:1px solid var(--stroke)}
+  .detail-price-block .overline{font-size:.62rem;text-transform:uppercase;letter-spacing:.11em;color:var(--text-faint)}
+  .detail-price-value{font-size:2rem;font-weight:850;letter-spacing:-1px;line-height:1.15;margin-block:.15rem}
+  .detail-price-value small{font-size:.72rem;color:var(--text-dim);font-weight:500;letter-spacing:0}
+  .detail-price-note{font-size:.68rem;color:var(--text-dim);line-height:1.45}
+  .detail-configurator{display:flex;flex-direction:column;gap:.55rem}
+  .quote-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-block-end:.3rem;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint)}
+  .quote-head b{font-family:var(--mono);font-size:.6rem;color:var(--accent);font-weight:600;letter-spacing:0}
+  .quote-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.35rem;padding:.05rem .05rem .2rem}
+  .quote-option{display:flex;flex-direction:column;align-items:flex-start;gap:.08rem;min-inline-size:0;padding:.42rem .45rem;border:1px solid var(--stroke);border-radius:9px;background:var(--card);color:var(--text-dim);transition:.14s}
+  .quote-option:hover{border-color:var(--stroke-2);color:var(--text)}
+  .quote-option.on{border-color:var(--accent);background:rgba(34,211,238,.1);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+  .quote-option b{font-size:.7rem;line-height:1.15}
+  .quote-option small{font-size:.54rem;color:var(--text-faint);white-space:nowrap;max-inline-size:100%;overflow:hidden;text-overflow:ellipsis}
+  .quote-option.on small{color:var(--accent)}
+  .quote-change{display:inline-flex;align-items:center;inline-size:max-content;max-inline-size:100%;margin-block-start:.32rem;padding:.18rem .42rem;border-radius:999px;font-size:.6rem;font-weight:700}
+  .quote-change.up{background:rgba(251,191,36,.12);color:var(--warn)}
+  .quote-change.down{background:rgba(74,222,128,.12);color:var(--ok)}
+  .quote-change.same{background:var(--panel-2);color:var(--text-dim)}
+  .quote-total{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-block-start:.55rem;padding-block-start:.55rem;border-block-start:1px solid var(--stroke);font-size:.64rem;color:var(--text-dim)}
+  .quote-total strong{font-family:var(--mono);font-size:.8rem;color:var(--text)}
+  .detail-price-block.quote-pulse{animation:quotePulse .28s ease}
+  @keyframes quotePulse{50%{border-color:var(--accent);box-shadow:0 0 0 2px rgba(34,211,238,.12)}}
+  .detail-inclusions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}
+  .detail-inclusions span{display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:.5rem .25rem;border:1px solid var(--stroke);border-radius:10px;background:var(--card);font-size:.6rem;color:var(--text-dim);text-align:center}
+  .detail-inclusions .ic{font-size:1rem;color:var(--accent)}
+  .detail-highlights{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+  .detail-highlight{display:flex;align-items:center;gap:.55rem;padding:.55rem;border:1px solid var(--stroke);border-radius:10px;background:var(--card);min-inline-size:0}
+  .detail-highlight>.ic{font-size:1.05rem;color:var(--accent);flex:none}
+  .detail-highlight .hk{font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint)}
+  .detail-highlight .hv{font-size:.76rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .detail-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem}
+  .detail-actions .linkout{justify-content:center;border-radius:10px;padding:.7rem .8rem}
+  .detail-actions .ghost{display:grid;place-items:center;border-radius:10px;padding:.7rem .85rem;color:var(--text)}
+  .detail-content-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-block-start:1rem}
+  .detail-panel{border:1px solid var(--stroke);border-radius:16px;background:var(--panel);padding:1rem;margin-block-start:1rem}
+  .detail-content-grid .detail-panel{margin-block-start:0}
+  .detail-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-block-end:.75rem}
+  .detail-panel-head h3{font-size:.86rem;margin:0;letter-spacing:0;text-transform:none;color:var(--text)}
+  .detail-panel-head p{font-size:.68rem;color:var(--text-faint);margin:.16rem 0 0}
+  .detail-kv{grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+  .detail-kv .cell{background:var(--card);padding:.62rem .7rem}
+  .detail-kv .v{font-size:.8rem;overflow-wrap:anywhere}
+  .detail-price-table{border:1px solid var(--stroke);border-radius:11px;overflow:hidden}
+  .detail-price-table table{margin:0}
+  .detail-price-table tr:last-child td{border-block-end:none}
+  .detail-price-table tr.best{background:var(--panel-2)}
+  .detail-price-table tr.selected{background:rgba(34,211,238,.1);box-shadow:inset 3px 0 0 var(--accent)}
+  .detail-price-table .best-tag{font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-inline-start:.35rem}
+  .detail-price-table .selected-tag{font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);margin-inline-start:.35rem}
+  .detail-km-note{font-size:.68rem;color:var(--text-dim);line-height:1.6;margin-block-start:.6rem}
+  .detail-colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.45rem}
+  .detail-color{display:flex;align-items:center;gap:.55rem;padding:.55rem .65rem;border:1px solid var(--stroke);border-radius:10px;background:var(--card);font-size:.72rem;min-inline-size:0}
+  .detail-color .sw{inline-size:22px;block-size:22px;border-radius:50%;border:1px solid var(--stroke-2);box-shadow:inset 0 0 0 2px var(--card);flex:none}
+  .detail-color .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .detail-color .date{margin-inline-start:auto;font-size:.6rem;color:var(--text-faint);white-space:nowrap}
+  .detail-equipment{display:grid;grid-template-columns:210px minmax(0,1fr);min-inline-size:0;border:1px solid var(--stroke);border-radius:13px;overflow:hidden;background:var(--card)}
+  .equipment-tabs{display:flex;flex-direction:column;gap:.25rem;padding:.55rem;border-inline-end:1px solid var(--stroke);background:var(--bg-2);overflow:auto;scrollbar-width:none}
+  .equipment-tabs::-webkit-scrollbar{display:none}
+  .equipment-tab{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:.55rem;inline-size:100%;padding:.58rem .62rem;border:1px solid transparent;border-radius:10px;background:transparent;font-size:.72rem;font-weight:700;color:var(--text-dim);text-align:start;transition:.15s}
+  .equipment-tab:hover{border-color:var(--stroke-2);color:var(--text)}
+  .equipment-tab.on{background:var(--panel);border-color:var(--stroke-2);color:var(--text);box-shadow:inset 3px 0 0 var(--accent)}
+  .equipment-tab>.ic{inline-size:30px;block-size:30px;padding:.42rem;border-radius:8px;background:var(--panel-2);color:var(--text-faint)}
+  .equipment-tab.on>.ic{background:var(--accent-grad);color:var(--on-accent)}
+  .equipment-tab .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .equipment-tab .n{display:grid;place-items:center;min-inline-size:20px;block-size:20px;padding-inline:.3rem;border-radius:999px;background:var(--panel-2);font-size:.6rem;color:var(--text-faint);font-family:var(--mono)}
+  .equipment-tab.on .n{background:var(--accent);color:var(--on-accent)}
+  .equipment-panels{min-inline-size:0;padding:.9rem 1rem}
+  .equipment-panel-head{display:flex;align-items:center;gap:.65rem;padding-block-end:.7rem;border-block-end:1px solid var(--stroke)}
+  .equipment-panel-head>.ic{inline-size:34px;block-size:34px;padding:.5rem;border-radius:9px;background:var(--panel-2);color:var(--accent)}
+  .equipment-panel-head .title{font-size:.84rem;font-weight:800}
+  .equipment-panel-head p{font-size:.64rem;color:var(--text-faint);margin:.12rem 0 0}
+  .equipment-panel-head .count{margin-inline-start:auto;font-size:.64rem;color:var(--text-dim);font-weight:600;white-space:nowrap}
+  .equipment-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.2rem;list-style:none;padding:0;margin:.35rem 0 0}
+  .equipment-list li{position:relative;padding:.62rem .2rem .62rem 1.45rem;border-block-end:1px solid var(--stroke);font-size:.72rem;color:var(--text-dim);line-height:1.45;overflow-wrap:anywhere}
+  .equipment-list li::before{content:"✓";position:absolute;inset-inline-start:.05rem;inset-block-start:.65rem;display:grid;place-items:center;inline-size:16px;block-size:16px;border-radius:50%;background:rgba(34,211,238,.12);color:var(--accent);font-size:.62rem;font-weight:900}
+  .equipment-list li:nth-last-child(-n+2){border-block-end-color:transparent}
+  .detail-document{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.6rem;padding:.62rem .7rem;border:1px solid var(--stroke);border-radius:11px;background:var(--card)}
+  .detail-document>.ic{inline-size:1.2rem;block-size:1.2rem;color:var(--accent)}
+  .detail-document .doc-title{font-size:.72rem;font-weight:750}
+  .detail-document .doc-meta{font-size:.58rem;color:var(--text-faint);margin-block-start:.08rem}
+  .detail-document .doc-actions{display:flex;gap:.35rem}
+  .detail-document .doc-open,.detail-document .doc-download{display:inline-flex;align-items:center;justify-content:center;gap:.3rem;block-size:32px;border:1px solid var(--stroke-2);border-radius:8px;padding-inline:.55rem;color:var(--text-dim);font-size:.64rem;font-weight:700;text-decoration:none;background:var(--panel)}
+  .detail-document .doc-open:hover,.detail-document .doc-download:hover{border-color:var(--accent);color:var(--text)}
+  .detail-document .doc-download{inline-size:32px;padding:0}
+  .detail-document .doc-download[aria-busy="true"] .ic{animation:docSpin .7s linear infinite}
+  @keyframes docSpin{to{transform:rotate(360deg)}}
+  .detail-meta{display:flex;justify-content:flex-end;margin:.65rem .25rem 0;color:var(--text-faint);font-size:.6rem;font-family:var(--mono)}
+  @media (max-width:860px){
+    .detail-hero,.detail-content-grid{grid-template-columns:minmax(0,1fr)}
+    .detail-gallery,.detail-summary,.detail-panel{min-inline-size:0}
+    .detail-kv{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .detail-equipment{grid-template-columns:170px minmax(0,1fr)}
+  }
+  @media (max-width:600px){
+    #detailDlg{inline-size:100vw;max-inline-size:100vw;max-block-size:100vh;border-radius:0;border:none}
+    #detailDlg .detail-head{align-items:flex-start;padding:.65rem .7rem}
+    .detail-head-main>.blogo{display:none}
+    .detail-heading .eyebrow{display:none}
+    .detail-heading .t{font-size:.9rem;max-inline-size:145px}
+    .detail-heading .s{font-size:.62rem;max-inline-size:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .detail-back{font-size:0;padding:.45rem}.detail-back .ic{font-size:1rem}
+    .detail-body{max-block-size:calc(100vh - 58px);padding:.7rem}
+    .detail-summary,.detail-panel{padding:.75rem}
+    .detail-inclusions span{font-size:.54rem;overflow-wrap:anywhere}
+    .detail-equipment{grid-template-columns:1fr}
+    .equipment-tabs{flex-direction:row;overflow-x:auto;border-inline-end:none;border-block-end:1px solid var(--stroke)}
+    .equipment-tab{inline-size:auto;grid-template-columns:24px auto auto;flex:none;padding:.45rem .55rem}
+    .equipment-tab>.ic{inline-size:24px;block-size:24px;padding:.32rem}
+    .equipment-tab.on{box-shadow:inset 0 -2px 0 var(--accent)}
+    .equipment-panels{padding:.75rem}
+    .equipment-list{grid-template-columns:1fr}
+    .equipment-list li:nth-last-child(-n+2){border-block-end-color:var(--stroke)}
+    .equipment-list li:last-child{border-block-end-color:transparent}
+    .detail-document .doc-open{font-size:0;inline-size:32px;padding:0}.detail-document .doc-open .ic{font-size:.8rem}
+    .detail-kv{grid-template-columns:1fr 1fr}
+    .detail-price-value{font-size:1.75rem}
+    .dnav{gap:.25rem}.dpos{display:none}
+  }
 
   /* ---------- polish: motion, a11y, feedback ---------- */
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
@@ -527,6 +707,8 @@
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
   <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2.5-5.5A2 2 0 0 1 7.3 5h9.4a2 2 0 0 1 1.8 1.5L21 12v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><line x1="9.5" y1="17" x2="14.5" y2="17"/><line x1="3" y1="12" x2="21" y2="12"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.59 13.41 12 22l-9-9V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
 </svg>
 
 <a class="skiplink" href="#grid">Skip to results</a>
@@ -630,6 +812,10 @@
       <div class="count" aria-live="polite"><span id="cnt">–</span><small id="cntSub"></small></div>
       <div class="grow"></div>
       <div class="tools">
+        <div class="seg browse-seg" id="browseSeg" title="Result grouping" role="group" aria-label="Result grouping">
+          <button data-browse="cars" class="on" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> All cars</button>
+          <button data-browse="models" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg> By model</button>
+        </div>
         <button class="favtoggle" id="favToggle" aria-pressed="false" title="Show favorites only">
           <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg> <span id="favCount">0</span>
         </button>
@@ -682,6 +868,7 @@
 <div id="drawerBg"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<dialog id="versionsDlg" aria-label="Model versions"></dialog>
 <dialog id="detailDlg" aria-label="Vehicle details"></dialog>
 <dialog id="cmpDlg" aria-label="Vehicle comparison"></dialog>
 
@@ -779,6 +966,7 @@ const DEFAULTS = {
   biz: true,
   km: 500,                                 // monthly mileage package (500 is included in base price)
   density: "grid",
+  browseMode: "cars",
   theme: (typeof matchMedia==="function" && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark"
 };
 /* Connection facts (verified via browser console, 2026-07-25):
@@ -808,12 +996,19 @@ const state = {
   cfg: loadCfg(),
   cars: [],
   filtered: [],
+  displayItems: [],
+  modelGroups: [],
   facets: null,
   renderCount: 0,
   compare: [],           // array of car keys, max 3
   favs: loadFavs(),      // Set of favorite car keys (persisted)
   detailIdx: -1,
   detailKey: null,
+  detailList: null,
+  detailGroupKey: null,
+  detailQuoteKm: null,
+  detailQuoteTerm: null,
+  activeGroupKey: null,
   loadGen: 0,            // increments per load; stale in-flight loads bail out
   f: freshFilters(),
   sort: "reco",
@@ -854,6 +1049,7 @@ const debounce = (fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=
 function carKey(c){ return String(c.config_id ?? c.id ?? c.uid); }
 function carName(c){ return `${brandName(c)} ${c.model||""}`.trim(); }
 function brandName(c){ return (c.brand && (c.brand.id||c.brand.name)) || c.brand_id || "?"; }
+function modelGroupKey(c){ return encodeURIComponent(brandName(c)) + "~" + encodeURIComponent(c.model||"Other model"); }
 function isEV(c){ return /elek|electr|ev/i.test(c.fuel||""); }
 function evRange(c){ const v = parseInt(c.ev_range,10); return isNaN(v)?null:v; }
 function pictureUrl(c){
@@ -865,9 +1061,9 @@ function pictureUrl(c){
    price: { msrp, b2b_12: 407, b2c_12: 484, extra_500: 0, extra_1000: 29, ... }
    -> monthly prices are per-term keys b2b_<term> / b2c_<term>;
    the documented available_price_list map is kept as a fallback. */
-function priceList(c){
+function priceList(c, km=state.cfg.km){
   const p = c.price || {};
-  const kmFee = kmFeeFor(c, state.cfg.km);
+  const kmFee = kmFeeFor(c, km);
   const terms = new Set((Array.isArray(c.available_terms)?c.available_terms:[]).map(Number));
   Object.keys(p).forEach(k=>{ const m = k.match(/^b2[bc]_(\d+)$/); if(m) terms.add(Number(m[1])); });
   const pref = state.cfg.biz ? "b2b_" : "b2c_", alt = state.cfg.biz ? "b2c_" : "b2b_";
@@ -906,8 +1102,8 @@ function kmPackages(c){
     .filter(x=>isFinite(x.km)&&x.km>0&&isFinite(x.fee))
     .sort((a,b)=>a.km-b.km);
 }
-function minPrice(c, terms){
-  let list = priceList(c);
+function minPrice(c, terms, km=state.cfg.km){
+  let list = priceList(c,km);
   if (terms && terms.length) list = list.filter(x=>terms.includes(x.term));
   if (!list.length) return null;
   return Math.min(...list.map(x=>x.price));
@@ -936,10 +1132,126 @@ function availLabel(c){
   return {txt:"from "+d.toLocaleDateString("de-DE",{day:"2-digit",month:"short",year:"numeric"}), soon:weeks<=4};
 }
 function finnLink(c){
-  const p = c.product_link || c.product_path || (c.config && c.config.link);
+  const p = c.product_link || c.product_path;
   if(!p) return null;
   if(/^https?:/i.test(p)) return p;
   return "https://www.finn.com" + (p.startsWith("/")?p:"/"+p);
+}
+function configPdfLink(c){
+  const url = c.config && c.config.link;
+  return typeof url==="string" && /^https?:\/\/.*\.pdf(?:$|[?#])/i.test(url) ? url : null;
+}
+function configPdfFilename(c){
+  const stem = [brandName(c),c.model,c.trim_name||c.engine,c.config_id].filter(Boolean).join("-");
+  let safe = "", separator = false;
+  for(const char of stem){
+    if(/[a-z0-9äöüß._-]/i.test(char)){ safe+=char; separator=false; }
+    else if(!separator){ safe+="-"; separator=true; }
+  }
+  while(safe.startsWith("-")) safe=safe.slice(1);
+  while(safe.endsWith("-")) safe=safe.slice(0,-1);
+  return (safe || "vehicle-configuration") + ".pdf";
+}
+const EQUIPMENT_LABELS = {
+  hasRearCamera:"Rear-view camera",hasPremiumSound:"Premium sound system",has360Camera:"360° camera",
+  hasUsbRear:"Rear USB ports",hasUsbFront:"Front USB ports",hasAdaptiveCruiseControl:"Adaptive cruise control",
+  hasKeylessEntry:"Keyless entry",hasKeylessStart:"Keyless start",hasHitch:"Towbar",hasEcall:"eCall emergency system",
+  hasPrivacyGlass:"Privacy glass",hasPanoramicRoof:"Panoramic roof",hasBlindSpotAssist:"Blind-spot assist",
+  hasAlloyWheels:"Alloy wheels",hasLeatherSeats:"Leather seats",hasSeatHeating:"Heated seats",
+  hasAuxiliaryHeating:"Auxiliary heating",hasHeadupDisplay:"Head-up display",hasHeatedSteeringWheel:"Heated steering wheel",
+  hasWirelessCharging:"Wireless phone charging",hasSplitRearSeats:"Split-folding rear seats",hasParkingAssist:"Parking assist",
+  hasElectricFrontSeats:"Electric front seats",hasCarplayAndroidauto:"Apple CarPlay & Android Auto",
+  hasWirelessCarplayAndroidauto:"Wireless Apple CarPlay & Android Auto",hasMatrixLedHeadlights:"Matrix LED headlights",
+  hasLedHeadlights:"LED headlights",hasRearCrossTrafficWarning:"Rear cross-traffic warning",hasSeatCooling:"Ventilated seats",
+  hasHeatPump:"Heat pump",hasLumbarSupport:"Lumbar support",hasRainLightSensor:"Rain and light sensor",
+  hasNavigation:"Navigation system",hasCorneringLights:"Cornering lights",hasElectricTailgate:"Electric tailgate",
+  hasFogLights:"Fog lights",hasRoofRails:"Roof rails",hasFoldingMirrors:"Folding mirrors",hasAmbientLighting:"Ambient lighting",
+  hasTrafficSignRecognition:"Traffic-sign recognition",hasCruiseControl:"Cruise control",hasStartStop:"Start/stop system",
+  hasEmergencyBraking:"Emergency braking assist",hasElectricParkingBrake:"Electric parking brake",
+  hasParkingSensors:"Parking sensors",hasTpms:"Tire-pressure monitoring",hasThreeZoneClimate:"Three-zone climate control"
+};
+const EQUIPMENT_CATEGORY_DEFS = [
+  {title:"Comfort",prop:"comfort",icon:"i-users",description:"Climate, convenience and everyday comfort"},
+  {title:"Exterior",prop:"exterior",icon:"i-car",description:"Wheels, lights and exterior features"},
+  {title:"Interior",prop:"interior",icon:"i-users",description:"Cabin, seating and interior finishes"},
+  {title:"Multimedia",prop:"multimedia",icon:"i-monitor",description:"Connectivity, audio and navigation"},
+  {title:"Safety",prop:"safety",icon:"i-shield",description:"Driver assistance and protection"}
+];
+const EQUIPMENT_CATEGORY_BY_KEY = {
+  hasPremiumSound:"Multimedia",hasUsbRear:"Multimedia",hasUsbFront:"Multimedia",hasCarplayAndroidauto:"Multimedia",
+  hasWirelessCarplayAndroidauto:"Multimedia",hasWirelessCharging:"Multimedia",hasNavigation:"Multimedia",
+  hasHitch:"Exterior",hasPrivacyGlass:"Exterior",hasPanoramicRoof:"Exterior",hasAlloyWheels:"Exterior",
+  hasMatrixLedHeadlights:"Exterior",hasLedHeadlights:"Exterior",hasCorneringLights:"Exterior",hasElectricTailgate:"Exterior",
+  hasFogLights:"Exterior",hasRoofRails:"Exterior",hasFoldingMirrors:"Exterior",
+  hasLeatherSeats:"Interior",hasSplitRearSeats:"Interior",hasElectricFrontSeats:"Interior",hasLumbarSupport:"Interior",
+  hasAmbientLighting:"Interior",
+  hasRearCamera:"Safety",has360Camera:"Safety",hasAdaptiveCruiseControl:"Safety",hasEcall:"Safety",
+  hasBlindSpotAssist:"Safety",hasParkingAssist:"Safety",hasRearCrossTrafficWarning:"Safety",hasRainLightSensor:"Safety",
+  hasTrafficSignRecognition:"Safety",hasEmergencyBraking:"Safety",hasParkingSensors:"Safety",hasTpms:"Safety"
+};
+function humanizeEquipmentKey(key){
+  const plain = key.replace(/^has/,"").replace(/([a-z0-9])([A-Z])/g,"$1 $2").replace(/([A-Za-z])(\d)/g,"$1 $2");
+  return plain ? plain.charAt(0).toUpperCase()+plain.slice(1) : key;
+}
+function parseEquipmentAudit(raw){
+  const text = String(raw||"").replaceAll("\u066b",",").replaceAll(/\s+/g," ").trim();
+  const prefix = "audit override:";
+  if(!text.toLocaleLowerCase().startsWith(prefix)) return {text,key:null,value:null};
+  const payload = text.slice(prefix.length).trim(), split = payload.indexOf(" = ");
+  const key = (split<0?payload:payload.slice(0,split)).trim();
+  const value = split<0 ? null : payload.slice(split+3).trim();
+  return /^\w+$/.test(key) ? {text,key,value} : {text,key:null,value:null};
+}
+function readableEquipmentItem(raw){
+  const audit = parseEquipmentAudit(raw);
+  if(!audit.key) return audit.text;
+  const {key,value}=audit;
+  if(key.startsWith("has")){
+    if(value && /^(false|0|no)$/i.test(value)) return null;
+    return EQUIPMENT_LABELS[key] || humanizeEquipmentKey(key);
+  }
+  return null;
+}
+function buildEquipmentGroups(equipment,delimiter,car){
+  const groups = new Map(EQUIPMENT_CATEGORY_DEFS.map(def=>[def.title,{...def,items:[]}])) , seen = new Set();
+  const technical = new Set([car.config_drive,car.engine,car.fuel,car.gearshift,car.cartype].filter(Boolean).map(x=>String(x).toLocaleLowerCase()));
+  for(const source of EQUIPMENT_CATEGORY_DEFS){
+    for(const raw of String(equipment[source.prop]||"").split(delimiter)){
+      const audit=parseEquipmentAudit(raw), item=readableEquipmentItem(raw);
+      if(!item) continue;
+      const category=audit.key&&EQUIPMENT_CATEGORY_BY_KEY[audit.key] || source.title;
+      const dedupe=item.toLocaleLowerCase();
+      if(seen.has(dedupe)||technical.has(dedupe)) continue;
+      seen.add(dedupe); groups.get(category).items.push(item);
+    }
+  }
+  return Array.from(groups.values()).filter(group=>group.items.length);
+}
+async function downloadConfigPdf(c, button){
+  const url = configPdfLink(c);
+  if(!url) return;
+  button.disabled = true;
+  button.setAttribute("aria-busy","true");
+  const templates = Array.from(new Set([state.cfg.proxy||"",ANYCORS].filter(Boolean)));
+  let blob = null, lastError = null;
+  try{
+    for(const tpl of templates){
+      try{
+        const res = await fetch(proxied(url,tpl));
+        if(!res.ok) continue;
+        const candidate = await res.blob();
+        if(candidate.size>0){ blob=candidate; break; }
+      }catch(e){ lastError=e; }
+    }
+    if(!blob) throw lastError || new Error("PDF download failed");
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl; a.download = configPdfFilename(c);
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(objectUrl),5000);
+    toast("Configuration PDF downloaded");
+  }catch(e){ console.warn("Configuration PDF download failed",e); toast("Download failed — use Open PDF instead"); }
+  finally{ button.disabled=false; button.removeAttribute("aria-busy"); }
 }
 
 /* ---------------- price-drop tracking (persists across visits) ---------------- */
@@ -1233,6 +1545,7 @@ function apply(){
     return true;
   });
   sortCars();
+  refreshDisplayItems();
   state.renderCount = 0;
   renderGrid(true);
   renderStats();
@@ -1255,6 +1568,30 @@ function sortCars(){
   }[state.sort] || (()=>0);
   state.filtered.sort(cmp);
 }
+function buildModelGroups(cars){
+  const groups = new Map();
+  for(const c of cars){
+    const key = modelGroupKey(c);
+    if(!groups.has(key)) groups.set(key,{key,brand:brandName(c),model:c.model||"Other model",versions:[]});
+    groups.get(key).versions.push(c);
+  }
+  const terms = state.f.terms.map(Number);
+  return Array.from(groups.values()).map(g=>{
+    const prices = g.versions.map(c=>minPrice(c,terms.length?terms:null)).filter(p=>p!=null);
+    const dated = g.versions.filter(c=>availDate(c)).sort((a,b)=>availDate(a)-availDate(b));
+    g.representative = g.versions.find(c=>pictureUrl(c)) || g.versions[0];
+    g.priceMin = prices.length ? Math.min(...prices) : null;
+    g.priceMax = prices.length ? Math.max(...prices) : null;
+    g.earliest = dated[0] || g.representative;
+    g.trims = new Set(g.versions.map(c=>c.trim_name||c.equipment_line||c.engine).filter(Boolean));
+    g.colors = new Set(g.versions.map(c=>c.color&&c.color.specific).filter(Boolean));
+    return g;
+  });
+}
+function refreshDisplayItems(){
+  state.modelGroups = buildModelGroups(state.filtered);
+  state.displayItems = state.cfg.browseMode==="models" ? state.modelGroups : state.filtered;
+}
 
 /* ---------------- rendering ---------------- */
 function renderSkeletons(){
@@ -1267,7 +1604,7 @@ function renderSkeletons(){
 const PAGE = 24;
 const AUTO_LOAD = "IntersectionObserver" in window;
 let autoFillScheduled = false;
-function hasMoreResults(){ return state.renderCount < state.filtered.length; }
+function hasMoreResults(){ return state.renderCount < state.displayItems.length; }
 function sentinelNearViewport(){
   const sentinel = $("#sentinel");
   return sentinel && sentinel.getBoundingClientRect().top <= window.innerHeight + 600;
@@ -1305,14 +1642,128 @@ function renderGrid(reset){
     $("#moreBtn").hidden = true;
     return;
   }
-  const slice = state.filtered.slice(state.renderCount, state.renderCount+PAGE);
+  const slice = state.displayItems.slice(state.renderCount, state.renderCount+PAGE);
   const frag = document.createDocumentFragment();
-  for(const c of slice) frag.appendChild(cardEl(c));
+  for(const item of slice) frag.appendChild(item.versions ? modelCardEl(item) : cardEl(item));
   grid.appendChild(frag);
   state.renderCount += slice.length;
   $("#moreBtn").hidden = !hasMoreResults() || AUTO_LOAD;
-  $("#moreBtn").textContent = `Show more  (${fmtNum(state.filtered.length-state.renderCount)} remaining)`;
+  $("#moreBtn").textContent = `Show more  (${fmtNum(state.displayItems.length-state.renderCount)} remaining)`;
   scheduleAutoFill();
+}
+function cardCarouselMarkup(pics,label){
+  if(pics.length<2) return "";
+  const dots=pics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
+  return `<button class="navarr prev" data-shot="-1" aria-label="Previous ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><button class="navarr next" data-shot="1" aria-label="Next ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><div class="dots">${dots}</div><span class="shots">1/${pics.length}</span>`;
+}
+function modelCardEl(group){
+  const c = group.representative;
+  const versionLabel = group.versions.length===1 ? "version" : "versions";
+  const el = document.createElement("article");
+  el.className = "card model-card"; el.dataset.group = group.key;
+  el.tabIndex = 0; el.setAttribute("role","button");
+  el.setAttribute("aria-label", `${group.brand} ${group.model}, ${group.versions.length} ${versionLabel}`);
+  const logo = brandLogo(c), pics = galleryPics(c), av = availLabel(group.earliest);
+  const powers = group.versions.map(x=>Number(x.power)).filter(x=>x>0).map(x=>Math.round(x*1.35962));
+  const ranges = group.versions.map(evRange).filter(x=>x>0);
+  const gears = Array.from(new Set(group.versions.map(x=>x.gearshift).filter(Boolean)));
+  const bodies = Array.from(new Set(group.versions.map(x=>x.cartype).filter(Boolean)));
+  const range = values => values.length ? (Math.min(...values)===Math.max(...values)?fmtNum(values[0]):`${fmtNum(Math.min(...values))}–${fmtNum(Math.max(...values))}`) : null;
+  const specs = [
+    ranges.length ? {ic:"i-bolt",txt:`${range(ranges)} km`,cls:"ev"} : {ic:"i-fuel",txt:Array.from(new Set(group.versions.map(x=>x.fuel).filter(Boolean))).join(" / ")},
+    gears.length ? {ic:"i-gear",txt:gears.join(" / ")} : null,
+    powers.length ? {ic:"i-gauge",txt:`${range(powers)} PS`} : null,
+    bodies.length ? {ic:"i-car",txt:bodies.join(" / ")} : null
+  ].filter(x=>x&&x.txt);
+  const meta = [`${group.versions.length} ${versionLabel}`,group.trims.size?`${group.trims.size} ${group.trims.size===1?"trim":"trims"}`:null,group.colors.size?`${group.colors.size} ${group.colors.size===1?"color":"colors"}`:null].filter(Boolean).join(" · ");
+  el.innerHTML = `
+    <div class="imgwrap">
+      <div class="badges"><span class="badge group-count">${fmtNum(group.versions.length)} ${versionLabel}</span></div>
+      <img class="hero" alt="${esc(group.brand+" "+group.model)}" loading="lazy">
+      ${cardCarouselMarkup(pics,"model")}
+    </div>
+    <div class="cbody">
+      <div class="chead">
+        ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
+        <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
+      </div>
+      <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
+      <div class="cfoot">
+        <div class="price"><div class="from">from · ${fmtNum(state.cfg.km)} km/mo</div><div class="val">${fmtEur(group.priceMin)}<small> /month</small></div><div class="incl">across matching versions</div></div>
+        <div class="avail"><div>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div><span class="model-cta">Explore versions <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></span></div>
+      </div>
+    </div>`;
+  const img = el.querySelector("img.hero");
+  img.addEventListener("load",()=>img.classList.add("loaded"));
+  img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
+  img.src = pics[0] || PLACEHOLDER;
+  el._pics=pics; el._shot=0;
+  return el;
+}
+function versionCardEl(c){
+  const key = carKey(c), price = minPrice(c), av = availLabel(c);
+  const pics = galleryPics(c);
+  const el = document.createElement("article");
+  el.className = "version-card"; el.dataset.version = key;
+  el.tabIndex = 0; el.setAttribute("role","button");
+  const title = c.trim_name || c.equipment_line || (c.config&&c.config.name) || c.engine || "Standard";
+  el.setAttribute("aria-label", `${carName(c)} ${title}, ${fmtEur(price)} per month`);
+  const meta = [c.engine,c.config_drive,c.color&&c.color.specific].filter(Boolean).join(" · ");
+  const chips = [
+    c.model_year,
+    c.power?`${Math.round(c.power*1.35962)} PS`:null,
+    evRange(c)?`${fmtNum(evRange(c))} km`:null,
+    c.gearshift
+  ].filter(Boolean).slice(0,4);
+  el.innerHTML = `
+    <div class="vimg">
+      <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+      <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
+      <img class="hero" alt="${esc(carName(c)+" "+title)}" loading="lazy">
+      ${cardCarouselMarkup(pics,"version")}
+    </div>
+    <div class="vbody">
+      <div class="vtitle">${esc(title)}</div>
+      <div class="vmeta">${esc(meta||[c.fuel,c.cartype].filter(Boolean).join(" · "))}</div>
+      <div class="vchips">${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
+    </div>`;
+  const img = el.querySelector(".vimg>img");
+  img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
+  img.src = pics[0] || PLACEHOLDER;
+  el._pics=pics; el._shot=0;
+  return el;
+}
+function findModelGroup(key){ return state.modelGroups.find(g=>g.key===key); }
+function openVersions(group){
+  if(!group) return;
+  state.activeGroupKey = group.key;
+  const dlg = $("#versionsDlg"), logo = brandLogo(group.representative);
+  dlg.setAttribute("aria-label", `${group.brand} ${group.model} versions`);
+  const prices = group.versions.map(c=>minPrice(c)).filter(p=>p!=null);
+  const priceText = prices.length ? (Math.min(...prices)===Math.max(...prices)?fmtEur(prices[0]):`${fmtEur(Math.min(...prices))}–${fmtEur(Math.max(...prices))}`) : "on request";
+  dlg.innerHTML = `
+    <div class="dhead versions-head">
+      <div class="model-id">${logo?`<img class="blogo" src="${esc(logo)}" alt="" onerror="this.remove()">`:""}<div><div class="t">${esc(group.brand+" "+group.model)}</div><div class="s">Choose a version to see full pricing, equipment and colors</div></div></div>
+      <button class="iconbtn x" data-close="versionsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dbody">
+      <div class="versions-summary"><span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span><span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
+      <div class="version-grid"></div>
+    </div>`;
+  const grid = dlg.querySelector(".version-grid"), frag = document.createDocumentFragment();
+  group.versions.forEach(c=>frag.appendChild(versionCardEl(c)));
+  grid.appendChild(frag);
+  if(!dlg.open) dlg.showModal();
+  dlg.querySelector(".dbody").scrollTop = 0;
+}
+function openVersionDetail(key){
+  const group = findModelGroup(state.activeGroupKey);
+  if(!group) return;
+  const c = group.versions.find(x=>carKey(x)===key);
+  if(!c) return;
+  $("#versionsDlg").close();
+  openDetail(c,{list:group.versions,groupKey:group.key});
 }
 function cardEl(c){
   const key = carKey(c);
@@ -1434,10 +1885,13 @@ function setPriceMax(v){
 }
 function renderStats(){
   const n = state.filtered.length;
+  const modelMode = state.cfg.browseMode==="models";
   const cnt = $("#cnt");
-  cnt.textContent = fmtNum(n);
+  cnt.textContent = fmtNum(modelMode?state.modelGroups.length:n);
   cnt.classList.remove("pulse"); void cnt.offsetWidth; cnt.classList.add("pulse");
-  $("#cntSub").textContent = n===1 ? "vehicle" : `vehicles of ${fmtNum(state.cars.length)}`;
+  $("#cntSub").textContent = modelMode
+    ? `${state.modelGroups.length===1?"model":"models"} · ${fmtNum(n)} matching versions`
+    : (n===1 ? "vehicle" : `vehicles of ${fmtNum(state.cars.length)}`);
   if(!n){ $("#stats").innerHTML=""; return; }
   const prices = state.filtered.map(c=>minPrice(c)).filter(p=>p!=null);
   const evs = state.filtered.filter(isEV).length;
@@ -1512,7 +1966,15 @@ function toggleFav(key){
     b.setAttribute("aria-pressed", String(state.favs.has(key)));
   });
   renderFavCount();
-  if (state.f.favOnly) apply();
+  if (state.f.favOnly){
+    const versionsOpen = $("#versionsDlg").open;
+    apply();
+    if(versionsOpen){
+      const group = findModelGroup(state.activeGroupKey);
+      if(group) openVersions(group);
+      else{ $("#versionsDlg").close(); toast("That model has no remaining favorites"); }
+    }
+  }
 }
 function renderFavCount(){
   $("#favCount").textContent = state.favs.size;
@@ -1521,22 +1983,20 @@ function renderFavCount(){
 }
 
 /* ---------------- detail dialog ---------------- */
-function openDetail(c){
+function openDetail(c, options={}){
+  if(options.list){ state.detailList = options.list; state.detailGroupKey = options.groupKey||null; }
+  else if(!options.keepContext){ state.detailList = state.filtered; state.detailGroupKey = null; }
+  const detailList = state.detailList || state.filtered;
   state.detailKey = carKey(c);
-  state.detailIdx = state.filtered.findIndex(x=>carKey(x)===state.detailKey);
+  state.detailIdx = detailList.findIndex(x=>carKey(x)===state.detailKey);
   const dlg = $("#detailDlg");
+  dlg.setAttribute("aria-label", `${carName(c)} ${c.trim_name||""} details`.trim());
   const pics = galleryPics(c).map(url=>({url}));
-  const plist = priceList(c);
   const link = finnLink(c);
   const eq = c.equipment||{};
   const delim = c.equipment_delimiter || ";";
-  const eqSection = (title, txt) => {
-    if(!txt) return "";
-    const items = String(txt).split(delim).map(s=>s.trim()).filter(Boolean);
-    if(!items.length) return "";
-    return `<details><summary>${esc(title)} <span style="opacity:.5;font-weight:400">${items.length}</span></summary>
-            <div class="items">${items.map(esc).join(" · ")}</div></details>`;
-  };
+  const equipmentGroups = buildEquipmentGroups(eq,delim,c);
+  const equipmentCount = equipmentGroups.reduce((sum,g)=>sum+g.items.length,0);
   const kv = [
     ["Fuel", c.fuel], ["Body", c.cartype], ["Gearshift", c.gearshift],
     ["Power", c.power?`${c.power} kW / ${Math.round(c.power*1.35962)} PS`:null],
@@ -1553,59 +2013,100 @@ function openDetail(c){
   const av = availLabel(c);
   const inList = state.detailIdx >= 0;
   const favOn = state.favs.has(carKey(c));
+  const logo = brandLogo(c);
+  const kmp = kmPackages(c);
+  const kmChoices = kmp.length ? kmp : [{km:state.cfg.km||500,fee:0}];
+  const requestedKm = options.keepContext ? state.detailQuoteKm : state.cfg.km;
+  const quoteKmOption = kmChoices.find(x=>x.km===requestedKm) || kmChoices.filter(x=>x.km<=requestedKm).at(-1) || kmChoices[0];
+  let quoteKm = quoteKmOption.km;
+  let quotePrices = priceList(c,quoteKm);
+  const cheapestQuote = quotePrices.length ? quotePrices.reduce((best,x)=>x.price<best.price?x:best,quotePrices[0]) : null;
+  const requestedTerm = options.keepContext ? state.detailQuoteTerm : null;
+  let quoteTerm = quotePrices.some(x=>x.term===requestedTerm) ? requestedTerm : (cheapestQuote&&cheapestQuote.term);
+  state.detailQuoteKm=quoteKm; state.detailQuoteTerm=quoteTerm;
+  const advertisedPrice = minPrice(c);
+  const quoteRows = (list,selectedTerm) => {
+    const cheapest = list.length ? Math.min(...list.map(x=>x.price)) : null;
+    return list.map(x=>`<tr class="${[x.price===cheapest?"best":"",x.term===selectedTerm?"selected":""].filter(Boolean).join(" ")}"><td>${x.term} months${x.price===cheapest?'<span class="best-tag">best price</span>':""}${x.term===selectedTerm?'<span class="selected-tag">selected</span>':""}</td><td class="num">${fmtEur2(x.price)}</td></tr>`).join("") || '<tr><td colspan="2">No price list returned.</td></tr>';
+  };
+  const initialQuote = quotePrices.find(x=>x.term===quoteTerm) || cheapestQuote;
+  const initialDelta = initialQuote&&advertisedPrice!=null ? initialQuote.price-advertisedPrice : 0;
+  const quoteDeltaText = delta => delta>0 ? `+${fmtEur(delta)} / month vs ${fmtEur(advertisedPrice)} starting price` : delta<0 ? `${fmtEur(Math.abs(delta))} less / month vs ${fmtEur(advertisedPrice)} starting price` : `Matches the ${fmtEur(advertisedPrice)} starting price`;
+  const configPdf = configPdfLink(c);
+  const colors = Array.isArray(c.color_list) ? c.color_list.slice(0,12) : [];
+  const highlights = [
+    evRange(c)?{ic:"i-bolt",k:"EV range",v:fmtNum(evRange(c))+" km"}:{ic:"i-fuel",k:"Fuel",v:c.fuel},
+    c.gearshift?{ic:"i-gear",k:"Gearshift",v:c.gearshift}:null,
+    c.power?{ic:"i-gauge",k:"Power",v:Math.round(c.power*1.35962)+" PS"}:null,
+    c.seats?{ic:"i-users",k:"Seats",v:c.seats}:null
+  ].filter(Boolean);
   dlg.innerHTML = `
-    <div class="dhead">
-      <div>
-        <div class="t">${esc(carName(c))} <span style="opacity:.55;font-weight:400">${esc(c.trim_name||"")}</span></div>
-        <div class="s">${esc([c.fuel,c.cartype,c.gearshift].filter(Boolean).join(" · "))} · ${esc(av.txt)}</div>
+    <div class="dhead detail-head">
+      <div class="detail-head-main">
+        ${state.detailGroupKey?`<button class="ghost detail-back" data-back-versions><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> Versions</button>`:""}
+        ${logo?`<img class="blogo" src="${esc(logo)}" alt="" onerror="this.remove()">`:""}
+        <div class="detail-heading">
+          <div class="eyebrow">${esc(brandName(c))}${c.model_year?` · model year ${esc(c.model_year)}`:""}</div>
+          <div class="t">${esc(c.model||carName(c))}${c.trim_name?` <span class="trim">${esc(c.trim_name)}</span>`:""}</div>
+          <div class="s">${esc([c.engine,c.config_drive,c.color&&c.color.specific].filter(Boolean).join(" · ") || [c.fuel,c.cartype,c.gearshift].filter(Boolean).join(" · "))}</div>
+        </div>
       </div>
       <div class="dnav">
-        ${inList?`<span class="dpos">${state.detailIdx+1} / ${fmtNum(state.filtered.length)}</span>
+        ${inList?`<span class="dpos">${state.detailIdx+1} / ${fmtNum(detailList.length)}</span>
         <button class="iconbtn" id="dPrev" title="Previous vehicle (←)" aria-label="Previous vehicle" ${state.detailIdx<=0?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
-        <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=state.filtered.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
+        <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=detailList.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
         <button class="iconbtn ${favOn?"on":""}" data-fav="${esc(carKey(c))}" title="Favorite (f)" aria-label="Toggle favorite" aria-pressed="${favOn}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
         <button class="iconbtn x" data-close="detailDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
     </div>
-    <div class="dbody">
-      <div class="dgrid">
-        <div>
-          <div class="gallery">
-            <div class="main"><img id="galMain" alt="${esc(carName(c))}"></div>
-            ${pics.length>1?`<div class="thumbs">${pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="view ${i+1}">`).join("")}</div>`:""}
-          </div>
-          <div class="sect eq">
-            <h3>Equipment</h3>
-            ${eqSection("Comfort",eq.comfort)+eqSection("Exterior",eq.exterior)+eqSection("Interior",eq.interior)+eqSection("Multimedia",eq.multimedia)+eqSection("Safety",eq.safety) || '<div style="font-size:.8rem;color:var(--text-faint)">No equipment details provided by the API.</div>'}
-          </div>
+    <div class="dbody detail-body">
+      <div class="detail-hero">
+        <div class="gallery detail-gallery">
+          <div class="main"><img id="galMain" alt="${esc(carName(c))}"></div>
+          ${pics.length>1?`<div class="thumbs">${pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="${esc(carName(c))} view ${i+1}">`).join("")}</div>`:""}
         </div>
-        <div>
-          <div class="kv">${kv.map(([k,v])=>`<div class="cell"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
-          <div class="sect">
-            <h3>Monthly price by term · ${state.cfg.biz?"business":"private"} · ${fmtNum(state.cfg.km)} km/mo</h3>
-            ${c._drop>0?`<div style="font-size:.78rem;color:var(--accent-2);margin-block-end:.5rem">▼ Base price dropped ${fmtEur(c._drop)} since your previous visit.</div>`:""}
-            <table class="ptable"><thead><tr><th>Term</th><th>per month</th></tr></thead>
-            <tbody>${plist.map(x=>`<tr><td>${x.term} months</td><td class="num">${fmtEur2(x.price)}</td></tr>`).join("") || '<tr><td colspan="2" style="color:var(--text-faint)">No price list returned.</td></tr>'}</tbody></table>
-            ${(()=>{ const kmp = kmPackages(c);
-              if (kmp.length) return `<div style="font-size:.74rem;color:var(--text-dim);margin-block-start:.5rem">Extra-km packages (per month): ${kmp.map(x=>"+"+fmtNum(x.km)+" km · "+(x.fee?fmtEur(x.fee):"included")).join(" &nbsp;·&nbsp; ")}</div>`;
-              return c.price&&c.price.extra_km_price?`<div style="font-size:.74rem;color:var(--text-dim);margin-block-start:.5rem">Extra km: ${fmtEur2(c.price.extra_km_price)} / km</div>`:""; })()}
+        <div class="detail-summary">
+          <div class="detail-availability"><span>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</span><span>Configure your subscription</span></div>
+          <div class="detail-configurator">
+            <div class="quote-group"><div class="quote-head"><span>Monthly mileage</span><b data-quote-km-label>${fmtNum(quoteKm)} km/month</b></div><div class="quote-options" data-quote-kms role="group" aria-label="Monthly mileage">${kmChoices.map(x=>`<button class="quote-option ${x.km===quoteKm?"on":""}" data-quote-km="${x.km}" aria-pressed="${x.km===quoteKm}"><b>${fmtNum(x.km)} km</b><small>${x.fee?"+"+fmtEur(x.fee)+" / mo":"included"}</small></button>`).join("")}</div></div>
+            <div class="quote-group"><div class="quote-head"><span>Contract length</span><b data-quote-term-label>${quoteTerm?quoteTerm+" months":"on request"}</b></div><div class="quote-options" data-quote-terms role="group" aria-label="Contract length">${quotePrices.map(x=>`<button class="quote-option ${x.term===quoteTerm?"on":""}" data-quote-term="${x.term}" aria-pressed="${x.term===quoteTerm}"><b>${x.term} months</b><small>${fmtEur(x.price)} / mo</small></button>`).join("") || '<span class="detail-price-note">No selectable terms available.</span>'}</div></div>
           </div>
-          ${Array.isArray(c.color_list)&&c.color_list.length?`
-          <div class="sect"><h3>Color variants (${c.color_list.length})</h3>
-            ${c.color_list.slice(0,10).map(cl=>`
-              <div class="colorrow">
-                <span class="sw" style="background:${esc(cl.color_hex||"#666")}"></span>
-                <span>${esc(cl.color_specific||"")}</span>
-                <span style="margin-inline-start:auto;font-size:.7rem;color:var(--text-faint)">${cl.availability_date?esc(new Date(cl.availability_date).toLocaleDateString("de-DE")):""}</span>
-              </div>`).join("")}
-          </div>`:""}
-          <div class="sect" style="display:flex;gap:.6rem;flex-wrap:wrap">
-            ${link?`<a class="linkout" href="${esc(link)}" target="_blank" rel="noreferrer">Open on finn.com ↗</a>`:""}
-            <button class="ghost" data-cmp="${esc(carKey(c))}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg> Compare</button>
+          <div class="detail-price-block" aria-live="polite">
+            <div class="overline" data-quote-context>${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}</div>
+            <div class="detail-price-value" data-quote-monthly>${fmtEur(initialQuote&&initialQuote.price)}<small> / month</small></div>
+            <div class="quote-change ${initialDelta>0?"up":initialDelta<0?"down":"same"}" data-quote-delta>${quoteDeltaText(initialDelta)}</div>
+            <div class="quote-total" title="Monthly price multiplied by contract length"><span data-quote-total-label>Contract total · ${quoteTerm||"–"} months</span><strong data-quote-total>${initialQuote&&quoteTerm?fmtEur(initialQuote.price*quoteTerm):"–"}</strong></div>
           </div>
-          <div style="margin-block-start:.9rem;font-size:.68rem;color:var(--text-faint);font-family:var(--mono)">config_id: ${esc(c.config_id)} · id: ${esc(c.id||"–")}</div>
+          <div class="detail-inclusions">
+            <span><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Insurance included</span>
+            <span><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>Maintenance included</span>
+            <span><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>Tax included</span>
+          </div>
+          <div class="detail-highlights">${highlights.map(x=>`<div class="detail-highlight"><svg class="ic" aria-hidden="true"><use href="#${x.ic}"/></svg><div><div class="hk">${esc(x.k)}</div><div class="hv">${esc(x.v)}</div></div></div>`).join("")}</div>
+          ${configPdf?`<div class="detail-document"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg><div><div class="doc-title">Configuration PDF</div><div class="doc-meta">Factory specification · PDF document</div></div><div class="doc-actions"><a class="doc-open" href="${esc(configPdf)}" target="_blank" rel="noreferrer" title="Open configuration PDF in a new tab">Open PDF <svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></a><button class="doc-download" data-pdf-download title="Download configuration PDF" aria-label="Download configuration PDF"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button></div></div>`:""}
+          <div class="detail-actions">
+            ${link?`<a class="linkout" href="${esc(link)}" target="_blank" rel="noreferrer">View offer on finn.com <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></a>`:'<span></span>'}
+            <button class="ghost" data-cmp="${esc(carKey(c))}" title="Add to comparison" aria-label="Add to comparison"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
+          </div>
         </div>
       </div>
+      <div class="detail-content-grid">
+        <section class="detail-panel">
+          <div class="detail-panel-head"><div><h3>Technical details</h3><p>Everything important at a glance</p></div></div>
+          <div class="kv detail-kv">${kv.map(([k,v])=>`<div class="cell"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
+        </section>
+        <section class="detail-panel">
+          <div class="detail-panel-head"><div><h3>Monthly pricing</h3><p>${state.cfg.biz?"Business":"Private"} · <span data-quote-panel-km>${fmtNum(quoteKm)} km/month</span></p></div>${c._drop>0?`<span class="badge drop">▼ ${fmtEur(c._drop)}</span>`:""}</div>
+          <div class="detail-price-table"><table class="ptable"><thead><tr><th>Term</th><th>per month</th></tr></thead><tbody data-quote-table>${quoteRows(quotePrices,quoteTerm)}</tbody></table></div>
+          <div class="detail-km-note" data-quote-km-note>${kmFeeFor(c,quoteKm)?`The ${fmtNum(quoteKm)} km package adds <b>${fmtEur(kmFeeFor(c,quoteKm))} / month</b> to every term.`:`The ${fmtNum(quoteKm)} km package is included in the base monthly price.`}</div>
+        </section>
+      </div>
+      <section class="detail-panel eq">
+        <div class="detail-panel-head"><div><h3>Equipment</h3><p>${equipmentCount?`${fmtNum(equipmentCount)} included features · choose a category to explore`:"Equipment supplied by the vehicle API"}</p></div></div>
+        <div class="detail-equipment">${equipmentGroups.length?`<div class="equipment-tabs" role="tablist" aria-label="Equipment categories">${equipmentGroups.map((g,i)=>`<button class="equipment-tab ${i===0?"on":""}" id="eqTab${i}" data-eq-tab="${i}" role="tab" aria-selected="${i===0}" aria-controls="eqPanel${i}"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><span class="label">${esc(g.title)}</span><span class="n">${g.items.length}</span></button>`).join("")}</div><div class="equipment-panels">${equipmentGroups.map((g,i)=>`<div class="equipment-panel" id="eqPanel${i}" data-eq-panel="${i}" role="tabpanel" aria-labelledby="eqTab${i}" ${i===0?"":"hidden"}><div class="equipment-panel-head"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><div><div class="title">${esc(g.title)}</div><p>${esc(g.description)}</p></div><span class="count">${g.items.length} included</span></div><ul class="equipment-list">${g.items.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></div>`).join("")}</div>`:'<div class="detail-price-note">No equipment details provided by the API.</div>'}</div>
+      </section>
+      ${colors.length?`<section class="detail-panel"><div class="detail-panel-head"><div><h3>Color availability</h3><p>${colors.length} variants supplied for this configuration</p></div></div><div class="detail-colors">${colors.map(cl=>`<div class="detail-color"><span class="sw" style="background:${esc(cl.color_hex||"#666")}"></span><span class="name">${esc(cl.color_specific||"Unnamed color")}</span><span class="date">${cl.availability_date?esc(new Date(cl.availability_date).toLocaleDateString("de-DE")):""}</span></div>`).join("")}</div></section>`:""}
+      <div class="detail-meta">config ${esc(c.config_id)} · ${esc(c.id||"no product id")}</div>
     </div>`;
   const main = dlg.querySelector("#galMain");
   const setMain = i => { main.src = pics[i] && pics[i].url ? pics[i].url : PLACEHOLDER; };
@@ -1619,17 +2120,65 @@ function openDetail(c){
       t.classList.add("on"); setMain(Number(t.dataset.gal));
     });
   });
+  const updateDetailQuote = () => {
+    quotePrices = priceList(c,quoteKm);
+    if(!quotePrices.some(x=>x.term===quoteTerm)){
+      const cheapest = quotePrices.length ? quotePrices.reduce((best,x)=>x.price<best.price?x:best,quotePrices[0]) : null;
+      quoteTerm = cheapest&&cheapest.term;
+    }
+    const selected = quotePrices.find(x=>x.term===quoteTerm);
+    const delta = selected&&advertisedPrice!=null ? selected.price-advertisedPrice : 0;
+    state.detailQuoteKm=quoteKm; state.detailQuoteTerm=quoteTerm;
+    dlg.querySelector("[data-quote-km-label]").textContent=`${fmtNum(quoteKm)} km/month`;
+    dlg.querySelector("[data-quote-term-label]").textContent=quoteTerm?`${quoteTerm} months`:"on request";
+    dlg.querySelector("[data-quote-context]").textContent=`${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}`;
+    dlg.querySelector("[data-quote-monthly]").innerHTML=`${fmtEur(selected&&selected.price)}<small> / month</small>`;
+    const change=dlg.querySelector("[data-quote-delta]");
+    change.className=`quote-change ${delta>0?"up":delta<0?"down":"same"}`; change.textContent=quoteDeltaText(delta);
+    dlg.querySelector("[data-quote-total-label]").textContent=`Contract total · ${quoteTerm||"–"} months`;
+    dlg.querySelector("[data-quote-total]").textContent=selected&&quoteTerm?fmtEur(selected.price*quoteTerm):"–";
+    dlg.querySelector("[data-quote-panel-km]").textContent=`${fmtNum(quoteKm)} km/month`;
+    dlg.querySelector("[data-quote-table]").innerHTML=quoteRows(quotePrices,quoteTerm);
+    const fee=kmFeeFor(c,quoteKm);
+    dlg.querySelector("[data-quote-km-note]").innerHTML=fee?`The ${fmtNum(quoteKm)} km package adds <b>${fmtEur(fee)} / month</b> to every term.`:`The ${fmtNum(quoteKm)} km package is included in the base monthly price.`;
+    dlg.querySelectorAll("[data-quote-km]").forEach(b=>{const on=Number(b.dataset.quoteKm)===quoteKm;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
+    dlg.querySelectorAll("[data-quote-term]").forEach(b=>{const term=Number(b.dataset.quoteTerm),on=term===quoteTerm,entry=quotePrices.find(x=>x.term===term);b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));const small=b.querySelector("small");if(small)small.textContent=entry?`${fmtEur(entry.price)} / mo`:"unavailable";});
+    const block=dlg.querySelector(".detail-price-block");
+    block.classList.remove("quote-pulse"); requestAnimationFrame(()=>block.classList.add("quote-pulse"));
+  };
+  dlg.querySelectorAll("[data-quote-km]").forEach(b=>b.addEventListener("click",()=>{quoteKm=Number(b.dataset.quoteKm);updateDetailQuote();}));
+  dlg.querySelectorAll("[data-quote-term]").forEach(b=>b.addEventListener("click",()=>{quoteTerm=Number(b.dataset.quoteTerm);updateDetailQuote();}));
+  const equipmentTabs = Array.from(dlg.querySelectorAll("[data-eq-tab]"));
+  const activateEquipment = index => {
+    equipmentTabs.forEach((tab,i)=>{ const on=i===index; tab.classList.toggle("on",on); tab.setAttribute("aria-selected",String(on)); tab.tabIndex=on?0:-1; });
+    dlg.querySelectorAll("[data-eq-panel]").forEach((panel,i)=>{ panel.hidden=i!==index; });
+  };
+  equipmentTabs.forEach((tab,i)=>{
+    tab.tabIndex=i===0?0:-1;
+    tab.addEventListener("click",()=>activateEquipment(i));
+    tab.addEventListener("keydown",e=>{
+      if(!["ArrowLeft","ArrowRight","Home","End"].includes(e.key)) return;
+      e.preventDefault();
+      const next = e.key==="Home"?0:e.key==="End"?equipmentTabs.length-1:(i+(e.key==="ArrowRight"?1:-1)+equipmentTabs.length)%equipmentTabs.length;
+      activateEquipment(next); equipmentTabs[next].focus();
+    });
+  });
+  const pdfDownload = dlg.querySelector("[data-pdf-download]");
+  if(pdfDownload) pdfDownload.addEventListener("click",()=>downloadConfigPdf(c,pdfDownload));
   const prev = dlg.querySelector("#dPrev"), next = dlg.querySelector("#dNext");
   if (prev) prev.addEventListener("click", e=>{ e.stopPropagation(); stepDetail(-1); });
   if (next) next.addEventListener("click", e=>{ e.stopPropagation(); stepDetail(1); });
+  const back = dlg.querySelector("[data-back-versions]");
+  if(back) back.addEventListener("click",()=>{ const group=findModelGroup(state.detailGroupKey); dlg.close(); openVersions(group); });
   if (!dlg.open) dlg.showModal();
   dlg.querySelector(".dbody").scrollTop = 0;
 }
 function stepDetail(dir){
   if (state.detailIdx < 0) return;
+  const detailList = state.detailList || state.filtered;
   const i = state.detailIdx + dir;
-  if (i < 0 || i >= state.filtered.length) return;
-  openDetail(state.filtered[i]);
+  if (i < 0 || i >= detailList.length) return;
+  openDetail(detailList[i],{keepContext:true});
 }
 
 /* ---------------- compare ---------------- */
@@ -1741,6 +2290,7 @@ function writeHash(){
   if (f.drops) p.set("dr","1");
   if (f.favOnly) p.set("fav","1");
   if (state.cfg.km!==500) p.set("km", state.cfg.km);
+  if (state.cfg.browseMode==="models") p.set("group","1");
   if (state.sort!=="reco") p.set("sort", state.sort);
   const h = p.toString();
   history.replaceState(null, "", h ? "#"+h : location.pathname + location.search);
@@ -1762,6 +2312,7 @@ function readHash(){
     f.soon = p.get("soon")==="1"; f.realPics = p.get("pics")==="1";
     f.drops = p.get("dr")==="1";
     f.favOnly = p.get("fav")==="1";
+    if (p.get("group")==="1") state.cfg.browseMode = "models";
     if (p.has("km")){ const km = Number(p.get("km")); if ([500,1000,1500,2000,2500,3000,3500].includes(km)) state.cfg.km = km; }
     if (p.get("sort") && SORT_KEYS.includes(p.get("sort"))) state.sort = p.get("sort");
     return [...p.keys()].length > 0;
@@ -1779,6 +2330,7 @@ function restoreControls(){
   $("#fltDrops").checked=f.drops;
   $("#kmSel").value = String(state.cfg.km||500);
   $("#sort").value = state.sort;
+  syncBrowseMode();
   renderFavCount();
   updateRangeOuts();
 }
@@ -1800,6 +2352,12 @@ function refreshPriceBounds(){
   ps.min = F.priceMin; ps.max = F.priceMax;
   ps.value = state.f.priceMax!=null ? Math.min(state.f.priceMax, F.priceMax) : F.priceMax;
   updateRangeOuts();
+}
+function syncBrowseMode(){
+  const mode = state.cfg.browseMode==="models" ? "models" : "cars";
+  state.cfg.browseMode = mode;
+  $$("#browseSeg button").forEach(b=>{ const on=b.dataset.browse===mode; b.classList.toggle("on",on); b.setAttribute("aria-pressed",String(on)); });
+  $("#grid").classList.toggle("models",mode==="models");
 }
 
 /* ---------------- settings ---------------- */
@@ -1841,7 +2399,7 @@ function wireEvents(){
     if (e.key==="?" && !typing){ e.preventDefault(); $("#helpDlg").showModal(); }
   });
   // click on the dimmed backdrop closes a dialog
-  ["detailDlg","cmpDlg","settingsDlg","helpDlg"].forEach(id=>{
+  ["versionsDlg","detailDlg","cmpDlg","settingsDlg","helpDlg"].forEach(id=>{
     const d = $("#"+id);
     d.addEventListener("click", e=>{ if (e.target === d) d.close(); });
   });
@@ -1874,8 +2432,20 @@ function wireEvents(){
     if (e.key!=="Enter" && e.key!==" ") return;
     const card = e.target.closest(".card"); if(!card || e.target.closest("button")) return;
     e.preventDefault();
+    if(card.dataset.group){ openVersions(findModelGroup(card.dataset.group)); return; }
     const c = state.cars.find(x=>carKey(x)===card.dataset.key);
     if (c) openDetail(c);
+  });
+  $("#versionsDlg").addEventListener("click",e=>{
+    const shot=e.target.closest("[data-shot]");
+    if(shot){e.stopPropagation();stepShot(shot.closest(".version-card"),Number(shot.dataset.shot));return;}
+    if(e.target.closest("button")) return;
+    const card=e.target.closest("[data-version]"); if(card) openVersionDetail(card.dataset.version);
+  });
+  $("#versionsDlg").addEventListener("keydown",e=>{
+    if((e.key!=="Enter"&&e.key!==" ")||e.target.closest("button")) return;
+    const card=e.target.closest("[data-version]"); if(!card) return;
+    e.preventDefault(); openVersionDetail(card.dataset.version);
   });
   chipGroup("#fuelChips", "fuels");
   chipGroup("#typeChips", "types");
@@ -1916,6 +2486,11 @@ function wireEvents(){
     $$("#densitySeg button").forEach(b=>{ b.classList.toggle("on", b===btn); b.setAttribute("aria-pressed", String(b===btn)); });
     $("#grid").classList.toggle("list", state.cfg.density==="list");
   });
+  $("#browseSeg").addEventListener("click",e=>{
+    const btn=e.target.closest("[data-browse]"); if(!btn||btn.dataset.browse===state.cfg.browseMode) return;
+    state.cfg.browseMode=btn.dataset.browse; saveCfg(); syncBrowseMode(); apply();
+    toast(state.cfg.browseMode==="models"?"Grouped by model — choose a card to compare versions":"Showing every vehicle configuration");
+  });
   [["fltDeals","deals"],["fltHitch","hitch"],["fltNow","soon"],["fltRealPics","realPics"],["fltDrops","drops"]].forEach(([id,prop])=>{
     $("#"+id).addEventListener("change", e=>{ state.f[prop]=e.target.checked; apply(); });
   });
@@ -1927,7 +2502,7 @@ function wireEvents(){
     syncChipStates(); apply();
   });
   $("#resetBtn").addEventListener("click", resetFilters);
-  $("#sort").addEventListener("change", e=>{ state.sort=e.target.value; sortCars(); state.renderCount=0; renderGrid(true); writeHash(); });
+  $("#sort").addEventListener("change", e=>{ state.sort=e.target.value; apply(); });
   $("#moreBtn").addEventListener("click", ()=>renderGrid(false));
   $("#bizSeg").addEventListener("click", e=>{
     const btn = e.target.closest("[data-biz]"); if(!btn) return;
@@ -1945,6 +2520,7 @@ function wireEvents(){
     const cmp = e.target.closest("[data-cmp]");
     if (cmp){ e.stopPropagation(); toggleCompare(cmp.dataset.cmp); return; }
     const card = e.target.closest(".card"); if(!card) return;
+    if(card.dataset.group){ openVersions(findModelGroup(card.dataset.group)); return; }
     const c = state.cars.find(x=>carKey(x)===card.dataset.key);
     if (c) openDetail(c);
   });
@@ -1996,6 +2572,7 @@ function wireEvents(){
   if (readHash()) state.evDefaulted = true;
   $$("#bizSeg button").forEach(b=>{ const on=(b.dataset.biz==="true")===state.cfg.biz; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
   $("#grid").classList.toggle("list", state.cfg.density==="list");
+  syncBrowseMode();
   $$("#densitySeg button").forEach(b=>{ const on=b.dataset.den===(state.cfg.density||"grid"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
   renderFavCount();
   wireEvents();
