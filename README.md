@@ -28,6 +28,11 @@ python proxy.py        # then open http://localhost:8020
 
 ## Features
 
+- **Marketplace-style result cards** — brand logo, photo carousel with dots + counter
+  (browse a car's photos without opening it), icon spec row (drivetrain / gearbox / PS /
+  seats), prominent monthly price with the all-inclusive note, and availability status.
+- **Quick-filter bar** — one-tap presets above the results (Electric, Hybrid, SUV, Estate,
+  Automatic, under 300 €, Available now, Deals), synced both ways with the sidebar.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos.
