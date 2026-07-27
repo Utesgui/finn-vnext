@@ -173,9 +173,13 @@
   }
   .chip:hover{border-color:var(--stroke-2);color:var(--text)}
   .chip.on{background:var(--accent-grad);border-color:transparent;color:var(--on-accent);font-weight:700}
+  .chip.ex{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.55);color:var(--danger);font-weight:700;text-decoration:line-through}
   .checklist{display:flex;flex-direction:column;gap:.15rem;max-block-size:230px;overflow:auto;scrollbar-width:thin}
   .checkrow{display:flex;align-items:center;gap:.55rem;padding:.3rem .3rem;border-radius:7px;font-size:.82rem;cursor:pointer}
   .checkrow:hover{background:var(--panel-2)}
+  .checkrow.ex{color:var(--danger);text-decoration:line-through}
+  .checkrow.ex .cnt{text-decoration:none}
+  .checkrow input:indeterminate{accent-color:var(--danger)}
   .checkrow input{accent-color:var(--accent);inline-size:14px;block-size:14px;padding:0}
   .checkrow .cnt{margin-inline-start:auto;font-size:.68rem;color:var(--text-faint);font-family:var(--mono)}
   .rangerow{display:flex;align-items:center;gap:.5rem;margin-block-end:.45rem}
@@ -186,6 +190,9 @@
   .swatches{display:flex;flex-wrap:wrap;gap:.45rem}
   .swatch{inline-size:26px;block-size:26px;border-radius:50%;border:2px solid var(--stroke);position:relative;transition:.13s}
   .swatch.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(34,211,238,.35)}
+  .swatch{position:relative}
+  .swatch.ex{border-color:var(--danger);box-shadow:0 0 0 2px rgba(248,113,113,.35)}
+  .swatch.ex::after{content:"\2715";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:.7rem;font-weight:800;text-shadow:0 0 3px rgba(0,0,0,.9)}
   .resetbtn{
     inline-size:100%;margin-block-start:.8rem;padding:.55rem;border-radius:var(--radius-s);
     border:1px dashed var(--stroke-2);color:var(--text-dim);font-size:.78rem;transition:.15s
@@ -1020,6 +1027,24 @@ function freshFilters(){
            priceMin:null, priceMax:null, powerMin:0, rangeMin:0,
            deals:false, hitch:false, soon:false, realPics:false, drops:false, favOnly:false };
 }
+/* tri-state facet values: "X" includes, "!X" excludes */
+const isNeg = v => typeof v==="string" && v.startsWith("!");
+function facetPass(arr, value){
+  if(!arr.length) return true;
+  const v = String(value ?? "");
+  let hasInclude = false, included = false;
+  for(const entry of arr){
+    if(isNeg(entry)){ if(entry.slice(1)===v) return false; }
+    else{ hasInclude = true; if(entry===v) included = true; }
+  }
+  return !hasInclude || included;
+}
+function cycleFacet(arr, v){ // off -> include -> exclude -> off
+  const i = arr.indexOf(v), n = arr.indexOf("!"+v);
+  if(i<0 && n<0) arr.push(v);
+  else if(i>=0){ arr.splice(i,1); arr.push("!"+v); }
+  else arr.splice(n,1);
+}
 function loadCfg(){
   try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
   catch(e){ return Object.assign({}, DEFAULTS); }
@@ -1495,8 +1520,9 @@ function renderBrandList(filterText){
   const q = filterText.toLowerCase();
   $("#brandList").innerHTML = state.facets.brands
     .filter(([b])=>!q||b.toLowerCase().includes(q))
-    .map(([b,n])=>`<label class="checkrow"><input type="checkbox" data-brand="${esc(b)}" ${state.f.brands.includes(b)?"checked":""}> ${esc(b)} <span class="cnt">${n}</span></label>`)
+    .map(([b,n])=>`<label class="checkrow ${state.f.brands.includes("!"+b)?"ex":""}" title="Click: include \u00b7 again: exclude \u00b7 again: clear"><input type="checkbox" data-brand="${esc(b)}" ${state.f.brands.includes(b)?"checked":""}> ${esc(b)} <span class="cnt">${n}</span></label>`)
     .join("") || `<div style="font-size:.75rem;color:var(--text-faint);padding:.3rem">No brand matches</div>`;
+  $$("#brandList [data-brand]").forEach(cb=>{ cb.indeterminate = state.f.brands.includes("!"+cb.dataset.brand); });
 }
 function updateRangeOuts(){
   syncPriceQuick();
@@ -1517,13 +1543,13 @@ function apply(){
         .filter(Boolean).join(" ").toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (f.fuels.length  && !f.fuels.includes(c.fuel)) return false;
-    if (f.brands.length && !f.brands.includes(brandName(c))) return false;
-    if (f.types.length  && !f.types.includes(c.cartype)) return false;
-    if (f.gears.length  && !f.gears.includes(c.gearshift)) return false;
-    if (f.seats.length  && !f.seats.includes(String(c.seats))) return false;
-    if (f.doors.length  && !f.doors.includes(String(c.doors))) return false;
-    if (f.colors.length && !(c.color && f.colors.includes(c.color.specific))) return false;
+    if (!facetPass(f.fuels, c.fuel)) return false;
+    if (!facetPass(f.brands, brandName(c))) return false;
+    if (!facetPass(f.types, c.cartype)) return false;
+    if (!facetPass(f.gears, c.gearshift)) return false;
+    if (!facetPass(f.seats, c.seats)) return false;
+    if (!facetPass(f.doors, c.doors)) return false;
+    if (!facetPass(f.colors, c.color && c.color.specific)) return false;
     if (terms.length){
       const avail = new Set(priceList(c).map(x=>x.term));
       (Array.isArray(c.available_terms)?c.available_terms:[]).forEach(t=>avail.add(Number(t)));
@@ -1861,7 +1887,7 @@ function renderQuickBar(){
   const f = state.f, F = state.facets;
   const val = (list, re) => (list.find(([v])=>re.test(v))||[])[0];
   const inList = (arr,v) => arr.includes(v);
-  const flip = (arr,v) => { const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); };
+  const flip = (arr,v) => { const n=arr.indexOf("!"+v); if(n>=0) arr.splice(n,1); const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); };
   const items = [];
   const ev = val(F.fuels,/elek|electr/i), phev = val(F.fuels,/hybrid/i);
   const suv = val(F.types,/suv|gelände/i), kombi = val(F.types,/kombi|estate/i);
@@ -1912,15 +1938,16 @@ function renderStats(){
 function renderActiveFilters(){
   const f = state.f, out = [];
   const add = (label, undo) => out.push({label, undo});
+  const tag = v => isNeg(v) ? "not "+v.slice(1) : v;
   if (f.q) add(`"${f.q}"`, ()=>{f.q="";$("#q").value="";});
-  f.fuels.forEach(v=>add(v, ()=>f.fuels=f.fuels.filter(x=>x!==v)));
-  f.brands.forEach(v=>add(v, ()=>f.brands=f.brands.filter(x=>x!==v)));
-  f.types.forEach(v=>add(v, ()=>f.types=f.types.filter(x=>x!==v)));
-  f.gears.forEach(v=>add(v, ()=>f.gears=f.gears.filter(x=>x!==v)));
+  f.fuels.forEach(v=>add(tag(v), ()=>f.fuels=f.fuels.filter(x=>x!==v)));
+  f.brands.forEach(v=>add(tag(v), ()=>f.brands=f.brands.filter(x=>x!==v)));
+  f.types.forEach(v=>add(tag(v), ()=>f.types=f.types.filter(x=>x!==v)));
+  f.gears.forEach(v=>add(tag(v), ()=>f.gears=f.gears.filter(x=>x!==v)));
   f.terms.forEach(v=>add(v+" mo", ()=>f.terms=f.terms.filter(x=>x!==v)));
-  f.seats.forEach(v=>add(v+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
-  f.doors.forEach(v=>add(v+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
-  f.colors.forEach(v=>add(v, ()=>f.colors=f.colors.filter(x=>x!==v)));
+  f.seats.forEach(v=>add(tag(v)+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
+  f.doors.forEach(v=>add(tag(v)+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
+  f.colors.forEach(v=>add(tag(v), ()=>f.colors=f.colors.filter(x=>x!==v)));
   if (f.priceMin!=null) add("≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;$("#priceMin").value="";});
   if (f.priceMax!=null) add("≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;$("#priceMax").value="";$("#priceSlider").value=$("#priceSlider").max;});
   if (f.powerMin>0) add(`≥ ${f.powerMin} kW`, ()=>{f.powerMin=0;$("#powerSlider").value=0;});
@@ -1943,8 +1970,15 @@ function syncChipStates(){
   const groups = [["#fuelChips",f.fuels],["#typeChips",f.types],["#gearChips",f.gears],
                   ["#termChips",f.terms.map(String)],["#seatChips",f.seats],["#doorChips",f.doors],["#colorSwatches",f.colors]];
   for(const [sel,arr] of groups)
-    $$(sel+" [data-chip]").forEach(ch=>ch.classList.toggle("on", arr.includes(ch.dataset.chip)));
-  $$("#brandList [data-brand]").forEach(cb=>{ cb.checked = f.brands.includes(cb.dataset.brand); });
+    $$(sel+" [data-chip]").forEach(ch=>{
+      ch.classList.toggle("on", arr.includes(ch.dataset.chip));
+      ch.classList.toggle("ex", arr.includes("!"+ch.dataset.chip));
+    });
+  $$("#brandList [data-brand]").forEach(cb=>{
+    cb.checked = f.brands.includes(cb.dataset.brand);
+    cb.indeterminate = f.brands.includes("!"+cb.dataset.brand);
+    cb.closest(".checkrow").classList.toggle("ex", f.brands.includes("!"+cb.dataset.brand));
+  });
   updateRangeOuts();
 }
 function resetFilters(){
@@ -2373,14 +2407,14 @@ function openSettings(){
 /* ---------------- events ---------------- */
 /* key-based lookup (not a captured array reference), so the groups keep working
    after resetFilters() replaces state.f */
-function chipGroup(sel, key){
+function chipGroup(sel, key, negatable=true){
   $(sel).addEventListener("click", e=>{
     const btn = e.target.closest("[data-chip]"); if(!btn) return;
     const arr = state.f[key];
     const v = btn.dataset.chip;
-    const i = arr.indexOf(v);
-    if (i>=0) arr.splice(i,1); else arr.push(v);
-    btn.classList.toggle("on", i<0);
+    if (negatable) cycleFacet(arr, v);
+    else{ const i = arr.indexOf(v); if (i>=0) arr.splice(i,1); else arr.push(v); }
+    syncChipStates();
     apply();
   });
 }
@@ -2450,16 +2484,17 @@ function wireEvents(){
   chipGroup("#fuelChips", "fuels");
   chipGroup("#typeChips", "types");
   chipGroup("#gearChips", "gears");
-  chipGroup("#termChips", "terms");
+  chipGroup("#termChips", "terms", false);
   chipGroup("#seatChips", "seats");
   chipGroup("#doorChips", "doors");
   chipGroup("#colorSwatches", "colors");
   $("#brandSearch").addEventListener("input", e=>renderBrandList(e.target.value));
-  $("#brandList").addEventListener("change", e=>{
-    const cb = e.target.closest("[data-brand]"); if(!cb) return;
-    const b = cb.dataset.brand;
-    if (cb.checked){ if(!state.f.brands.includes(b)) state.f.brands.push(b); }
-    else state.f.brands = state.f.brands.filter(x=>x!==b);
+  $("#brandList").addEventListener("click", e=>{
+    const row = e.target.closest(".checkrow"); if(!row) return;
+    const cb = row.querySelector("[data-brand]"); if(!cb) return;
+    e.preventDefault();
+    cycleFacet(state.f.brands, cb.dataset.brand);
+    syncChipStates();
     apply();
   });
   $("#priceMin").addEventListener("change", e=>{ state.f.priceMin = e.target.value===""?null:Number(e.target.value); apply(); });
