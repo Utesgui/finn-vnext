@@ -33,6 +33,8 @@ python proxy.py        # then open http://localhost:8020
   seats), prominent monthly price with the all-inclusive note, and availability status.
 - **Quick-filter bar** — one-tap presets above the results (Electric, Hybrid, SUV, Estate,
   Automatic, under 300 €, Available now, Deals), synced both ways with the sidebar.
+- **Automatic infinite scrolling** — cards render in fast batches and append as the user
+  approaches the end; older browsers retain the manual fallback.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos.

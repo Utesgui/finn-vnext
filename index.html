@@ -41,7 +41,10 @@
     --fav:#fb7185;
     --card:rgba(255,255,255,.055);
     --stage:radial-gradient(70% 85% at 50% 108%, rgba(34,211,238,.14), transparent 70%), linear-gradient(180deg,#141c28 0%,#0d131c 100%);
-    --logo-bg:#fff;
+    --logo-bg:transparent;
+    --logo-border:transparent;
+    --logo-filter:grayscale(1) invert(1);
+    --logo-blend:screen;
     color-scheme:dark;
   }
   :root[data-theme="light"]{
@@ -69,6 +72,9 @@
     --card:#ffffff;
     --stage:radial-gradient(70% 85% at 50% 108%, rgba(14,116,144,.10), transparent 70%), linear-gradient(180deg,#f7f9fc 0%,#e9edf3 100%);
     --logo-bg:#fff;
+    --logo-border:var(--stroke);
+    --logo-filter:none;
+    --logo-blend:normal;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -97,7 +103,7 @@
     inline-size:34px;block-size:34px;border-radius:10px;background:var(--accent-grad);
     display:grid;place-items:center;font-weight:800;color:var(--on-accent);font-size:1rem;letter-spacing:-.5px;
   }
-  .logo .name{font-weight:750;font-size:1.02rem;letter-spacing:.2px}
+  .logo .name{font-weight:750;font-size:1.02rem;letter-spacing:.2px;white-space:nowrap}
   .logo .name em{font-style:normal;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .logo .sub{font-size:.62rem;color:var(--text-faint);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
   .searchwrap{flex:1 1 260px;min-inline-size:220px;max-inline-size:520px;position:relative}
@@ -112,6 +118,7 @@
   .seg{display:flex;border:1px solid var(--stroke);border-radius:999px;overflow:hidden;background:var(--panel)}
   .seg button{padding:.42rem .85rem;font-size:.78rem;color:var(--text-dim);transition:.15s}
   .seg button.on{background:var(--accent-grad);color:var(--on-accent);font-weight:700}
+  #bizSeg{flex:none}
   .pill{
     display:inline-flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--text-dim);
     border:1px solid var(--stroke);border-radius:999px;padding:.34rem .7rem;background:var(--panel);
@@ -127,6 +134,16 @@
     background:var(--panel);display:grid;place-items:center;font-size:.95rem;color:var(--text-dim);transition:.15s
   }
   .iconbtn:hover{border-color:var(--stroke-2);color:var(--text)}
+  .header-actions{display:flex;align-items:center;gap:.5rem;flex:none}
+  @media (max-width:1180px){
+    header{gap:.75rem}
+    .logo .sub{display:none}
+    .pill{padding:.34rem .55rem}
+    #statusTxt{
+      position:absolute;inline-size:1px;block-size:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0 0 0 0);white-space:nowrap;border:0
+    }
+  }
 
   /* ---------- Layout ---------- */
   .layout{display:grid;grid-template-columns:280px 1fr;gap:1.1rem;padding:1.1rem 1.25rem;align-items:start}
@@ -265,7 +282,7 @@
   .chead{display:flex;align-items:flex-start;gap:.6rem}
   .blogo{
     inline-size:30px;block-size:30px;object-fit:contain;flex:none;border-radius:7px;background:var(--logo-bg);
-    padding:2px;border:1px solid var(--stroke)
+    padding:2px;border:1px solid var(--logo-border);filter:var(--logo-filter);mix-blend-mode:var(--logo-blend)
   }
   .chead .txt{min-inline-size:0;flex:1}
   .ctitle{display:flex;align-items:baseline;gap:.5rem;justify-content:space-between}
@@ -456,10 +473,25 @@
   table.keys td:first-child{white-space:nowrap;inline-size:120px}
   kbd.k{font-family:var(--mono);font-size:.72rem;border:1px solid var(--stroke-2);border-radius:5px;padding:.12rem .45rem;background:var(--bg-2)}
   dialog#helpDlg{inline-size:min(440px,94vw)}
-  @media (max-width:760px){
-    header{flex-wrap:wrap;row-gap:.55rem;padding:.6rem .9rem}
-    .searchwrap{order:9;flex-basis:100%;max-inline-size:none}
+  @media (max-width:900px){
+    header{
+      display:grid;grid-template-columns:auto auto auto 1fr;
+      grid-template-areas:"logo biz status actions" "search search search search";
+      gap:.5rem;padding:.6rem .9rem
+    }
+    .logo{grid-area:logo}
+    .searchwrap{grid-area:search;min-inline-size:0;max-inline-size:none}
     .hspacer{display:none}
+    #bizSeg{grid-area:biz;justify-self:end}
+    #status{grid-area:status;justify-self:start}
+    .header-actions{grid-area:actions;justify-self:end}
+  }
+  @media (max-width:600px){
+    header{
+      grid-template-columns:minmax(0,1fr) auto;
+      grid-template-areas:"logo biz" "status actions" "search search"
+    }
+    .logo .name{font-size:.9rem;letter-spacing:0}
   }
 
   footer{padding:1.6rem 1.25rem 2.2rem;text-align:center;font-size:.7rem;color:var(--text-faint)}
@@ -518,12 +550,14 @@
     <button data-biz="true" class="on" aria-pressed="true">Business</button>
     <button data-biz="false" aria-pressed="false">Private</button>
   </div>
-  <div class="pill busy" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statusTxt">Connecting…</span></div>
-  <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
-  <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)" aria-label="Copy link to this view"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
-  <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
-  <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
-  <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+  <div class="pill busy" id="status" role="status" aria-live="polite" title="Connecting…"><span class="dot"></span><span id="statusTxt">Connecting…</span></div>
+  <div class="header-actions">
+    <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
+    <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)" aria-label="Copy link to this view"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+    <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
+    <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
+    <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+  </div>
 </header>
 
 <div class="banner" id="banner"></div>
@@ -1065,12 +1099,16 @@ async function loadCatalog(){
     setStatus("err", "API unreachable");
     showBanner(err);
   }finally{
-    if (gen === state.loadGen) state.loading = false;
+    if (gen === state.loadGen){
+      state.loading = false;
+      scheduleAutoFill();
+    }
   }
 }
 function setStatus(kind, txt){
   const el = $("#status");
   el.className = "pill " + kind;
+  el.title = txt;
   $("#statusTxt").textContent = txt;
 }
 function showBanner(err){
@@ -1227,6 +1265,26 @@ function renderSkeletons(){
   $("#cnt").textContent = "–"; $("#cntSub").textContent=""; $("#stats").innerHTML=""; $("#activeFilters").innerHTML="";
 }
 const PAGE = 24;
+const AUTO_LOAD = "IntersectionObserver" in window;
+let autoFillScheduled = false;
+function hasMoreResults(){ return state.renderCount < state.filtered.length; }
+function sentinelNearViewport(){
+  const sentinel = $("#sentinel");
+  return sentinel && sentinel.getBoundingClientRect().top <= window.innerHeight + 600;
+}
+function scheduleAutoFill(){
+  if (!AUTO_LOAD || state.loading || autoFillScheduled || !hasMoreResults()) return;
+  autoFillScheduled = true;
+  requestAnimationFrame(()=>{
+    let batches = 0;
+    while (!state.loading && hasMoreResults() && sentinelNearViewport() && batches < 10){
+      renderGrid(false);
+      batches++;
+    }
+    autoFillScheduled = false;
+    if (!state.loading && hasMoreResults() && sentinelNearViewport()) scheduleAutoFill();
+  });
+}
 function renderGrid(reset){
   const grid = $("#grid");
   grid.setAttribute("aria-busy","false");
@@ -1252,8 +1310,9 @@ function renderGrid(reset){
   for(const c of slice) frag.appendChild(cardEl(c));
   grid.appendChild(frag);
   state.renderCount += slice.length;
-  $("#moreBtn").hidden = state.renderCount >= state.filtered.length;
+  $("#moreBtn").hidden = !hasMoreResults() || AUTO_LOAD;
   $("#moreBtn").textContent = `Show more  (${fmtNum(state.filtered.length-state.renderCount)} remaining)`;
+  scheduleAutoFill();
 }
 function cardEl(c){
   const key = carKey(c);
@@ -1804,10 +1863,10 @@ function wireEvents(){
     try{ await navigator.clipboard.writeText(location.href); toast("Link to this view copied"); }
     catch(e){ toast("Couldn't copy automatically — use the address bar URL"); }
   });
-  // infinite scroll (Show more remains as fallback)
-  if ("IntersectionObserver" in window){
+  // The button remains a fallback for browsers without IntersectionObserver.
+  if (AUTO_LOAD){
     new IntersectionObserver(entries=>{
-      if (entries.some(en=>en.isIntersecting) && !$("#moreBtn").hidden && !state.loading) renderGrid(false);
+      if (entries.some(en=>en.isIntersecting)) scheduleAutoFill();
     }, {rootMargin:"600px 0px"}).observe($("#sentinel"));
   }
   // keyboard: open a focused card with Enter / Space
