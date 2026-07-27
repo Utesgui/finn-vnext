@@ -41,7 +41,9 @@ python proxy.py        # then open http://localhost:8020
   compare actions before entering full details.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
-  color swatches, deals, towbar, "available within 4 weeks", real photos.
+  color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are
+  **negatable**: click a value once to include it, again to exclude it (e.g. "not Dacia",
+  shown struck-through in red and as a `not …` pill), a third time to clear it.
 - **Full-text search** across brand, model, trim, equipment line and engine (`/` to focus).
 - **Favorites** — heart any car (persisted locally), one-click favorites-only view,
   shareable via URL, exported in CSV.
