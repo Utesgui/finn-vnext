@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="FINN vNext — internal vehicle search over the FINN Product API with instant client-side filtering.">
+<meta name="robots" content="noindex">
 <title>FINN vNext · Internal Vehicle Search</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%2322d3ee"/><stop offset="1" stop-color="%23a3e635"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(%23g)"/><text x="32" y="45" font-family="Arial" font-size="38" font-weight="800" fill="%2308131a" text-anchor="middle">F</text></svg>'>
 <style>
   :root{
     --bg:#0b0f14;
@@ -27,14 +30,47 @@
     --shadow:0 10px 30px rgba(0,0,0,.35);
     --font:ui-sans-serif,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","Segoe UI Mono",Consolas,monospace;
+    --bg-elev:#0e1520;
+    --header-bg:rgba(11,15,20,.82);
+    --bar-bg:rgba(16,23,34,.94);
+    --scroll-thumb:rgba(255,255,255,.14);
+    --scroll-thumb-h:rgba(255,255,255,.28);
+    --glow-1:rgba(34,211,238,.13);
+    --glow-2:rgba(163,230,53,.09);
+    --on-accent:#08131a;
+    --fav:#fb7185;
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    color-scheme:light;
+    --bg:#eef1f6;
+    --bg-2:#ffffff;
+    --panel:rgba(255,255,255,.78);
+    --panel-2:rgba(15,23,42,.06);
+    --stroke:rgba(15,23,42,.11);
+    --stroke-2:rgba(15,23,42,.22);
+    --text:#0f172a;
+    --text-dim:#46566b;
+    --text-faint:#8695a9;
+    --accent:#0e7490;
+    --accent-2:#4d7c0f;
+    --shadow:0 10px 30px rgba(15,23,42,.14);
+    --bg-elev:#ffffff;
+    --header-bg:rgba(238,241,246,.86);
+    --bar-bg:rgba(255,255,255,.96);
+    --scroll-thumb:rgba(15,23,42,.22);
+    --scroll-thumb-h:rgba(15,23,42,.4);
+    --glow-1:rgba(14,116,144,.07);
+    --glow-2:rgba(101,163,13,.07);
+    --fav:#e11d48;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     font-family:var(--font);color:var(--text);background:var(--bg);
     background-image:
-      radial-gradient(1100px 500px at 85% -10%, rgba(34,211,238,.13), transparent 60%),
-      radial-gradient(900px 420px at -10% 0%, rgba(163,230,53,.09), transparent 55%);
+      radial-gradient(1100px 500px at 85% -10%, var(--glow-1), transparent 60%),
+      radial-gradient(900px 420px at -10% 0%, var(--glow-2), transparent 55%);
     background-attachment:fixed;
     min-block-size:100vh;
   }
@@ -47,13 +83,13 @@
   /* ---------- Header ---------- */
   header{
     position:sticky;inset-block-start:0;z-index:50;display:flex;align-items:center;gap:1rem;
-    padding:.7rem 1.25rem;background:rgba(11,15,20,.82);backdrop-filter:blur(14px);
+    padding:.7rem 1.25rem;background:var(--header-bg);backdrop-filter:blur(14px);
     border-block-end:1px solid var(--stroke);
   }
   .logo{display:flex;align-items:center;gap:.6rem;user-select:none}
   .logo .mark{
     inline-size:34px;block-size:34px;border-radius:10px;background:var(--accent-grad);
-    display:grid;place-items:center;font-weight:800;color:#08131a;font-size:1rem;letter-spacing:-.5px;
+    display:grid;place-items:center;font-weight:800;color:var(--on-accent);font-size:1rem;letter-spacing:-.5px;
   }
   .logo .name{font-weight:750;font-size:1.02rem;letter-spacing:.2px}
   .logo .name em{font-style:normal;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -69,7 +105,7 @@
   .hspacer{flex:1}
   .seg{display:flex;border:1px solid var(--stroke);border-radius:999px;overflow:hidden;background:var(--panel)}
   .seg button{padding:.42rem .85rem;font-size:.78rem;color:var(--text-dim);transition:.15s}
-  .seg button.on{background:var(--accent-grad);color:#08131a;font-weight:700}
+  .seg button.on{background:var(--accent-grad);color:var(--on-accent);font-weight:700}
   .pill{
     display:inline-flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--text-dim);
     border:1px solid var(--stroke);border-radius:999px;padding:.34rem .7rem;background:var(--panel)
@@ -110,17 +146,17 @@
     background:var(--bg-2);color:var(--text-dim);transition:.13s;user-select:none
   }
   .chip:hover{border-color:var(--stroke-2);color:var(--text)}
-  .chip.on{background:var(--accent-grad);border-color:transparent;color:#08131a;font-weight:700}
+  .chip.on{background:var(--accent-grad);border-color:transparent;color:var(--on-accent);font-weight:700}
   .checklist{display:flex;flex-direction:column;gap:.15rem;max-block-size:230px;overflow:auto;scrollbar-width:thin}
   .checkrow{display:flex;align-items:center;gap:.55rem;padding:.3rem .3rem;border-radius:7px;font-size:.82rem;cursor:pointer}
   .checkrow:hover{background:var(--panel-2)}
-  .checkrow input{accent-color:#22d3ee;inline-size:14px;block-size:14px;padding:0}
+  .checkrow input{accent-color:var(--accent);inline-size:14px;block-size:14px;padding:0}
   .checkrow .cnt{margin-inline-start:auto;font-size:.68rem;color:var(--text-faint);font-family:var(--mono)}
   .rangerow{display:flex;align-items:center;gap:.5rem;margin-block-end:.45rem}
   .rangerow input[type=number]{inline-size:84px;font-size:.8rem;padding:.4rem .5rem}
   .rangerow span{color:var(--text-faint);font-size:.8rem}
   .rangeout{font-family:var(--mono);font-size:.72rem;color:var(--accent)}
-  input[type=range]{inline-size:100%;accent-color:#22d3ee;padding:0;background:transparent;border:none}
+  input[type=range]{inline-size:100%;accent-color:var(--accent);padding:0;background:transparent;border:none}
   .swatches{display:flex;flex-wrap:wrap;gap:.45rem}
   .swatch{inline-size:26px;block-size:26px;border-radius:50%;border:2px solid var(--stroke);position:relative;transition:.13s}
   .swatch.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(34,211,238,.35)}
@@ -172,7 +208,7 @@
     display:grid;place-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:#cbd5e1;font-size:.85rem;transition:.15s;border:1px solid transparent
   }
   .cmpbtn:hover{color:#fff;border-color:var(--stroke-2)}
-  .cmpbtn.on{background:var(--accent-grad);color:#08131a}
+  .cmpbtn.on{background:var(--accent-grad);color:var(--on-accent)}
   .cbody{padding:.85rem .95rem 1rem;display:flex;flex-direction:column;gap:.55rem;flex:1}
   .ctitle{display:flex;align-items:baseline;gap:.5rem;justify-content:space-between}
   .ctitle .bm{font-weight:750;font-size:1rem;letter-spacing:-.2px}
@@ -216,22 +252,22 @@
   .cmpbar{
     position:fixed;inset-block-end:1rem;inset-inline-start:50%;transform:translateX(-50%) translateY(120%);z-index:60;
     display:flex;align-items:center;gap:.8rem;padding:.6rem .9rem;border-radius:999px;
-    background:rgba(16,23,34,.92);backdrop-filter:blur(14px);border:1px solid var(--stroke-2);box-shadow:var(--shadow);
+    background:var(--bar-bg);backdrop-filter:blur(14px);border:1px solid var(--stroke-2);box-shadow:var(--shadow);
     transition:transform .25s
   }
   .cmpbar.show{transform:translateX(-50%) translateY(0)}
   .cmpbar .thumbs{display:flex;gap:.4rem}
   .cmpbar .thumbs img{inline-size:52px;block-size:34px;object-fit:contain;background:var(--bg-2);border-radius:7px;border:1px solid var(--stroke)}
-  .cmpbar .go{background:var(--accent-grad);color:#08131a;font-weight:750;border-radius:999px;padding:.5rem 1.1rem;font-size:.8rem}
+  .cmpbar .go{background:var(--accent-grad);color:var(--on-accent);font-weight:750;border-radius:999px;padding:.5rem 1.1rem;font-size:.8rem}
   .cmpbar .clr{font-size:.75rem;color:var(--text-dim)}
 
   /* ---------- Dialogs ---------- */
   dialog{
-    border:1px solid var(--stroke-2);border-radius:18px;background:#0e1520;color:var(--text);
+    border:1px solid var(--stroke-2);border-radius:18px;background:var(--bg-elev);color:var(--text);
     padding:0;max-inline-size:min(960px,94vw);inline-size:min(960px,94vw);max-block-size:88vh;box-shadow:var(--shadow)
   }
   dialog::backdrop{background:rgba(4,7,10,.7);backdrop-filter:blur(3px)}
-  .dhead{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-block-end:1px solid var(--stroke);position:sticky;inset-block-start:0;background:#0e1520;z-index:2}
+  .dhead{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-block-end:1px solid var(--stroke);position:sticky;inset-block-start:0;background:var(--bg-elev);z-index:2}
   .dhead .t{font-weight:750;font-size:1.05rem}
   .dhead .s{font-size:.76rem;color:var(--text-dim)}
   .dhead .x{margin-inline-start:auto}
@@ -262,7 +298,7 @@
   .eq details[open] summary::after{content:"–"}
   .eq .items{padding:.2rem .9rem .8rem;font-size:.8rem;color:var(--text-dim);line-height:1.7}
   .linkout{
-    display:inline-flex;align-items:center;gap:.45rem;background:var(--accent-grad);color:#08131a;font-weight:750;
+    display:inline-flex;align-items:center;gap:.45rem;background:var(--accent-grad);color:var(--on-accent);font-weight:750;
     border-radius:999px;padding:.6rem 1.2rem;font-size:.84rem;text-decoration:none
   }
   .ghost{border:1px solid var(--stroke-2);border-radius:999px;padding:.6rem 1.2rem;font-size:.84rem;color:var(--text-dim)}
@@ -276,13 +312,13 @@
   .set-row input,.set-row select{inline-size:100%}
   .set-row .hint{font-size:.7rem;color:var(--text-faint);line-height:1.5}
   .dfoot{display:flex;gap:.6rem;justify-content:flex-end;padding:1rem 1.2rem;border-block-start:1px solid var(--stroke)}
-  .primary{background:var(--accent-grad);color:#08131a;font-weight:750;border-radius:999px;padding:.55rem 1.3rem;font-size:.84rem}
+  .primary{background:var(--accent-grad);color:var(--on-accent);font-weight:750;border-radius:999px;padding:.55rem 1.3rem;font-size:.84rem}
 
   /* ---------- polish: motion, a11y, feedback ---------- */
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
   ::-webkit-scrollbar{inline-size:9px;block-size:9px}
-  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px;border:2px solid transparent;background-clip:content-box}
-  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:99px;border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-h);border:2px solid transparent;background-clip:content-box}
   ::-webkit-scrollbar-track{background:transparent}
   .chip,.iconbtn,.seg button,.morebtn{transition:transform .12s,background .15s,color .15s,border-color .15s}
   .chip:active,.iconbtn:active{transform:scale(.93)}
@@ -297,7 +333,7 @@
   .sclear:hover{color:var(--danger)}
   .toast{
     position:fixed;inset-block-end:4.4rem;inset-inline-start:50%;transform:translateX(-50%) translateY(16px);
-    background:rgba(16,23,34,.95);border:1px solid var(--stroke-2);border-radius:999px;padding:.6rem 1.2rem;
+    background:var(--bar-bg);border:1px solid var(--stroke-2);border-radius:999px;padding:.6rem 1.2rem;
     font-size:.8rem;opacity:0;pointer-events:none;transition:.25s;z-index:80;backdrop-filter:blur(10px)
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -307,14 +343,14 @@
     aside{
       position:fixed;inset-block:0;inset-inline-start:0;inline-size:min(320px,86vw);z-index:70;max-block-size:100vh;
       border-radius:0 var(--radius) var(--radius) 0;transform:translateX(-105%);
-      transition:transform .28s cubic-bezier(.2,.7,.3,1);background:#0e1520
+      transition:transform .28s cubic-bezier(.2,.7,.3,1);background:var(--bg-elev)
     }
     body.drawer-open aside{transform:none}
     #drawerBg{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:65}
     body.drawer-open #drawerBg{opacity:1;pointer-events:auto}
     .fab{
       display:flex;align-items:center;gap:.45rem;position:fixed;inset-block-end:1.1rem;inset-inline-end:1.1rem;z-index:60;
-      background:var(--accent-grad);color:#08131a;font-weight:750;border-radius:999px;padding:.75rem 1.25rem;
+      background:var(--accent-grad);color:var(--on-accent);font-weight:750;border-radius:999px;padding:.75rem 1.25rem;
       font-size:.85rem;box-shadow:var(--shadow)
     }
     .fab .n{background:rgba(0,0,0,.25);border-radius:99px;padding:.05rem .5rem;font-size:.72rem}
@@ -323,11 +359,70 @@
     *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
   }
 
+  /* ---------- icons, favorites, theme & help ---------- */
+  .ic{inline-size:1em;block-size:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em;flex:none}
+  .iconbtn .ic{font-size:1rem}
+  .iconbtn[disabled]{opacity:.35;cursor:default;pointer-events:none}
+  .skiplink{
+    position:absolute;inset-inline-start:-999px;inset-block-start:.55rem;z-index:100;background:var(--accent-grad);
+    color:var(--on-accent);padding:.5rem 1rem;border-radius:999px;font-size:.8rem;font-weight:700;text-decoration:none
+  }
+  .skiplink:focus{inset-inline-start:.55rem}
+  .favbtn{
+    position:absolute;inset-block-start:.5rem;inset-inline-end:2.75rem;inline-size:30px;block-size:30px;border-radius:8px;
+    display:grid;place-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:#cbd5e1;font-size:.85rem;transition:.15s;border:1px solid transparent
+  }
+  .favbtn:hover{color:#fff;border-color:var(--stroke-2)}
+  .favbtn.on{color:var(--fav)}
+  .favbtn.on .ic,.iconbtn.on[data-fav] .ic,.favtoggle.on .ic{fill:currentColor}
+  .iconbtn.on[data-fav]{color:var(--fav);border-color:rgba(251,113,133,.5)}
+  .favtoggle{
+    display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--text-dim);
+    border:1px solid var(--stroke);border-radius:999px;padding:.34rem .75rem;background:var(--panel);transition:.15s
+  }
+  .favtoggle:hover{border-color:var(--stroke-2);color:var(--text)}
+  .favtoggle.on{color:var(--fav);border-color:rgba(251,113,133,.55);background:rgba(251,113,133,.1)}
+  .dnav{margin-inline-start:auto;display:flex;gap:.4rem;align-items:center}
+  .dpos{font-size:.7rem;color:var(--text-faint);font-family:var(--mono);margin-inline-end:.2rem;white-space:nowrap}
+  .empty .big .ic{inline-size:46px;block-size:46px;stroke-width:1.5;color:var(--text-faint)}
+  table.keys{border-collapse:collapse;font-size:.85rem;inline-size:100%}
+  table.keys td{padding:.5rem .4rem;border-block-end:1px solid var(--stroke)}
+  table.keys td:first-child{white-space:nowrap;inline-size:120px}
+  kbd.k{font-family:var(--mono);font-size:.72rem;border:1px solid var(--stroke-2);border-radius:5px;padding:.12rem .45rem;background:var(--bg-2)}
+  dialog#helpDlg{inline-size:min(440px,94vw)}
+  @media (max-width:760px){
+    header{flex-wrap:wrap;row-gap:.55rem;padding:.6rem .9rem}
+    .searchwrap{order:9;flex-basis:100%;max-inline-size:none}
+    .hspacer{display:none}
+  }
+
   footer{padding:1.6rem 1.25rem 2.2rem;text-align:center;font-size:.7rem;color:var(--text-faint)}
   footer a{color:var(--text-dim)}
 </style>
 </head>
 <body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+</svg>
+
+<a class="skiplink" href="#grid">Skip to results</a>
 
 <header>
   <div class="logo">
@@ -338,20 +433,22 @@
     </div>
   </div>
   <div class="searchwrap">
-    <span class="icon">⌕</span>
-    <input id="q" type="search" placeholder="Search brand, model, trim, engine …" autocomplete="off">
-    <button class="sclear" id="qClear" hidden aria-label="Clear search">✕</button>
+    <span class="icon"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span>
+    <input id="q" type="search" placeholder="Search brand, model, trim, engine …" autocomplete="off" aria-label="Search vehicles">
+    <button class="sclear" id="qClear" hidden aria-label="Clear search"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     <kbd>/</kbd>
   </div>
   <div class="hspacer"></div>
-  <div class="seg" id="bizSeg" title="Pricing mode">
-    <button data-biz="true" class="on">Business</button>
-    <button data-biz="false">Private</button>
+  <div class="seg" id="bizSeg" title="Pricing mode" role="group" aria-label="Pricing mode">
+    <button data-biz="true" class="on" aria-pressed="true">Business</button>
+    <button data-biz="false" aria-pressed="false">Private</button>
   </div>
-  <div class="pill busy" id="status"><span class="dot"></span><span id="statusTxt">Connecting…</span></div>
-  <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)">🔗</button>
-  <button class="iconbtn" id="exportBtn" title="Export current results as CSV">⤓</button>
-  <button class="iconbtn" id="settingsBtn" title="Settings">⚙</button>
+  <div class="pill busy" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statusTxt">Connecting…</span></div>
+  <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
+  <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)" aria-label="Copy link to this view"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+  <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
+  <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
+  <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
 </header>
 
 <div class="banner" id="banner"></div>
@@ -361,7 +458,7 @@
     <details open><summary>Fuel</summary><div class="fbody"><div class="chips" id="fuelChips"></div></div></details>
     <details open><summary>Brand</summary>
       <div class="fbody">
-        <input id="brandSearch" type="search" placeholder="Filter brands…" style="inline-size:100%;margin-block-end:.5rem">
+        <input id="brandSearch" type="search" placeholder="Filter brands…" aria-label="Filter brands" style="inline-size:100%;margin-block-end:.5rem">
         <div class="checklist" id="brandList"></div>
       </div>
     </details>
@@ -369,12 +466,12 @@
     <details open><summary>Monthly price</summary>
       <div class="fbody">
         <div class="rangerow">
-          <input type="number" id="priceMin" min="0" step="10" placeholder="min">
+          <input type="number" id="priceMin" min="0" step="10" placeholder="min" aria-label="Minimum monthly price">
           <span>–</span>
-          <input type="number" id="priceMax" min="0" step="10" placeholder="max">
+          <input type="number" id="priceMax" min="0" step="10" placeholder="max" aria-label="Maximum monthly price">
           <span>€</span>
         </div>
-        <input type="range" id="priceSlider" min="0" max="2000" step="10">
+        <input type="range" id="priceSlider" min="0" max="2000" step="10" aria-label="Maximum monthly price">
         <div class="rangeout" id="priceOut"></div>
         <div class="chips" id="priceQuick" style="margin-block-start:.55rem">
           <button class="chip" data-pq="200">≤ 200 €</button>
@@ -387,13 +484,13 @@
     <details><summary>Gearshift</summary><div class="fbody"><div class="chips" id="gearChips"></div></div></details>
     <details><summary>Power</summary>
       <div class="fbody">
-        <input type="range" id="powerSlider" min="0" max="400" step="5">
+        <input type="range" id="powerSlider" min="0" max="400" step="5" aria-label="Minimum power">
         <div class="rangeout" id="powerOut">any</div>
       </div>
     </details>
     <details><summary>Electric range</summary>
       <div class="fbody">
-        <input type="range" id="rangeSlider" min="0" max="700" step="10">
+        <input type="range" id="rangeSlider" min="0" max="700" step="10" aria-label="Minimum electric range">
         <div class="rangeout" id="rangeOut">any</div>
       </div>
     </details>
@@ -415,16 +512,19 @@
         <label class="checkrow"><input type="checkbox" id="fltDrops"> Price dropped recently</label>
       </div>
     </details>
-    <button class="resetbtn" id="resetBtn">✕ &nbsp;Reset all filters</button>
+    <button class="resetbtn" id="resetBtn"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg> &nbsp;Reset all filters</button>
   </aside>
 
   <main>
     <div class="toolbar">
-      <div class="count"><span id="cnt">–</span><small id="cntSub"></small></div>
+      <div class="count" aria-live="polite"><span id="cnt">–</span><small id="cntSub"></small></div>
       <div class="statchips" id="stats"></div>
       <div class="grow"></div>
+      <button class="favtoggle" id="favToggle" aria-pressed="false" title="Show favorites only">
+        <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg> <span id="favCount">0</span>
+      </button>
       <div class="sortwrap" title="Monthly mileage package — surcharge is included in all displayed prices">
-        Km/mo
+        <label for="kmSel">Km/mo</label>
         <select id="kmSel">
           <option value="500">500</option>
           <option value="1000">1.000</option>
@@ -435,12 +535,12 @@
           <option value="3500">3.500</option>
         </select>
       </div>
-      <div class="seg" id="densitySeg" title="Layout">
-        <button data-den="grid" class="on" title="Grid view">▦</button>
-        <button data-den="list" title="List view">☰</button>
+      <div class="seg" id="densitySeg" title="Layout" role="group" aria-label="Layout">
+        <button data-den="grid" class="on" title="Grid view" aria-pressed="true" aria-label="Grid view"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg></button>
+        <button data-den="list" title="List view" aria-pressed="false" aria-label="List view"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
       </div>
       <div class="sortwrap">
-        Sort
+        <label for="sort">Sort</label>
         <select id="sort">
           <option value="reco">Recommended</option>
           <option value="price-asc">Price ↑</option>
@@ -454,7 +554,7 @@
       </div>
     </div>
     <div class="activef" id="activeFilters"></div>
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid" aria-busy="false"></div>
     <div id="sentinel" aria-hidden="true"></div>
     <button class="morebtn" id="moreBtn" hidden>Show more</button>
   </main>
@@ -466,38 +566,54 @@
   <button class="clr" id="cmpClear">Clear</button>
 </div>
 
-<button class="fab" id="fabFilters">⚲ Filters <span class="n" id="fabCount">0</span></button>
+<button class="fab" id="fabFilters"><svg class="ic" aria-hidden="true"><use href="#i-filter"/></svg> Filters <span class="n" id="fabCount">0</span></button>
 <div id="drawerBg"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<dialog id="detailDlg"></dialog>
-<dialog id="cmpDlg"></dialog>
+<dialog id="detailDlg" aria-label="Vehicle details"></dialog>
+<dialog id="cmpDlg" aria-label="Vehicle comparison"></dialog>
 
-<dialog id="settingsDlg">
-  <div class="dhead"><div class="t">Settings</div><button class="iconbtn x" data-close="settingsDlg">✕</button></div>
+<dialog id="helpDlg" aria-label="Keyboard shortcuts">
+  <div class="dhead"><div class="t">Keyboard shortcuts</div><button class="iconbtn x" data-close="helpDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dbody">
+    <table class="keys">
+      <tr><th class="sr" style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0)">Key</th><th style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0)">Action</th></tr>
+      <tr><td><kbd class="k">/</kbd></td><td>Focus the search field</td></tr>
+      <tr><td><kbd class="k">Esc</kbd></td><td>Close dialogs / the filter drawer</td></tr>
+      <tr><td><kbd class="k">←</kbd> <kbd class="k">→</kbd></td><td>Previous / next vehicle in the detail view</td></tr>
+      <tr><td><kbd class="k">Enter</kbd></td><td>Open the focused vehicle card</td></tr>
+      <tr><td><kbd class="k">f</kbd></td><td>Toggle favorite in the detail view</td></tr>
+      <tr><td><kbd class="k">t</kbd></td><td>Toggle light / dark theme</td></tr>
+      <tr><td><kbd class="k">?</kbd></td><td>Show this help</td></tr>
+    </table>
+  </div>
+</dialog>
+
+<dialog id="settingsDlg" aria-label="Settings">
+  <div class="dhead"><div class="t">Settings</div><button class="iconbtn x" data-close="settingsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <div class="dbody">
     <div class="set-row">
-      <label>Auto-configure from a request URL</label>
+      <label for="setPaste">Auto-configure from a request URL</label>
       <input id="setPaste" type="text" spellcheck="false" placeholder="Paste a …/cars?… request URL copied from finn.com DevTools">
       <div class="hint">Open finn.com → F12 → <b>Network</b> tab → reload → filter for <b>cars</b> → right-click the request → Copy URL → paste it here. Base URL and actor are extracted automatically.</div>
     </div>
     <div class="set-row">
-      <label>API base URL</label>
+      <label for="setBase">API base URL</label>
       <input id="setBase" type="text" spellcheck="false">
       <div class="hint">FINN Product API host. Auto-detected on first load; change it if the service moves.</div>
     </div>
     <div class="set-row">
-      <label>Actor (API authorization)</label>
+      <label for="setActor">Actor (API authorization)</label>
       <input id="setActor" type="text" spellcheck="false">
       <div class="hint">Sent as the required <b>x-finn-actor</b> request header (and as <b>actor</b> query parameter for legacy hosts). The API rejects requests without it.</div>
     </div>
     <div class="set-row">
-      <label>CORS proxy</label>
+      <label for="setProxy">CORS proxy</label>
       <input id="setProxy" type="text" spellcheck="false">
       <div class="hint">Requests are routed through this proxy. Placeholders: <b>{url}</b> = raw target URL, <b>{enc}</b> = URL-encoded, <b>{bare}</b> = without https://. The company anycors instance expects <code>https://anycors.b0t.at/?{url}</code> (whole query string = target). Leave empty for direct calls.</div>
     </div>
     <div class="set-row">
-      <label>Vehicle view</label>
+      <label for="setView">Vehicle view</label>
       <select id="setView">
         <option value="available_cars">Available + coming soon (default)</option>
         <option value="displayed_cars">Displayed cars</option>
@@ -506,7 +622,7 @@
       <div class="hint">The default automatically merges FINN's coming-soon list (currently often empty) into the available cars — merged cars get a "coming soon" badge.</div>
     </div>
     <div class="set-row">
-      <label>Page size per API request</label>
+      <label for="setLimit">Page size per API request</label>
       <select id="setLimit">
         <option>200</option><option>100</option><option>50</option><option>24</option>
       </select>
@@ -550,7 +666,8 @@ const DEFAULTS = {
   limit: 200,
   biz: true,
   km: 500,                                 // monthly mileage package (500 is included in base price)
-  density: "grid"
+  density: "grid",
+  theme: (typeof matchMedia==="function" && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark"
 };
 /* Connection facts (verified via browser console, 2026-07-25):
    - product-api.finn.com is LIVE and CORS-open, but rejects unknown actors with 401
@@ -582,6 +699,10 @@ const state = {
   facets: null,
   renderCount: 0,
   compare: [],           // array of car keys, max 3
+  favs: loadFavs(),      // Set of favorite car keys (persisted)
+  detailIdx: -1,
+  detailKey: null,
+  loadGen: 0,            // increments per load; stale in-flight loads bail out
   f: freshFilters(),
   sort: "reco",
   loading: false
@@ -590,13 +711,24 @@ const state = {
 function freshFilters(){
   return { q:"", fuels:[], brands:[], types:[], gears:[], terms:[], seats:[], doors:[], colors:[],
            priceMin:null, priceMax:null, powerMin:0, rangeMin:0,
-           deals:false, hitch:false, soon:false, realPics:false, drops:false };
+           deals:false, hitch:false, soon:false, realPics:false, drops:false, favOnly:false };
 }
 function loadCfg(){
   try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
   catch(e){ return Object.assign({}, DEFAULTS); }
 }
 function saveCfg(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state.cfg)); }catch(e){} }
+const FAV_LS = "finnvnext.favs.v1";
+function loadFavs(){ try{ return new Set(JSON.parse(localStorage.getItem(FAV_LS)||"[]")); }catch(e){ return new Set(); } }
+function saveFavs(){ try{ localStorage.setItem(FAV_LS, JSON.stringify(Array.from(state.favs))); }catch(e){} }
+const SORT_KEYS = ["reco","price-asc","price-desc","drop-desc","power-desc","range-desc","avail-asc","name-asc"];
+function applyTheme(){
+  const t = state.cfg.theme==="light" ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
+  const use = document.querySelector("#themeBtn use");
+  if (use) use.setAttribute("href", t==="dark" ? "#i-sun" : "#i-moon");
+}
+function toggleTheme(){ state.cfg.theme = state.cfg.theme==="light" ? "dark" : "light"; saveCfg(); applyTheme(); }
 
 /* ---------------- helpers ---------------- */
 const $  = s => document.querySelector(s);
@@ -796,6 +928,7 @@ async function probeEndpoint(){
 async function loadCatalog(){
   // this view 500s on the finn.com /api route — migrate old saved configs away from it
   if (state.cfg.view === "available-and-coming-soon"){ state.cfg.view = "available_cars"; saveCfg(); }
+  const gen = ++state.loadGen;   // invalidates any load still in flight
   state.loading = true;
   setStatus("busy", "Loading catalog…");
   renderSkeletons();
@@ -805,6 +938,7 @@ async function loadCatalog(){
     async function fetchView(view, seen, markSoon){
       let offset = 0, limit = Number(state.cfg.limit)||200, pages = 0;
       for(;;){
+        if (gen !== state.loadGen) return;
         let json;
         try{
           json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
@@ -831,6 +965,7 @@ async function loadCatalog(){
     if (state.cfg.view === "available_cars"){
       try{ await fetchView("coming-soon", seen, true); }catch(e){ /* supplemental — ignore failures */ }
     }
+    if (gen !== state.loadGen) return;
     state.cars = Array.from(seen.values());
     trackPrices();
     state.facets = buildFacets(state.cars);
@@ -846,12 +981,13 @@ async function loadCatalog(){
     setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
     apply();
   }catch(err){
+    if (gen !== state.loadGen) return;
     state.cars = []; state.filtered = [];
     $("#grid").innerHTML = "";
     setStatus("err", "API unreachable");
     showBanner(err);
   }finally{
-    state.loading = false;
+    if (gen === state.loadGen) state.loading = false;
   }
 }
 function setStatus(kind, txt){
@@ -869,7 +1005,7 @@ function showBanner(err){
      <br>Reading the log: <i>Failed to fetch</i> = network/CORS · <i>HTTP 401</i> = actor rejected · <i>HTTP 404</i> = wrong path · <i>HTTP 500</i> = server error / bad parameter.
      Adjust base URL, actor or proxy in ⚙ Settings.
      ${rows?`<details style="margin-block-start:.55rem"><summary style="cursor:pointer">Show all ${attempts.length} attempts</summary>${rows}</details>`:""}
-     <div class="actions"><button id="retryBtn">↻ Retry</button><button id="openSettings2">⚙ Settings</button></div>`;
+     <div class="actions"><button id="retryBtn"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Retry</button><button id="openSettings2">Settings</button></div>`;
   el.classList.add("show");
   $("#retryBtn").addEventListener("click", loadCatalog);
   $("#openSettings2").addEventListener("click", openSettings);
@@ -947,6 +1083,7 @@ function apply(){
   const f = state.f, terms = f.terms.map(Number);
   const q = f.q.trim().toLowerCase();
   state.filtered = state.cars.filter(c=>{
+    if (f.favOnly && !state.favs.has(carKey(c))) return false;
     if (q){
       const hay = [brandName(c), c.model, c.trim_name, c.equipment_line, c.engine, c.cartype, c.fuel, c.config&&c.config.name]
         .filter(Boolean).join(" ").toLowerCase();
@@ -1005,25 +1142,28 @@ function sortCars(){
 
 /* ---------------- rendering ---------------- */
 function renderSkeletons(){
-  $("#grid").innerHTML = Array.from({length:9},()=>'<div class="skel"><div class="a"></div><div class="b"></div></div>').join("");
+  const grid = $("#grid");
+  grid.setAttribute("aria-busy","true");
+  grid.innerHTML = Array.from({length:9},()=>'<div class="skel"><div class="a"></div><div class="b"></div></div>').join("");
   $("#moreBtn").hidden = true;
   $("#cnt").textContent = "–"; $("#cntSub").textContent=""; $("#stats").innerHTML=""; $("#activeFilters").innerHTML="";
 }
 const PAGE = 24;
 function renderGrid(reset){
   const grid = $("#grid");
+  grid.setAttribute("aria-busy","false");
   if (reset) grid.innerHTML = "";
   if (!state.cars.length){
     // the API answered, but this view has no vehicles at all (e.g. "coming soon" is often empty)
-    grid.innerHTML = `<div class="empty"><div class="big">📭</div>The API returned <b>no vehicles</b> for the view "<b>${esc(state.cfg.view)}</b>" — that bucket is currently empty on FINN's side.<br>
+    grid.innerHTML = `<div class="empty"><div class="big"><svg class="ic" aria-hidden="true"><use href="#i-inbox"/></svg></div>The API returned <b>no vehicles</b> for the view "<b>${esc(state.cfg.view)}</b>" — that bucket is currently empty on FINN's side.<br>
       Tip: switch back to <b>Available cars</b> and use the <b>"Available within 4 weeks"</b> filter instead.<br><br>
-      <button class="chip" id="emptyView">⚙ Open Settings</button></div>`;
+      <button class="chip" id="emptyView">Open Settings</button></div>`;
     const s=$("#emptyView"); if(s) s.addEventListener("click", openSettings);
     $("#moreBtn").hidden = true;
     return;
   }
   if (!state.filtered.length){
-    grid.innerHTML = `<div class="empty"><div class="big">🔎</div>No vehicles match the current filters.<br><br>
+    grid.innerHTML = `<div class="empty"><div class="big"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></div>No vehicles match the current filters.<br><br>
       <button class="chip" id="emptyReset">Reset filters</button></div>`;
     const b=$("#emptyReset"); if(b) b.addEventListener("click", resetFilters);
     $("#moreBtn").hidden = true;
@@ -1060,7 +1200,8 @@ function cardEl(c){
         ${label?`<span class="badge">${esc(label)}</span>`:""}
         ${c._soonView?'<span class="badge soon">coming soon</span>':(av.soon?'<span class="badge soon">soon</span>':"")}
       </div>
-      <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare">⇄</button>
+      <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+      <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img alt="${esc(carName(c))}" loading="lazy">
     </div>
     <div class="cbody">
@@ -1125,6 +1266,7 @@ function renderActiveFilters(){
   if (f.soon) add("≤ 4 weeks", ()=>{f.soon=false;$("#fltNow").checked=false;});
   if (f.realPics) add("real photos", ()=>{f.realPics=false;$("#fltRealPics").checked=false;});
   if (f.drops) add("▼ price drops", ()=>{f.drops=false;$("#fltDrops").checked=false;});
+  if (f.favOnly) add("favorites", ()=>{f.favOnly=false;renderFavCount();});
   $("#activeFilters").innerHTML = out.map((x,i)=>`<span class="af">${esc(x.label)}<button data-af="${i}">✕</button></span>`).join("");
   $$("#activeFilters [data-af]").forEach(btn=>btn.addEventListener("click", e=>{
     e.stopPropagation(); out[Number(btn.dataset.af)].undo(); syncChipStates(); apply();
@@ -1146,11 +1288,31 @@ function resetFilters(){
   const ps=$("#priceSlider"); ps.value=ps.max;
   $("#powerSlider").value=0; $("#rangeSlider").value=0;
   ["fltDeals","fltHitch","fltNow","fltRealPics","fltDrops"].forEach(id=>{$("#"+id).checked=false;});
+  renderFavCount();
   syncChipStates(); apply();
+}
+
+/* ---------------- favorites ---------------- */
+function toggleFav(key){
+  if (state.favs.has(key)) state.favs.delete(key); else state.favs.add(key);
+  saveFavs();
+  $$(`[data-fav="${CSS.escape(key)}"]`).forEach(b=>{
+    b.classList.toggle("on", state.favs.has(key));
+    b.setAttribute("aria-pressed", String(state.favs.has(key)));
+  });
+  renderFavCount();
+  if (state.f.favOnly) apply();
+}
+function renderFavCount(){
+  $("#favCount").textContent = state.favs.size;
+  $("#favToggle").classList.toggle("on", state.f.favOnly);
+  $("#favToggle").setAttribute("aria-pressed", String(state.f.favOnly));
 }
 
 /* ---------------- detail dialog ---------------- */
 function openDetail(c){
+  state.detailKey = carKey(c);
+  state.detailIdx = state.filtered.findIndex(x=>carKey(x)===state.detailKey);
   const dlg = $("#detailDlg");
   const pics = (Array.isArray(c.pictures)&&c.pictures.length?c.pictures:[{url:pictureUrl(c)}]).filter(p=>p&&p.url).slice(0,14);
   const plist = priceList(c);
@@ -1178,13 +1340,21 @@ function openDetail(c){
     ["MSRP", c.price&&c.price.msrp?fmtEur(c.price.msrp):null]
   ].filter(([,v])=>v!=null&&v!=="");
   const av = availLabel(c);
+  const inList = state.detailIdx >= 0;
+  const favOn = state.favs.has(carKey(c));
   dlg.innerHTML = `
     <div class="dhead">
       <div>
         <div class="t">${esc(carName(c))} <span style="opacity:.55;font-weight:400">${esc(c.trim_name||"")}</span></div>
         <div class="s">${esc([c.fuel,c.cartype,c.gearshift].filter(Boolean).join(" · "))} · ${esc(av.txt)}</div>
       </div>
-      <button class="iconbtn x" data-close="detailDlg">✕</button>
+      <div class="dnav">
+        ${inList?`<span class="dpos">${state.detailIdx+1} / ${fmtNum(state.filtered.length)}</span>
+        <button class="iconbtn" id="dPrev" title="Previous vehicle (←)" aria-label="Previous vehicle" ${state.detailIdx<=0?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+        <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=state.filtered.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
+        <button class="iconbtn ${favOn?"on":""}" data-fav="${esc(carKey(c))}" title="Favorite (f)" aria-label="Toggle favorite" aria-pressed="${favOn}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+        <button class="iconbtn x" data-close="detailDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
     </div>
     <div class="dbody">
       <div class="dgrid">
@@ -1220,7 +1390,7 @@ function openDetail(c){
           </div>`:""}
           <div class="sect" style="display:flex;gap:.6rem;flex-wrap:wrap">
             ${link?`<a class="linkout" href="${esc(link)}" target="_blank" rel="noreferrer">Open on finn.com ↗</a>`:""}
-            <button class="ghost" data-cmp="${esc(carKey(c))}">⇄ Compare</button>
+            <button class="ghost" data-cmp="${esc(carKey(c))}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg> Compare</button>
           </div>
           <div style="margin-block-start:.9rem;font-size:.68rem;color:var(--text-faint);font-family:var(--mono)">config_id: ${esc(c.config_id)} · id: ${esc(c.id||"–")}</div>
         </div>
@@ -1238,7 +1408,17 @@ function openDetail(c){
       t.classList.add("on"); setMain(Number(t.dataset.gal));
     });
   });
-  dlg.showModal();
+  const prev = dlg.querySelector("#dPrev"), next = dlg.querySelector("#dNext");
+  if (prev) prev.addEventListener("click", e=>{ e.stopPropagation(); stepDetail(-1); });
+  if (next) next.addEventListener("click", e=>{ e.stopPropagation(); stepDetail(1); });
+  if (!dlg.open) dlg.showModal();
+  dlg.querySelector(".dbody").scrollTop = 0;
+}
+function stepDetail(dir){
+  if (state.detailIdx < 0) return;
+  const i = state.detailIdx + dir;
+  if (i < 0 || i >= state.filtered.length) return;
+  openDetail(state.filtered[i]);
 }
 
 /* ---------------- compare ---------------- */
@@ -1249,7 +1429,10 @@ function toggleCompare(key){
     if (state.compare.length>=3) state.compare.shift();
     state.compare.push(key);
   }
-  $$(".cmpbtn").forEach(b=>b.classList.toggle("on", state.compare.includes(b.dataset.cmp)));
+  $$(".cmpbtn").forEach(b=>{
+    b.classList.toggle("on", state.compare.includes(b.dataset.cmp));
+    b.setAttribute("aria-pressed", String(state.compare.includes(b.dataset.cmp)));
+  });
   renderCmpBar();
 }
 function renderCmpBar(){
@@ -1270,7 +1453,7 @@ function openCompare(){
   const dlg = $("#cmpDlg");
   const row = (label, fn, cls) => `<tr><th>${esc(label)}</th>${cars.map(c=>`<td class="${cls||""}">${fn(c)??"–"}</td>`).join("")}</tr>`;
   dlg.innerHTML = `
-    <div class="dhead"><div class="t">Compare ${cars.length} vehicles</div><button class="iconbtn x" data-close="cmpDlg">✕</button></div>
+    <div class="dhead"><div class="t">Compare ${cars.length} vehicles</div><button class="iconbtn x" data-close="cmpDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
     <div class="dbody">
       <table class="cmp">
         <thead><tr><th></th>${cars.map(c=>`<td><img alt="${esc(carName(c))}"><br>${esc(carName(c))}<br><span style="font-size:.7rem;color:var(--text-dim)">${esc(c.trim_name||"")}</span></td>`).join("")}</tr></thead>
@@ -1303,13 +1486,13 @@ function openCompare(){
 /* ---------------- CSV export ---------------- */
 function exportCsv(){
   const terms = state.f.terms.map(Number);
-  const rows = [["brand","model","trim","fuel","body","gearshift","power_kw","ev_range_km","seats","doors","price_from_eur","terms_months","available_from","finn_link"]];
+  const rows = [["brand","model","trim","fuel","body","gearshift","power_kw","ev_range_km","seats","doors","price_from_eur","terms_months","available_from","favorite","finn_link"]];
   for(const c of state.filtered){
     rows.push([brandName(c), c.model||"", c.trim_name||"", c.fuel||"", c.cartype||"", c.gearshift||"",
       c.power??"", evRange(c)??"", c.seats||"", c.doors||"",
       minPrice(c, terms.length?terms:null)??"",
       Array.isArray(c.available_terms)?c.available_terms.join("/"):"",
-      c.available_from||"", finnLink(c)||""]);
+      c.available_from||"", state.favs.has(carKey(c))?"yes":"", finnLink(c)||""]);
   }
   const csv = "﻿" + rows.map(r=>r.map(v=>{
     const s=String(v).replace(/"/g,'""');
@@ -1344,6 +1527,7 @@ function writeHash(){
   if (f.soon) p.set("soon","1");
   if (f.realPics) p.set("pics","1");
   if (f.drops) p.set("dr","1");
+  if (f.favOnly) p.set("fav","1");
   if (state.cfg.km!==500) p.set("km", state.cfg.km);
   if (state.sort!=="reco") p.set("sort", state.sort);
   const h = p.toString();
@@ -1365,8 +1549,9 @@ function readHash(){
     f.deals = p.get("deals")==="1"; f.hitch = p.get("ahk")==="1";
     f.soon = p.get("soon")==="1"; f.realPics = p.get("pics")==="1";
     f.drops = p.get("dr")==="1";
+    f.favOnly = p.get("fav")==="1";
     if (p.has("km")){ const km = Number(p.get("km")); if ([500,1000,1500,2000,2500,3000,3500].includes(km)) state.cfg.km = km; }
-    if (p.get("sort")) state.sort = p.get("sort");
+    if (p.get("sort") && SORT_KEYS.includes(p.get("sort"))) state.sort = p.get("sort");
     return [...p.keys()].length > 0;
   }catch(e){ return false; }
 }
@@ -1382,6 +1567,7 @@ function restoreControls(){
   $("#fltDrops").checked=f.drops;
   $("#kmSel").value = String(state.cfg.km||500);
   $("#sort").value = state.sort;
+  renderFavCount();
   updateRangeOuts();
 }
 function syncPriceQuick(){
@@ -1432,11 +1618,18 @@ function wireEvents(){
   $("#q").addEventListener("input", debounce(e=>{ state.f.q = e.target.value; $("#qClear").hidden = !e.target.value; apply(); }, 180));
   $("#qClear").addEventListener("click", ()=>{ $("#q").value=""; state.f.q=""; $("#qClear").hidden=true; apply(); $("#q").focus(); });
   document.addEventListener("keydown", e=>{
-    if (e.key==="/" && !/input|select|textarea/i.test(document.activeElement.tagName)){ e.preventDefault(); $("#q").focus(); }
+    const typing = /input|select|textarea/i.test(document.activeElement.tagName);
+    if (e.key==="/" && !typing){ e.preventDefault(); $("#q").focus(); }
     if (e.key==="Escape"){ $$( "dialog[open]" ).forEach(d=>d.close()); document.body.classList.remove("drawer-open"); }
+    const detailOpen = $("#detailDlg").open;
+    if (detailOpen && e.key==="ArrowLeft"){ e.preventDefault(); stepDetail(-1); }
+    if (detailOpen && e.key==="ArrowRight"){ e.preventDefault(); stepDetail(1); }
+    if (detailOpen && (e.key==="f"||e.key==="F") && !typing && state.detailKey){ e.preventDefault(); toggleFav(state.detailKey); }
+    if ((e.key==="t"||e.key==="T") && !typing && !detailOpen){ toggleTheme(); }
+    if (e.key==="?" && !typing){ e.preventDefault(); $("#helpDlg").showModal(); }
   });
   // click on the dimmed backdrop closes a dialog
-  ["detailDlg","cmpDlg","settingsDlg"].forEach(id=>{
+  ["detailDlg","cmpDlg","settingsDlg","helpDlg"].forEach(id=>{
     const d = $("#"+id);
     d.addEventListener("click", e=>{ if (e.target === d) d.close(); });
   });
@@ -1508,7 +1701,7 @@ function wireEvents(){
   $("#densitySeg").addEventListener("click", e=>{
     const btn = e.target.closest("[data-den]"); if(!btn) return;
     state.cfg.density = btn.dataset.den; saveCfg();
-    $$("#densitySeg button").forEach(b=>b.classList.toggle("on", b===btn));
+    $$("#densitySeg button").forEach(b=>{ b.classList.toggle("on", b===btn); b.setAttribute("aria-pressed", String(b===btn)); });
     $("#grid").classList.toggle("list", state.cfg.density==="list");
   });
   [["fltDeals","deals"],["fltHitch","hitch"],["fltNow","soon"],["fltRealPics","realPics"],["fltDrops","drops"]].forEach(([id,prop])=>{
@@ -1522,10 +1715,12 @@ function wireEvents(){
     const biz = btn.dataset.biz==="true";
     if (biz===state.cfg.biz) return;
     state.cfg.biz = biz; saveCfg();
-    $$("#bizSeg button").forEach(b=>b.classList.toggle("on", b===btn));
+    $$("#bizSeg button").forEach(b=>{ b.classList.toggle("on", b===btn); b.setAttribute("aria-pressed", String(b===btn)); });
     loadCatalog();
   });
   $("#grid").addEventListener("click", e=>{
+    const fav = e.target.closest("[data-fav]");
+    if (fav){ e.stopPropagation(); toggleFav(fav.dataset.fav); return; }
     const cmp = e.target.closest("[data-cmp]");
     if (cmp){ e.stopPropagation(); toggleCompare(cmp.dataset.cmp); return; }
     const card = e.target.closest(".card"); if(!card) return;
@@ -1535,12 +1730,21 @@ function wireEvents(){
   document.addEventListener("click", e=>{
     const closer = e.target.closest("[data-close]");
     if (closer) $("#"+closer.dataset.close).close();
+    const favIn = e.target.closest("dialog [data-fav]");
+    if (favIn){ toggleFav(favIn.dataset.fav); return; }
     const cmpIn = e.target.closest("dialog [data-cmp]");
     if (cmpIn){ toggleCompare(cmpIn.dataset.cmp); }
   });
   $("#cmpGo").addEventListener("click", openCompare);
-  $("#cmpClear").addEventListener("click", ()=>{ state.compare=[]; $$(".cmpbtn").forEach(b=>b.classList.remove("on")); renderCmpBar(); });
+  $("#cmpClear").addEventListener("click", ()=>{ state.compare=[]; $$(".cmpbtn").forEach(b=>{b.classList.remove("on");b.setAttribute("aria-pressed","false");}); renderCmpBar(); });
   $("#exportBtn").addEventListener("click", exportCsv);
+  $("#themeBtn").addEventListener("click", toggleTheme);
+  $("#helpBtn").addEventListener("click", ()=>$("#helpDlg").showModal());
+  $("#favToggle").addEventListener("click", ()=>{
+    state.f.favOnly = !state.f.favOnly;
+    if (state.f.favOnly && !state.favs.size){ state.f.favOnly=false; toast("No favorites yet — tap the heart on a vehicle card"); return; }
+    renderFavCount(); apply();
+  });
   $("#settingsBtn").addEventListener("click", openSettings);
   $("#setSave").addEventListener("click", ()=>{
     const pasted = $("#setPaste").value.trim();
@@ -1566,11 +1770,13 @@ function wireEvents(){
 
 /* ---------------- boot ---------------- */
 (function boot(){
+  applyTheme();
   // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
   if (readHash()) state.evDefaulted = true;
-  $$("#bizSeg button").forEach(b=>b.classList.toggle("on", (b.dataset.biz==="true")===state.cfg.biz));
+  $$("#bizSeg button").forEach(b=>{ const on=(b.dataset.biz==="true")===state.cfg.biz; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
   $("#grid").classList.toggle("list", state.cfg.density==="list");
-  $$("#densitySeg button").forEach(b=>b.classList.toggle("on", b.dataset.den===(state.cfg.density||"grid")));
+  $$("#densitySeg button").forEach(b=>{ const on=b.dataset.den===(state.cfg.density||"grid"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+  renderFavCount();
   wireEvents();
   ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ state.userTouched = true; }, {once:true, capture:true}));
   loadCatalog();

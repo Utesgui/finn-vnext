@@ -6,7 +6,9 @@ official **FINN Product API** — the same API that powers finn.com. Unlike the 
 
 ## Quick start
 
-Open `index.html` in any modern browser — that's it.
+Open `index.html` in any modern browser — that's it. It also works when hosted on any
+static host (e.g. **GitHub Pages**): all API calls go browser → anycors → finn.com, so
+no server-side code is needed.
 
 By default all API requests are routed through the company CORS proxy
 **https://anycors.b0t.at/** to `https://www.finn.com/api/cars`. The app auto-detects
@@ -16,7 +18,8 @@ calls if the proxy is unreachable. The proxy template, base URL and actor are al
 editable under ⚙ Settings (placeholders: `{url}` = raw target, `{enc}` = encoded target).
 
 **Fallback without anycors:** `proxy.py` (Python 3, no dependencies) serves the app and
-forwards `/api/*` to `www.finn.com` server-side:
+forwards `/api/*` to `www.finn.com` server-side. Note this is a *local* fallback only —
+it cannot run on static hosts like GitHub Pages:
 
 ```
 cd <app folder>
@@ -29,16 +32,25 @@ python proxy.py        # then open http://localhost:8020
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos.
 - **Full-text search** across brand, model, trim, equipment line and engine (`/` to focus).
+- **Favorites** — heart any car (persisted locally), one-click favorites-only view,
+  shareable via URL, exported in CSV.
+- **Light & dark theme** — follows the OS preference on first load, toggle in the header
+  (or press `t`).
 - **Business ↔ Private pricing toggle** (uses the API's `is_for_business` pricing).
-- **Sorting**: recommended, price ↑/↓, power, EV range, soonest availability, brand A–Z.
+- **Sorting**: recommended, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
 - **Detail view**: photo gallery, spec grid, price-per-term table, extra-km price, MSRP,
   equipment (comfort / exterior / interior / multimedia / safety), color variants,
-  direct link to the finn.com product page.
+  direct link to the finn.com product page — plus **←/→ prev-next navigation** through
+  the current result list without leaving the dialog.
 - **Compare tray** — pick up to 3 cars, side-by-side spec table.
+- **Keyboard-first** — `/` search, `← →` navigate details, `f` favorite, `t` theme,
+  `?` shows the shortcut overlay; full focus-visible states and screen-reader labels
+  (crisp SVG icons instead of emoji glyphs).
 - **Live stats** — cheapest, median price, EV share, brand count for the current result set.
 - **CSV export** of the filtered result list (semicolon-separated, Excel-DE friendly).
 - **Resilient API layer** — endpoint auto-probing, adaptive page size on errors,
-  configurable base URL / actor / view / page size, connection status pill.
+  configurable base URL / actor / view / page size, connection status pill, and a
+  load-generation guard so switching Business/Private mid-load can't interleave catalogs.
 
 ---
 
