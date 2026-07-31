@@ -993,12 +993,8 @@
   }
   .resetbtn:hover { border-color: var(--cp-danger); color: var(--cp-danger); }
 
-  .workspace-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; margin-block: .15rem 1.25rem; }
-  .workspace-intro .eyebrow { margin: 0 0 .25rem; color: var(--cp-accent); font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .workspace-intro { margin-block: .15rem 1rem; }
   .workspace-intro h1 { margin: 0; max-inline-size: 720px; font-size: clamp(1.65rem, 3vw, 2.5rem); font-weight: 760; letter-spacing: -.045em; line-height: 1.08; }
-  .workspace-intro p:last-child { max-inline-size: 620px; margin: .55rem 0 0; color: var(--cp-text-muted); font-size: .88rem; }
-  .workspace-note { display: inline-flex; align-items: center; gap: .45rem; flex: none; border-block-start: 2px solid var(--cp-accent); padding-block-start: .5rem; color: var(--cp-text-muted); font-size: .72rem; }
-  .workspace-note .ic { color: var(--cp-accent); }
   .filter-rail {
     display: flex; align-items: center; gap: .55rem; min-inline-size: 0; overflow-x: auto;
     margin-block-end: .7rem; padding-block: .1rem .3rem; overscroll-behavior-inline: contain; scrollbar-width: none;
@@ -1080,6 +1076,13 @@
   .ctitle .bm { overflow: hidden; color: var(--cp-text); font-size: 1rem; font-weight: 760; letter-spacing: -.025em; text-overflow: ellipsis; white-space: nowrap; }
   .ctitle .yr { flex: none; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: .62rem; }
   .ctrim { overflow: hidden; margin-block-start: .1rem; color: var(--cp-text-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+  .card-stock {
+    display: flex; flex: none; flex-direction: column; align-items: flex-end; justify-content: center;
+    min-inline-size: 58px; min-block-size: 34px; padding-inline-start: .65rem;
+    border-inline-start: 1px solid var(--cp-border); line-height: 1;
+  }
+  .card-stock strong { color: var(--cp-accent-secondary); font-size: .95rem; font-weight: 820; letter-spacing: -.03em; }
+  .card-stock span { margin-block-start: .2rem; color: var(--cp-text-soft); font-size: .52rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
   .specrow { display: grid; grid-template-columns: 1fr 1fr; gap: .15rem .65rem; padding-block: .55rem; border-block: 1px solid var(--cp-border); }
   .specrow .spec { display: inline-flex; align-items: center; gap: .35rem; min-inline-size: 0; color: var(--cp-text-muted); font-size: .69rem; }
   .specrow .spec span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1206,6 +1209,7 @@
   .version-card .vmeta { overflow: hidden; color: var(--cp-text-muted); font-size: .67rem; text-overflow: ellipsis; white-space: nowrap; }
   .version-card .vchips { display: flex; flex-wrap: wrap; gap: .3rem; }
   .version-card .vchips span { border: 1px solid var(--cp-border); border-radius: .4rem; background: var(--cp-surface-soft); color: var(--cp-text-muted); padding: .16rem .36rem; font-size: .6rem; }
+  .version-card .vchips .stock-chip { border-color: var(--cp-accent-secondary); background: var(--cp-surface); color: var(--cp-accent-secondary); font-weight: 750; }
   .version-card .vfoot { display: flex; align-items: flex-end; justify-content: space-between; gap: .5rem; margin-block-start: auto; padding-block-start: .3rem; }
   .version-card .vprice { font-size: 1.05rem; font-weight: 800; letter-spacing: -.03em; }
   .version-card .vprice small { color: var(--cp-text-muted); font-size: .6rem; font-weight: 500; }
@@ -1369,8 +1373,6 @@
     .fab { position: fixed; inset-inline-end: max(1rem, env(safe-area-inset-right)); inset-block-end: max(1rem, env(safe-area-inset-bottom)); z-index: 125; display: inline-flex; align-items: center; gap: .42rem; min-block-size: 48px; border: 0; border-radius: .75rem; background: var(--cp-accent-gradient); color: var(--cp-accent-fg); box-shadow: var(--cp-shadow); padding: .7rem 1rem; font-size: .78rem; font-weight: 750; }
     .fab .n { display: grid; place-items: center; min-inline-size: 22px; block-size: 22px; border-radius: 999px; background: var(--cp-surface); color: var(--cp-accent); padding-inline: .25rem; font-size: .62rem; }
     body.cmp-open .fab { inset-block-end: max(5.5rem, calc(env(safe-area-inset-bottom) + 5rem)); }
-    .workspace-intro { align-items: flex-start; }
-    .workspace-note { display: none; }
     .detail-hero, .detail-content-grid { grid-template-columns: minmax(0, 1fr); }
     .detail-kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .detail-equipment { grid-template-columns: 180px minmax(0, 1fr); }
@@ -1385,7 +1387,6 @@
     .header-actions::-webkit-scrollbar { display: none; }
     .layout { padding-block-start: 1.1rem; }
     .workspace-intro h1 { font-size: clamp(1.5rem, 7vw, 2rem); }
-    .workspace-intro p:last-child { font-size: .8rem; }
     .grid.list .card { grid-template-columns: 180px minmax(0, 1fr); }
     .dgrid { grid-template-columns: 1fr; }
     .detail-equipment { grid-template-columns: 1fr; }
@@ -1404,8 +1405,6 @@
     #status { justify-self: start; }
     .layout { padding-inline: .75rem; }
     .workspace-intro { margin-block-end: 1rem; }
-    .workspace-intro .eyebrow { font-size: .62rem; }
-    .workspace-intro p:last-child { display: none; }
     .count { inline-size: 100%; }
     .sortwrap label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .grid { grid-template-columns: minmax(0, 1fr); }
@@ -1590,12 +1589,7 @@
 
   <main>
     <section class="workspace-intro" aria-labelledby="workspaceTitle">
-      <div>
-        <p class="eyebrow">Live subscription fleet</p>
-        <h1 id="workspaceTitle">Find the right car, faster.</h1>
-        <p>Search every configuration, compare real monthly pricing, and narrow the fleet without waiting for another request.</p>
-      </div>
-      <div class="workspace-note"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Live data · instant local filtering</div>
+      <h1 id="workspaceTitle">Every car. One clear view.</h1>
     </section>
     <div class="filter-rail" aria-label="Filter shortcuts and applied filters">
       <div class="quickbar" id="quickBar" role="group" aria-label="Quick filters"></div>
@@ -1880,6 +1874,26 @@ function pictureUrl(c){
   if (Array.isArray(c.pictures) && c.pictures[0] && c.pictures[0].url) return c.pictures[0].url;
   return null;
 }
+/* Customer-visible unit stock. product_stock_webflow is what FINN exposes on
+   the storefront; product_stock_total is a compatible fallback. */
+function stockCount(c){
+  const visibleRaw = c && c.product_stock_webflow;
+  const visible = Number(visibleRaw);
+  if (visibleRaw != null && visibleRaw !== "" && Number.isFinite(visible) && visible >= 0) return visible;
+  const totalRaw = c && c.product_stock_total;
+  const total = Number(totalRaw);
+  return totalRaw != null && totalRaw !== "" && Number.isFinite(total) && total >= 0 ? total : null;
+}
+function aggregateStock(cars){
+  let known = false, total = 0;
+  for (const c of cars || []){
+    const count = stockCount(c);
+    if (count == null) continue;
+    known = true; total += count;
+  }
+  return known ? total : null;
+}
+function stockText(count){ return count == null ? null : `${fmtNum(count)} ${count===1?"car":"cars"}`; }
 /* Real /cars price schema (verified against a live response, 2026-07-25):
    price: { msrp, b2b_12: 407, b2c_12: 484, extra_500: 0, extra_1000: 29, ... }
    -> monthly prices are per-term keys b2b_<term> / b2c_<term>;
@@ -2225,7 +2239,8 @@ async function loadCatalog(){
     }
     syncChipStates();
     restoreControls();
-    setStatus("ok", `${state.cars.length} vehicles · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
+    const catalogStock = aggregateStock(state.cars);
+    setStatus("ok", `${fmtNum(state.cars.length)} configurations${catalogStock==null?"":` · ${stockText(catalogStock)}`} · ${state.cfg.biz?"business":"private"} prices${state.cfg.proxy?" · via anycors":""}`);
     apply();
   }catch(err){
     if (gen !== state.loadGen) return;
@@ -2406,6 +2421,7 @@ function buildModelGroups(cars){
     g.representative = g.versions.find(c=>pictureUrl(c)) || g.versions[0];
     g.priceMin = prices.length ? Math.min(...prices) : null;
     g.priceMax = prices.length ? Math.max(...prices) : null;
+    g.stockCount = aggregateStock(g.versions);
     g.earliest = dated[0] || g.representative;
     g.trims = new Set(g.versions.map(c=>c.trim_name||c.equipment_line||c.engine).filter(Boolean));
     g.colors = new Set(g.versions.map(c=>c.color&&c.color.specific).filter(Boolean));
@@ -2483,10 +2499,11 @@ function cardCarouselMarkup(pics,label){
 function modelCardEl(group){
   const c = group.representative;
   const versionLabel = group.versions.length===1 ? "version" : "versions";
+  const inventoryLabel = stockText(group.stockCount);
   const el = document.createElement("article");
   el.className = "card model-card"; el.dataset.group = group.key;
   el.tabIndex = 0; el.setAttribute("role","button");
-  el.setAttribute("aria-label", `${group.brand} ${group.model}, ${group.versions.length} ${versionLabel}`);
+  el.setAttribute("aria-label", `${group.brand} ${group.model}, ${inventoryLabel?inventoryLabel+", ":""}${group.versions.length} ${versionLabel}`);
   const logo = brandLogo(c), pics = galleryPics(c), av = availLabel(group.earliest);
   const powers = group.versions.map(x=>Number(x.power)).filter(x=>x>0).map(x=>Math.round(x*1.35962));
   const ranges = group.versions.map(evRange).filter(x=>x>0);
@@ -2499,7 +2516,7 @@ function modelCardEl(group){
     powers.length ? {ic:"i-gauge",txt:`${range(powers)} PS`} : null,
     bodies.length ? {ic:"i-car",txt:bodies.join(" / ")} : null
   ].filter(x=>x&&x.txt);
-  const meta = [`${group.versions.length} ${versionLabel}`,group.trims.size?`${group.trims.size} ${group.trims.size===1?"trim":"trims"}`:null,group.colors.size?`${group.colors.size} ${group.colors.size===1?"color":"colors"}`:null].filter(Boolean).join(" · ");
+  const meta = [group.trims.size?`${group.trims.size} ${group.trims.size===1?"trim":"trims"}`:null,group.colors.size?`${group.colors.size} ${group.colors.size===1?"color":"colors"}`:null].filter(Boolean).join(" · ");
   el.innerHTML = `
     <div class="imgwrap">
       <div class="badges"><span class="badge group-count">${fmtNum(group.versions.length)} ${versionLabel}</span></div>
@@ -2510,6 +2527,7 @@ function modelCardEl(group){
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
+        ${group.stockCount==null?"":`<div class="card-stock" title="Customer-visible stock across matching configurations; availability dates still apply"><strong>${fmtNum(group.stockCount)}</strong><span>${group.stockCount===1?"car":"cars"}</span></div>`}
       </div>
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
       <div class="cfoot">
@@ -2525,13 +2543,13 @@ function modelCardEl(group){
   return el;
 }
 function versionCardEl(c){
-  const key = carKey(c), price = minPrice(c), av = availLabel(c);
+  const key = carKey(c), price = minPrice(c), av = availLabel(c), inventory = stockCount(c);
   const pics = galleryPics(c);
   const el = document.createElement("article");
   el.className = "version-card"; el.dataset.version = key;
   el.tabIndex = 0; el.setAttribute("role","button");
   const title = c.trim_name || c.equipment_line || (c.config&&c.config.name) || c.engine || "Standard";
-  el.setAttribute("aria-label", `${carName(c)} ${title}, ${fmtEur(price)} per month`);
+  el.setAttribute("aria-label", `${carName(c)} ${title}, ${stockText(inventory)?stockText(inventory)+", ":""}${fmtEur(price)} per month`);
   const meta = [c.engine,c.config_drive,c.color&&c.color.specific].filter(Boolean).join(" · ");
   const chips = [
     c.model_year,
@@ -2549,7 +2567,7 @@ function versionCardEl(c){
     <div class="vbody">
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${esc(meta||[c.fuel,c.cartype].filter(Boolean).join(" · "))}</div>
-      <div class="vchips">${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="vchips">${inventory==null?"":`<span class="stock-chip" title="Customer-visible stock; availability date still applies">${esc(stockText(inventory))}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
   const img = el.querySelector(".vimg>img");
@@ -2572,7 +2590,7 @@ function openVersions(group){
       <button class="iconbtn x" data-close="versionsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="dbody">
-      <div class="versions-summary"><span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span><span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
+      <div class="versions-summary">${group.stockCount==null?"":`<span class="pilllet stock-summary" title="Customer-visible stock across matching configurations; availability dates still apply"><b>${fmtNum(group.stockCount)}</b> ${group.stockCount===1?"car":"cars"}</span>`}<span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span><span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
       <div class="version-grid"></div>
     </div>`;
   const grid = dlg.querySelector(".version-grid"), frag = document.createDocumentFragment();
@@ -2593,11 +2611,13 @@ function cardEl(c){
   const key = carKey(c);
   const terms = state.f.terms.map(Number);
   const price = minPrice(c, terms.length?terms:null);
+  const inventory = stockCount(c);
   const av = availLabel(c);
   const label = c.product_label && c.product_label.label;
   const el = document.createElement("article");
   el.className = "card"; el.dataset.key = key;
-  el.tabIndex = 0; el.setAttribute("role","button"); el.setAttribute("aria-label", carName(c));
+  el.tabIndex = 0; el.setAttribute("role","button");
+  el.setAttribute("aria-label", `${carName(c)}${stockText(inventory)?`, ${stockText(inventory)}`:""}`);
   const specs = [
     isEV(c) ? {ic:"i-bolt", txt:evRange(c)?`${fmtNum(evRange(c))} km`:"Electric", cls:"ev"} : {ic:"i-fuel", txt:c.fuel},
     c.gearshift ? {ic:"i-gear", txt:c.gearshift} : null,
@@ -2631,6 +2651,7 @@ function cardEl(c){
           <div class="ctitle"><span class="bm">${esc(carName(c))}</span>${c.model_year?`<span class="yr">${esc(c.model_year)}</span>`:""}</div>
           <div class="ctrim">${esc(subtitle)}</div>
         </div>
+        ${inventory==null?"":`<div class="card-stock" title="Customer-visible stock for this configuration; availability date still applies"><strong>${fmtNum(inventory)}</strong><span>${inventory===1?"car":"cars"}</span></div>`}
       </div>
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
       <div class="cfoot">
@@ -2716,15 +2737,17 @@ function renderStats(){
   cnt.classList.remove("pulse"); void cnt.offsetWidth; cnt.classList.add("pulse");
   $("#cntSub").textContent = modelMode
     ? `${state.modelGroups.length===1?"model":"models"} · ${fmtNum(n)} matching versions`
-    : (n===1 ? "vehicle" : `vehicles of ${fmtNum(state.cars.length)}`);
+    : (n===1 ? "configuration" : `configurations of ${fmtNum(state.cars.length)}`);
   if(!n){ $("#stats").innerHTML=""; return; }
   const prices = state.filtered.map(c=>minPrice(c)).filter(p=>p!=null);
   const evs = state.filtered.filter(isEV).length;
   const brands = new Set(state.filtered.map(brandName)).size;
+  const stock = aggregateStock(state.filtered);
   const cheapest = prices.length?Math.min(...prices):null;
   const median = prices.length ? prices.slice().sort((a,b)=>a-b)[Math.floor(prices.length/2)] : null;
   const drops = state.filtered.filter(c=>c._drop>0).length;
   $("#stats").innerHTML = [
+    stock!=null?`<span class="statchip" title="Customer-visible stock across matching configurations; availability dates still apply">cars <b>${fmtNum(stock)}</b></span>`:"",
     cheapest!=null?`<span class="statchip">cheapest <b>${fmtEur(cheapest)}</b></span>`:"",
     median!=null?`<span class="statchip">median <b>${fmtEur(median)}</b></span>`:"",
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,

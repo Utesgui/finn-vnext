@@ -38,7 +38,8 @@ python proxy.py        # then open http://localhost:8020
 - **Model explorer** — the visible **All cars / By model** switch groups only the currently
   matching configurations. Both model cards and individual version cards retain their own
   photo carousel; the version grid also exposes prices, specs, availability, favorites and
-  compare actions before entering full details.
+  compare actions before entering full details. Model cards aggregate the API's real
+  customer-visible stock across matching configurations; version cards show their own units.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are
@@ -122,6 +123,8 @@ GET https://product-api.finn.com/cars        # Authorization: `actor` query para
   `price.extra_km_price`, `price.msrp`, `downpayment_prices { downpayment_discount_percentage, … }`
 - Availability: `availability`, `available_from`, `available_to`, `available_terms[]`,
   `availability_by_term`
+- Stock: `product_stock_webflow` (customer-visible units), `product_stock_total`
+  (fallback/total units), `product_stock_preorder`, `states_stock`
 - Specs: `fuel`, `cartype`, `gearshift`, `power` (kW), `ev_range`, `consumption`,
   `co2emission`, `co2_class`, `efficiency_class`, `seats`, `doors`, `engine`,
   `config_drive`, `vehicle_size { width_mm, height_mm, length_mm }`
