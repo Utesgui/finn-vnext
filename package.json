@@ -1,0 +1,10 @@
+{
+  "name": "finn-vnext",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Internal FINN fleet explorer",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check js/domain.js && node --check js/core.js && node --check js/api.js && node --check js/ui.js && node --check js/events.js && node --test tests/*.test.js"
+  }
+}

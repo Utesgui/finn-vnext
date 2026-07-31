@@ -25,6 +25,20 @@ HOP_BY_HOP = {
 class Handler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
+            "connect-src 'self' https:; object-src 'none'; base-uri 'none'; "
+            "frame-ancestors 'none'; form-action 'self'",
+        )
+        super().end_headers()
+
     def do_GET(self):
         if self.path == "/api" or self.path.startswith("/api/"):
             self.forward()
