@@ -1234,7 +1234,15 @@
   .detail-gallery .thumbs { display: grid; grid-auto-flow: column; grid-auto-columns: 76px; }
   .detail-gallery .thumbs img { inline-size: 76px; block-size: 52px; }
   .detail-summary { display: flex; flex-direction: column; gap: .75rem; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface); padding: 1rem; }
-  .detail-availability { display: flex; align-items: center; justify-content: space-between; gap: .6rem; color: var(--cp-text-muted); font-size: .68rem; }
+  .detail-availability { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem .6rem; color: var(--cp-text-muted); font-size: .68rem; }
+  .detail-stock {
+    display: inline-flex; align-items: center; gap: .35rem; flex: none;
+    min-block-size: 28px; padding: .25rem .5rem; border: 1px solid var(--cp-accent-secondary);
+    border-radius: .5rem; background: var(--cp-surface-soft); color: var(--cp-accent-secondary);
+    font-size: .64rem; font-weight: 750; white-space: nowrap;
+  }
+  .detail-stock .ic { font-size: .8rem; }
+  .detail-stock strong { color: currentColor; font-size: .76rem; font-weight: 850; }
   .detail-configurator { display: flex; flex-direction: column; gap: .6rem; }
   .quote-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-block-end: .3rem; color: var(--cp-text-soft); font-size: .58rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
   .quote-head b { color: var(--cp-accent); font-family: Consolas, "Courier New", Courier, monospace; font-size: .58rem; letter-spacing: 0; }
@@ -2870,6 +2878,7 @@ function openDetail(c, options={}){
     ["Color", c.color&&c.color.specific],
     ["MSRP", c.price&&c.price.msrp?fmtEur(c.price.msrp):null]
   ].filter(([,v])=>v!=null&&v!=="");
+  const inventory = stockCount(c);
   const av = availLabel(c);
   const inList = state.detailIdx >= 0;
   const favOn = state.favs.has(carKey(c));
@@ -2926,7 +2935,7 @@ function openDetail(c, options={}){
           ${pics.length>1?`<div class="thumbs">${pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="${esc(carName(c))} view ${i+1}">`).join("")}</div>`:""}
         </div>
         <div class="detail-summary">
-          <div class="detail-availability"><span>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</span><span>Configure your subscription</span></div>
+          <div class="detail-availability"><span>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</span>${inventory==null?'<span>Configure your subscription</span>':`<span class="detail-stock" title="Customer-visible stock for this configuration; availability date still applies"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg><strong>${fmtNum(inventory)}</strong> ${inventory===1?"car":"cars"}</span>`}</div>
           <div class="detail-configurator">
             <div class="quote-group"><div class="quote-head"><span>Monthly mileage</span><b data-quote-km-label>${fmtNum(quoteKm)} km/month</b></div><div class="quote-options" data-quote-kms role="group" aria-label="Monthly mileage">${kmChoices.map(x=>`<button class="quote-option ${x.km===quoteKm?"on":""}" data-quote-km="${x.km}" aria-pressed="${x.km===quoteKm}"><b>${fmtNum(x.km)} km</b><small>${x.fee?"+"+fmtEur(x.fee)+" / mo":"included"}</small></button>`).join("")}</div></div>
             <div class="quote-group"><div class="quote-head"><span>Contract length</span><b data-quote-term-label>${quoteTerm?quoteTerm+" months":"on request"}</b></div><div class="quote-options" data-quote-terms role="group" aria-label="Contract length">${quotePrices.map(x=>`<button class="quote-option ${x.term===quoteTerm?"on":""}" data-quote-term="${x.term}" aria-pressed="${x.term===quoteTerm}"><b>${x.term} months</b><small>${fmtEur(x.price)} / mo</small></button>`).join("") || '<span class="detail-price-note">No selectable terms available.</span>'}</div></div>
