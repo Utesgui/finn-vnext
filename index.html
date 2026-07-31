@@ -836,7 +836,7 @@
 
   header {
     position: sticky; inset-block-start: 0; z-index: 100;
-    display: grid; grid-template-columns: auto minmax(220px, 560px) minmax(12px, 1fr) auto minmax(0, max-content) auto auto;
+    display: grid; grid-template-columns: auto minmax(220px, 560px) minmax(12px, 1fr) auto auto auto;
     align-items: center; gap: .75rem; min-block-size: 72px; padding: .75rem clamp(1rem, 2vw, 2rem);
     border-block-end: 1px solid var(--cp-border); background: var(--cp-overlay);
     backdrop-filter: blur(18px) saturate(1.1);
@@ -867,12 +867,12 @@
   .sclear { position: absolute; inset-inline-end: 2.55rem; inset-block-start: 50%; z-index: 2; transform: translateY(-50%); border: 0; background: none; color: var(--cp-text-muted); padding: .35rem; }
   .sclear:hover { color: var(--cp-danger); }
   .hspacer { min-inline-size: 0; }
-  .header-controls {
+  .result-controls {
     display: flex; align-items: center; justify-content: flex-start; gap: .4rem; min-inline-size: 0;
     overflow-x: auto; overscroll-behavior-inline: contain; padding-block: .1rem; scrollbar-width: none;
   }
-  .header-controls::-webkit-scrollbar { display: none; }
-  .header-controls > * { flex: none; }
+  .result-controls::-webkit-scrollbar { display: none; }
+  .result-controls > * { flex: none; }
   .header-actions { display: flex; align-items: center; gap: .4rem; }
   .iconbtn {
     display: inline-grid; place-items: center; inline-size: 40px; block-size: 40px; padding: 0;
@@ -929,8 +929,13 @@
     letter-spacing: .04em; text-transform: uppercase;
   }
   aside summary::-webkit-details-marker { display: none; }
-  aside summary::after { content: "+"; display: grid; place-items: center; inline-size: 22px; block-size: 22px; border-radius: 50%; background: var(--cp-surface-soft); color: var(--cp-text-muted); font-size: .9rem; font-weight: 400; }
-  aside details[open] summary::after { content: "−"; background: var(--cp-accent-soft); color: var(--cp-accent); }
+  aside summary::after {
+    content: "›"; display: grid; place-items: center; inline-size: 20px; block-size: 20px;
+    background: transparent; color: var(--cp-text-soft); font-size: 1.05rem; font-weight: 500;
+    transform: rotate(0); transition: color .15s ease, transform .15s ease;
+  }
+  aside details[open] summary::after { color: var(--cp-text-muted); transform: rotate(90deg); }
+  aside summary:hover::after { color: var(--cp-accent); }
   .fbody { padding: .1rem .1rem .9rem; }
   .chips, .swatches { display: flex; flex-wrap: wrap; gap: .4rem; }
   .chip, .qf, .statchip, .af, .favtoggle {
@@ -949,7 +954,28 @@
   .checkrow { display: flex; align-items: center; gap: .55rem; min-block-size: 36px; padding: .35rem .4rem; border-radius: .5rem; color: var(--cp-text-muted); font-size: .78rem; cursor: pointer; }
   .checkrow:hover { background: var(--cp-surface-soft); color: var(--cp-text); }
   .checkrow.ex { color: var(--cp-danger); text-decoration: line-through; }
-  .checkrow input { inline-size: 16px; block-size: 16px; margin: 0; padding: 0; }
+  .checkrow input[type="checkbox"] {
+    appearance: none; display: grid; place-content: center; flex: none;
+    inline-size: 16px; block-size: 16px; min-inline-size: 16px; min-block-size: 16px;
+    margin: 0; padding: 0; border: 1px solid var(--cp-border-strong); border-radius: .25rem;
+    background: var(--cp-surface-soft); box-shadow: none; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, transform .12s ease;
+  }
+  .checkrow input[type="checkbox"]::before {
+    content: ""; inline-size: 4px; block-size: 8px;
+    border: solid var(--cp-accent-fg); border-width: 0 2px 2px 0;
+    transform: rotate(45deg) scale(0); transform-origin: center;
+    transition: transform .12s ease;
+  }
+  .checkrow input[type="checkbox"]:hover { border-color: var(--cp-accent); }
+  .checkrow input[type="checkbox"]:checked { border-color: transparent; background: var(--cp-accent-gradient); }
+  .checkrow input[type="checkbox"]:checked::before { transform: rotate(45deg) scale(1); }
+  .checkrow input[type="checkbox"]:indeterminate { border-color: var(--cp-danger); background: var(--cp-danger); }
+  .checkrow input[type="checkbox"]:indeterminate::before {
+    inline-size: 8px; block-size: 2px; border: 0; border-radius: 999px;
+    background: var(--cp-surface); transform: scale(1);
+  }
+  .checkrow input[type="checkbox"]:indeterminate:focus-visible { outline-color: var(--cp-danger); }
   .checkrow .cnt { margin-inline-start: auto; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: .65rem; text-decoration: none; }
   .filter-empty { padding: .35rem; color: var(--cp-text-soft); font-size: .72rem; }
   .rangerow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: .35rem; margin-block-end: .45rem; }
@@ -973,12 +999,17 @@
   .workspace-intro p:last-child { max-inline-size: 620px; margin: .55rem 0 0; color: var(--cp-text-muted); font-size: .88rem; }
   .workspace-note { display: inline-flex; align-items: center; gap: .45rem; flex: none; border-block-start: 2px solid var(--cp-accent); padding-block-start: .5rem; color: var(--cp-text-muted); font-size: .72rem; }
   .workspace-note .ic { color: var(--cp-accent); }
-  .quickbar { display: flex; gap: .45rem; min-inline-size: 0; overflow-x: auto; margin-block-end: .75rem; padding-block: .1rem .3rem; scrollbar-width: none; }
+  .filter-rail {
+    display: flex; align-items: center; gap: .55rem; min-inline-size: 0; overflow-x: auto;
+    margin-block-end: .7rem; padding-block: .1rem .3rem; overscroll-behavior-inline: contain; scrollbar-width: none;
+  }
+  .filter-rail::-webkit-scrollbar { display: none; }
+  .quickbar { display: flex; flex: none; gap: .45rem; min-inline-size: max-content; overflow: visible; margin: 0; padding: 0; }
   .quickbar::-webkit-scrollbar { display: none; }
   .qf { display: inline-flex; align-items: center; gap: .42rem; flex: none; min-block-size: 36px; border-radius: .625rem; padding: .42rem .72rem; font-size: .74rem; font-weight: 650; white-space: nowrap; }
   .qf:hover { border-color: var(--cp-border-strong); color: var(--cp-text); }
   .qf .ic { color: var(--cp-text-soft); }
-  .qf.on { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
+  .qf.on { border-color: transparent; background: var(--cp-accent-gradient); color: var(--cp-accent-fg); }
   .qf.on .ic { color: currentColor; }
   .results-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem .8rem; min-inline-size: 0; margin-block-end: .65rem; }
   .count { display: flex; align-items: baseline; gap: .4rem; min-inline-size: max-content; font-size: 1.25rem; font-weight: 780; letter-spacing: -.035em; }
@@ -992,11 +1023,14 @@
   .favtoggle:hover { border-color: var(--cp-border-strong); color: var(--cp-text); }
   .favtoggle.on { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
   .statchips, .activef { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .75rem; }
-  .results-meta .statchips { flex: 1; margin-block-end: 0; }
+  .results-meta .statchips { flex: 1 1 260px; margin-block-end: 0; }
+  .results-meta .result-controls { flex: 0 1 auto; max-inline-size: 100%; margin-inline-start: auto; }
   .statchip { border-radius: .5rem; padding: .28rem .52rem; font-size: .66rem; }
   .statchip b { color: var(--cp-accent); font-family: Consolas, "Courier New", Courier, monospace; font-weight: 700; }
   .activef:empty, .statchips:empty { display: none; }
-  .activef .af { display: inline-flex; align-items: center; gap: .35rem; border-color: var(--cp-accent); border-radius: .5rem; background: var(--cp-accent-soft); color: var(--cp-accent); padding: .26rem .52rem; font-size: .68rem; font-weight: 650; }
+  .filter-rail .activef { align-items: center; flex: none; flex-wrap: nowrap; margin: 0; padding-inline-start: .65rem; border-inline-start: 1px solid var(--cp-border); }
+  .filter-rail .activef::before { content: "Applied"; color: var(--cp-text-soft); font-size: .58rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+  .activef .af { display: inline-flex; align-items: center; gap: .35rem; border-color: var(--cp-accent); border-radius: .5rem; background: var(--cp-surface); color: var(--cp-accent); padding: .26rem .52rem; font-size: .68rem; font-weight: 650; }
   .activef .af button { border: 0; background: none; color: inherit; padding: 0 .05rem; line-height: 1; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 1rem; }
@@ -1297,7 +1331,7 @@
   }
   @media (max-width: 1800px) {
     header {
-      grid-template-columns: auto minmax(180px, 1fr) minmax(8px, .6fr) auto minmax(360px, max-content) auto auto;
+      grid-template-columns: auto minmax(180px, 560px) minmax(8px, 1fr) auto auto auto;
       gap: .5rem; padding-inline: 1rem;
     }
     .logo .sub { display: none; }
@@ -1307,7 +1341,7 @@
     .header-actions .iconbtn { inline-size: 36px; block-size: 36px; }
   }
   @media (max-width: 1220px) {
-    header { grid-template-columns: auto minmax(160px, 1fr) auto minmax(180px, auto) auto auto; gap: .5rem; }
+    header { grid-template-columns: auto minmax(160px, 1fr) auto auto auto; gap: .5rem; }
     .hspacer { display: none; }
     .logo .sub { display: none; }
     #statusTxt { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -1318,14 +1352,13 @@
   @media (max-width: 960px) {
     header {
       grid-template-columns: auto auto auto 1fr;
-      grid-template-areas: "logo biz status actions" "search search search search" "controls controls controls controls";
+      grid-template-areas: "logo biz status actions" "search search search search";
       gap: .5rem; padding: .65rem 1rem;
     }
     .logo { grid-area: logo; }
     .searchwrap { grid-area: search; }
     #bizSeg { grid-area: biz; justify-self: end; }
     #status { grid-area: status; justify-self: start; }
-    .header-controls { grid-area: controls; justify-content: flex-start; inline-size: 100%; }
     .header-actions { grid-area: actions; justify-self: end; }
     .layout { grid-template-columns: minmax(0, 1fr); }
     aside { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 145; inline-size: min(340px, 90vw); max-block-size: 100vh; padding-block-start: env(safe-area-inset-top); border-block: 0; border-inline-start: 0; border-radius: 0 16px 16px 0; transform: translateX(-105%); transition: transform .24s ease; }
@@ -1343,7 +1376,7 @@
     .detail-equipment { grid-template-columns: 180px minmax(0, 1fr); }
   }
   @media (max-width: 760px) {
-    header { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo biz status" "search search actions" "controls controls controls"; min-block-size: 0; padding: .65rem 1rem; }
+    header { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo biz status" "search search actions"; min-block-size: 0; padding: .65rem 1rem; }
     .logo { grid-area: logo; }
     .searchwrap { grid-area: search; }
     #bizSeg { grid-area: biz; justify-self: end; }
@@ -1365,7 +1398,7 @@
     .equipment-list li:last-child { border-block-end-color: transparent; }
   }
   @media (max-width: 600px) {
-    header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "logo biz" "search search" "status actions" "controls controls"; }
+    header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "logo biz" "search search" "status actions"; }
     .logo .name { font-size: .92rem; }
     .logo .mark { inline-size: 34px; block-size: 34px; }
     #status { justify-self: start; }
@@ -1476,44 +1509,6 @@
     <button data-biz="true" class="on" aria-pressed="true">Business</button>
     <button data-biz="false" aria-pressed="false">Private</button>
   </div>
-  <div class="header-controls" aria-label="Result controls">
-    <div class="seg browse-seg" id="browseSeg" title="Result grouping" role="group" aria-label="Result grouping">
-      <button data-browse="cars" class="on" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> All cars</button>
-      <button data-browse="models" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg> By model</button>
-    </div>
-    <button class="favtoggle" id="favToggle" aria-pressed="false" title="Show favorites only">
-      <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg> <span id="favCount">0</span>
-    </button>
-    <div class="sortwrap" title="Monthly mileage package — surcharge is included in all displayed prices">
-      <label for="kmSel">Km/mo</label>
-      <select id="kmSel">
-        <option value="500">500</option>
-        <option value="1000">1.000</option>
-        <option value="1500">1.500</option>
-        <option value="2000">2.000</option>
-        <option value="2500">2.500</option>
-        <option value="3000">3.000</option>
-        <option value="3500">3.500</option>
-      </select>
-    </div>
-    <div class="seg" id="densitySeg" title="Layout" role="group" aria-label="Layout">
-      <button data-den="grid" class="on" title="Grid view" aria-pressed="true" aria-label="Grid view"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg></button>
-      <button data-den="list" title="List view" aria-pressed="false" aria-label="List view"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
-    </div>
-    <div class="sortwrap">
-      <label for="sort">Sort</label>
-      <select id="sort">
-        <option value="reco">Recommended</option>
-        <option value="price-asc">Price ↑</option>
-        <option value="price-desc">Price ↓</option>
-        <option value="drop-desc">Price drop ↓</option>
-        <option value="power-desc">Power ↓</option>
-        <option value="range-desc">EV range ↓</option>
-        <option value="avail-asc">Available soonest</option>
-        <option value="name-asc">Brand A–Z</option>
-      </select>
-    </div>
-  </div>
   <div class="pill busy" id="status" role="status" aria-live="polite" title="Connecting…"><span class="dot" aria-hidden="true"></span><span id="statusTxt">Connecting…</span></div>
   <div class="header-actions">
     <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
@@ -1602,12 +1597,52 @@
       </div>
       <div class="workspace-note"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Live data · instant local filtering</div>
     </section>
-    <div class="quickbar" id="quickBar" role="group" aria-label="Quick filters"></div>
+    <div class="filter-rail" aria-label="Filter shortcuts and applied filters">
+      <div class="quickbar" id="quickBar" role="group" aria-label="Quick filters"></div>
+      <div class="activef" id="activeFilters" aria-label="Additional applied filters"></div>
+    </div>
     <div class="results-meta">
       <div class="count" aria-live="polite"><span id="cnt">–</span><small id="cntSub"></small></div>
       <div class="statchips" id="stats"></div>
+      <div class="result-controls" aria-label="Result controls">
+        <div class="seg browse-seg" id="browseSeg" title="Result grouping" role="group" aria-label="Result grouping">
+          <button data-browse="cars" class="on" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg> All cars</button>
+          <button data-browse="models" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg> By model</button>
+        </div>
+        <button class="favtoggle" id="favToggle" aria-pressed="false" title="Show favorites only">
+          <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg> <span id="favCount">0</span>
+        </button>
+        <div class="sortwrap" title="Monthly mileage package — surcharge is included in all displayed prices">
+          <label for="kmSel">Km/mo</label>
+          <select id="kmSel">
+            <option value="500">500</option>
+            <option value="1000">1.000</option>
+            <option value="1500">1.500</option>
+            <option value="2000">2.000</option>
+            <option value="2500">2.500</option>
+            <option value="3000">3.000</option>
+            <option value="3500">3.500</option>
+          </select>
+        </div>
+        <div class="seg" id="densitySeg" title="Layout" role="group" aria-label="Layout">
+          <button data-den="grid" class="on" title="Grid view" aria-pressed="true" aria-label="Grid view"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg></button>
+          <button data-den="list" title="List view" aria-pressed="false" aria-label="List view"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
+        </div>
+        <div class="sortwrap">
+          <label for="sort">Sort</label>
+          <select id="sort">
+            <option value="reco">Recommended</option>
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
+            <option value="drop-desc">Price drop ↓</option>
+            <option value="power-desc">Power ↓</option>
+            <option value="range-desc">EV range ↓</option>
+            <option value="avail-asc">Available soonest</option>
+            <option value="name-asc">Brand A–Z</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="activef" id="activeFilters"></div>
     <div class="grid" id="grid" aria-busy="false"></div>
     <div id="sentinel" aria-hidden="true"></div>
     <button class="morebtn" id="moreBtn" hidden>Show more</button>
@@ -2646,7 +2681,7 @@ function stepShot(card, dir){
 /* one-tap presets for the filters people reach for first */
 function renderQuickBar(){
   const bar = $("#quickBar");
-  if (!state.facets){ bar.innerHTML = ""; return; }
+  if (!state.facets){ bar.innerHTML = ""; bar._coveredFilters = new Set(); return; }
   const f = state.f, F = state.facets;
   const val = (list, re) => (list.find(([v])=>re.test(v))||[])[0];
   const inList = (arr,v) => arr.includes(v);
@@ -2655,17 +2690,18 @@ function renderQuickBar(){
   const ev = val(F.fuels,/elek|electr/i), phev = val(F.fuels,/hybrid/i);
   const suv = val(F.types,/suv|gelände/i), kombi = val(F.types,/kombi|estate/i);
   const auto = val(F.gears,/automat/i);
-  if (ev)   items.push({ic:"i-bolt",  label:"Electric",  on:inList(f.fuels,ev),   go:()=>flip(f.fuels,ev)});
-  if (phev) items.push({ic:"i-fuel",  label:"Hybrid",    on:inList(f.fuels,phev), go:()=>flip(f.fuels,phev)});
-  if (suv)  items.push({ic:"i-car",   label:"SUV",       on:inList(f.types,suv),  go:()=>flip(f.types,suv)});
-  if (kombi)items.push({ic:"i-car",   label:"Estate",    on:inList(f.types,kombi),go:()=>flip(f.types,kombi)});
-  if (auto) items.push({ic:"i-gear",  label:"Automatic", on:inList(f.gears,auto), go:()=>flip(f.gears,auto)});
-  items.push({ic:"i-tag",      label:"under 300 €",   on:f.priceMax===300, go:()=>setPriceMax(f.priceMax===300?null:300)});
-  items.push({ic:"i-calendar", label:"Available now", on:f.soon,           go:()=>{f.soon=!f.soon;$("#fltNow").checked=f.soon;}});
-  items.push({ic:"i-shield",   label:"Deals",         on:f.deals,          go:()=>{f.deals=!f.deals;$("#fltDeals").checked=f.deals;}});
+  if (ev)   items.push({ic:"i-bolt",  label:"Electric",   on:inList(f.fuels,ev),    covers:`fuel:${ev}`, go:()=>flip(f.fuels,ev)});
+  if (phev) items.push({ic:"i-fuel",  label:"Hybrid",     on:inList(f.fuels,phev),  covers:`fuel:${phev}`, go:()=>flip(f.fuels,phev)});
+  if (suv)  items.push({ic:"i-car",   label:"SUV",        on:inList(f.types,suv),   covers:`type:${suv}`, go:()=>flip(f.types,suv)});
+  if (kombi)items.push({ic:"i-car",   label:"Estate",     on:inList(f.types,kombi), covers:`type:${kombi}`, go:()=>flip(f.types,kombi)});
+  if (auto) items.push({ic:"i-gear",  label:"Automatic",  on:inList(f.gears,auto),  covers:`gear:${auto}`, go:()=>flip(f.gears,auto)});
+  items.push({ic:"i-tag",      label:"under 300 €", on:f.priceMax===300, covers:"priceMax:300", go:()=>setPriceMax(f.priceMax===300?null:300)});
+  items.push({ic:"i-calendar", label:"≤ 4 weeks",   on:f.soon, covers:"soon", go:()=>{f.soon=!f.soon;$("#fltNow").checked=f.soon;}});
+  items.push({ic:"i-shield",   label:"Deals",       on:f.deals, covers:"deals", go:()=>{f.deals=!f.deals;$("#fltDeals").checked=f.deals;}});
   bar.innerHTML = items.map((x,i)=>
     `<button class="qf ${x.on?"on":""}" data-qf="${i}" aria-pressed="${x.on}"><svg class="ic" aria-hidden="true"><use href="#${x.ic}"/></svg>${esc(x.label)}</button>`).join("");
   bar._items = items;
+  bar._coveredFilters = new Set(items.filter(x=>x.on&&x.covers).map(x=>x.covers));
 }
 function setPriceMax(v){
   state.f.priceMax = v;
@@ -2700,32 +2736,34 @@ function renderStats(){
 }
 function renderActiveFilters(){
   const f = state.f, out = [];
-  const add = (label, undo) => out.push({label, undo});
-  const tag = v => isNeg(v) ? "not "+v.slice(1) : v;
-  if (f.q) add(`"${f.q}"`, ()=>{f.q="";$("#q").value="";});
-  f.fuels.forEach(v=>add(tag(v), ()=>f.fuels=f.fuels.filter(x=>x!==v)));
-  f.brands.forEach(v=>add(tag(v), ()=>f.brands=f.brands.filter(x=>x!==v)));
-  f.types.forEach(v=>add(tag(v), ()=>f.types=f.types.filter(x=>x!==v)));
-  f.gears.forEach(v=>add(tag(v), ()=>f.gears=f.gears.filter(x=>x!==v)));
-  f.terms.forEach(v=>add(v+" mo", ()=>f.terms=f.terms.filter(x=>x!==v)));
-  f.seats.forEach(v=>add(tag(v)+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
-  f.doors.forEach(v=>add(tag(v)+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
-  f.colors.forEach(v=>add(tag(v), ()=>f.colors=f.colors.filter(x=>x!==v)));
-  if (f.priceMin!=null) add("≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;$("#priceMin").value="";});
-  if (f.priceMax!=null) add("≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;$("#priceMax").value="";$("#priceSlider").value=$("#priceSlider").max;});
-  if (f.powerMin>0) add(`≥ ${f.powerMin} kW`, ()=>{f.powerMin=0;$("#powerSlider").value=0;});
-  if (f.rangeMin>0) add(`≥ ${f.rangeMin} km`, ()=>{f.rangeMin=0;$("#rangeSlider").value=0;});
-  if (f.deals) add("deals", ()=>{f.deals=false;$("#fltDeals").checked=false;});
-  if (f.hitch) add("towbar", ()=>{f.hitch=false;$("#fltHitch").checked=false;});
-  if (f.soon) add("≤ 4 weeks", ()=>{f.soon=false;$("#fltNow").checked=false;});
-  if (f.realPics) add("real photos", ()=>{f.realPics=false;$("#fltRealPics").checked=false;});
-  if (f.drops) add("▼ price drops", ()=>{f.drops=false;$("#fltDrops").checked=false;});
-  if (f.favOnly) add("favorites", ()=>{f.favOnly=false;renderFavCount();});
-  $("#activeFilters").innerHTML = out.map((x,i)=>`<span class="af">${esc(x.label)}<button data-af="${i}" aria-label="Remove filter">✕</button></span>`).join("");
-  $$("#activeFilters [data-af]").forEach(btn=>btn.addEventListener("click", e=>{
-    e.stopPropagation(); out[Number(btn.dataset.af)].undo(); syncChipStates(); apply();
-  }));
   renderQuickBar();
+  const add = (key, label, undo) => out.push({key, label, undo});
+  const tag = v => isNeg(v) ? "not "+v.slice(1) : v;
+  if (f.q) add("query", `"${f.q}"`, ()=>{f.q="";$("#q").value="";});
+  f.fuels.forEach(v=>add(`fuel:${v}`, tag(v), ()=>f.fuels=f.fuels.filter(x=>x!==v)));
+  f.brands.forEach(v=>add(`brand:${v}`, tag(v), ()=>f.brands=f.brands.filter(x=>x!==v)));
+  f.types.forEach(v=>add(`type:${v}`, tag(v), ()=>f.types=f.types.filter(x=>x!==v)));
+  f.gears.forEach(v=>add(`gear:${v}`, tag(v), ()=>f.gears=f.gears.filter(x=>x!==v)));
+  f.terms.forEach(v=>add(`term:${v}`, v+" mo", ()=>f.terms=f.terms.filter(x=>x!==v)));
+  f.seats.forEach(v=>add(`seat:${v}`, tag(v)+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
+  f.doors.forEach(v=>add(`door:${v}`, tag(v)+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
+  f.colors.forEach(v=>add(`color:${v}`, tag(v), ()=>f.colors=f.colors.filter(x=>x!==v)));
+  if (f.priceMin!=null) add(`priceMin:${f.priceMin}`, "≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;$("#priceMin").value="";});
+  if (f.priceMax!=null) add(`priceMax:${f.priceMax}`, "≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;$("#priceMax").value="";$("#priceSlider").value=$("#priceSlider").max;});
+  if (f.powerMin>0) add(`powerMin:${f.powerMin}`, `≥ ${f.powerMin} kW`, ()=>{f.powerMin=0;$("#powerSlider").value=0;});
+  if (f.rangeMin>0) add(`rangeMin:${f.rangeMin}`, `≥ ${f.rangeMin} km`, ()=>{f.rangeMin=0;$("#rangeSlider").value=0;});
+  if (f.deals) add("deals", "deals", ()=>{f.deals=false;$("#fltDeals").checked=false;});
+  if (f.hitch) add("hitch", "towbar", ()=>{f.hitch=false;$("#fltHitch").checked=false;});
+  if (f.soon) add("soon", "≤ 4 weeks", ()=>{f.soon=false;$("#fltNow").checked=false;});
+  if (f.realPics) add("realPics", "real photos", ()=>{f.realPics=false;$("#fltRealPics").checked=false;});
+  if (f.drops) add("drops", "▼ price drops", ()=>{f.drops=false;$("#fltDrops").checked=false;});
+  if (f.favOnly) add("favorites", "favorites", ()=>{f.favOnly=false;renderFavCount();});
+  const covered = $("#quickBar")._coveredFilters || new Set();
+  const visible = out.filter(x=>!covered.has(x.key));
+  $("#activeFilters").innerHTML = visible.map((x,i)=>`<span class="af">${esc(x.label)}<button data-af="${i}" aria-label="Remove ${esc(x.label)} filter">✕</button></span>`).join("");
+  $$("#activeFilters [data-af]").forEach(btn=>btn.addEventListener("click", e=>{
+    e.stopPropagation(); visible[Number(btn.dataset.af)].undo(); syncChipStates(); apply();
+  }));
   $("#fabCount").textContent = out.length;
   $("#filterCount").textContent = out.length;
   $("#filterCount").title = out.length ? `${out.length} active ${out.length===1?"filter":"filters"}` : "No active filters";
