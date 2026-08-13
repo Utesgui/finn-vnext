@@ -10,7 +10,7 @@
     ["fu", "fuels"], ["br", "brands"], ["ty", "types"], ["ge", "gears"],
     ["te", "terms"], ["se", "seats"], ["do", "doors"], ["co", "colors"]
   ];
-  const SORT_KEYS = new Set(["reco", "price-asc", "price-desc", "drop-desc", "power-desc", "range-desc", "avail-asc", "name-asc"]);
+  const SORT_KEYS = new Set(["reco", "added-desc", "price-asc", "price-desc", "drop-desc", "power-desc", "range-desc", "avail-asc", "name-asc"]);
   const MILEAGE_PACKAGES = new Set([500, 1000, 1500, 2000, 2500, 3000, 3500]);
 
   function freshFilters() {

@@ -86,6 +86,7 @@ function sortCars(){
   const p = c => minPrice(c, terms.length?terms:null) ?? Infinity;
   const cmp = {
     "reco":       (a,b)=>(a.product_desktop_sorting??1e9)-(b.product_desktop_sorting??1e9),
+    "added-desc": (a,b)=>(a._addedOrder??1e9)-(b._addedOrder??1e9),
     "price-asc":  (a,b)=>p(a)-p(b),
     "price-desc": (a,b)=>p(b)-p(a),
     "drop-desc":  (a,b)=>(b._drop||0)-(a._drop||0),

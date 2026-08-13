@@ -74,6 +74,12 @@ test("shareable view state round-trips filters and controls", () => {
   assert.equal(decoded.sort, "price-asc");
 });
 
+test("recently added sort is accepted in shared view state", () => {
+  const encoded = domain.encodeViewState({ sort: "added-desc" });
+  assert.equal(encoded, "sort=added-desc");
+  assert.equal(domain.decodeViewState("#" + encoded).sort, "added-desc");
+});
+
 test("view-state decoder rejects unsupported controls and invalid numbers", () => {
   const decoded = domain.decodeViewState("#km=1234&sort=hack&pmax=nope&pow=-10&fu=Elektro");
   assert.equal(decoded.km, null);

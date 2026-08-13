@@ -62,7 +62,8 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Light & dark theme** — follows the OS preference on first load, toggle in the header
   (or press `t`).
 - **Business ↔ Private pricing toggle** (uses the API's `is_for_business` pricing).
-- **Sorting**: recommended, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
+- **Sorting**: recommended, recently added, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
+- The app requests `view=available_cars` in newest-first (`last_added`) pages (default `limit=200`) and separately attempts
 - **Modern detail view**: immersive photo gallery, prominent all-inclusive subscription
   summary, and a live quote configurator: select real mileage packages and contract terms to
   update monthly price, baseline delta, selected price-table row and full contract total.

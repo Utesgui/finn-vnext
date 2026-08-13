@@ -32,7 +32,7 @@ function trackPrices(){
 const REQUEST_TIMEOUT_MS = 30000;
 const PROBE_TIMEOUT_MS = 6000;
 const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
-const CATALOG_CACHE_DB = "finnvnext-cache-v1";
+const CATALOG_CACHE_DB = "finnvnext-cache-v2";
 const CATALOG_CACHE_STORE = "catalogs";
 
 async function fetchWithTimeout(url, options={}, {timeoutMs=REQUEST_TIMEOUT_MS,signal}={}){
@@ -224,7 +224,7 @@ async function loadCatalog(options={}){
         try{
           json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
             view, is_for_business: state.cfg.biz, pricing_type:"normal",
-            limit, offset, sort:"desktop"
+            limit, offset, sort:"last_added"
           })),state.cfg.actor,{signal});
         }catch(e){
           if(signal.aborted) throw e;
@@ -233,7 +233,12 @@ async function loadCatalog(options={}){
         }
         for(const c of json.results){
           if (markSoon) c._soonView = true;
-          if (!seen.has(carKey(c))) seen.set(carKey(c), c);
+          if (!seen.has(carKey(c))){
+            // FINN returns `last_added` newest first. Keep that rank so local
+            // filters and grouped browsing can still offer the same ordering.
+            c._addedOrder = seen.size;
+            seen.set(carKey(c), c);
+          }
         }
         pages++;
         setStatus("busy", `Loading… ${seen.size} configurations`);
