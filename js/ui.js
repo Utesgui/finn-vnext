@@ -86,7 +86,7 @@ function sortCars(){
   const p = c => minPrice(c, terms.length?terms:null) ?? Infinity;
   const cmp = {
     "reco":       (a,b)=>(a.product_desktop_sorting??1e9)-(b.product_desktop_sorting??1e9),
-    "added-desc": (a,b)=>(a._addedOrder??1e9)-(b._addedOrder??1e9),
+    "added-desc": (a,b)=>((b._firstSeen??0)-(a._firstSeen??0)) || ((a._addedOrder??1e9)-(b._addedOrder??1e9)),
     "price-asc":  (a,b)=>p(a)-p(b),
     "price-desc": (a,b)=>p(b)-p(a),
     "drop-desc":  (a,b)=>(b._drop||0)-(a._drop||0),
@@ -257,7 +257,7 @@ function versionCardEl(c){
     <div class="vbody">
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${esc(meta||[displayValue("fuel",c.fuel),displayValue("body",c.cartype)].filter(Boolean).join(" · "))}</div>
-      <div class="vchips">${inventory==null?"":`<span class="stock-chip" title="Customer-visible stock; availability date still applies">${esc(stockText(inventory))}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${inventory==null?"":`<span class="stock-chip" title="Customer-visible stock; availability date still applies">${esc(stockText(inventory))}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
   const img = el.querySelector(".vimg>img");
@@ -321,6 +321,7 @@ function cardEl(c){
     <button class="card-open" data-open-car aria-label="${esc(openLabel)}"></button>
     <div class="imgwrap">
       <div class="badges">
+        ${c._isNew?`<span class="badge new" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}
         ${c._drop>0?`<span class="badge drop" title="Base price dropped since your previous visit">▼ ${fmtEur(c._drop)}</span>`:""}
         ${label?`<span class="badge">${esc(label)}</span>`:""}
         ${c._soonView?'<span class="badge soon">coming soon</span>':""}
@@ -443,6 +444,8 @@ function renderStats(){
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,
     `<span class="statchip">brands <b>${brands}</b></span>`,
     drops?`<span class="statchip">▼ price drops <b>${drops}</b></span>`:"",
+    (()=>{ const news = state.filtered.filter(c=>c._isNew).length;
+           return news?`<span class="statchip">new <b>${news}</b></span>`:""; })(),
     (()=>{ const cs = state.filtered.filter(c=>c._soonView).length;
            return cs?`<span class="statchip">coming soon <b>${cs}</b></span>`:""; })()
   ].join("");
@@ -547,6 +550,8 @@ function openDetail(c, options={}){
   const delim = c.equipment_delimiter || ";";
   const equipmentGroups = buildEquipmentGroups(eq,delim,c);
   const equipmentCount = equipmentGroups.reduce((sum,g)=>sum+g.items.length,0);
+  const packages = (c.equipment_packages && typeof c.equipment_packages==="object" && !Array.isArray(c.equipment_packages))
+    ? Object.entries(c.equipment_packages).filter(([name])=>name).slice(0,12) : [];
   const kv = [
     ["Fuel", displayValue("fuel",c.fuel)], ["Body", displayValue("body",c.cartype)], ["Gearshift", displayValue("gear",c.gearshift)],
     ["Power", c.power?`${c.power} kW / ${Math.round(c.power*1.35962)} PS`:null],
@@ -556,8 +561,10 @@ function openDetail(c, options={}){
     ["CO₂", c.co2emission!=null?fmtNum(c.co2emission)+" g/km":null],
     ["Efficiency", c.efficiency_class || c.co2_class],
     ["Seats", c.seats], ["Doors", c.doors],
-    ["Model year", c.model_year], ["Tires", c.tires],
+    ["Model year", c.model_year],
+    ["Tires", [c.tires?(({all_season:"All-season",summer_winter:"Summer / winter",summer:"Summer",winter:"Winter"})[c.tires]||String(c.tires).replace(/_/g," ")):null, c.tire_size_inches?`${c.tire_size_inches}″`:null].filter(Boolean).join(" · ")||null],
     ["Color", c.color&&c.color.specific],
+    ["Interior", c.interior_color&&c.interior_color.specific],
     ["MSRP", c.price&&c.price.msrp?fmtEur(c.price.msrp):null]
   ].filter(([,v])=>v!=null&&v!=="");
   const inventory = stockCount(c);
@@ -654,10 +661,11 @@ function openDetail(c, options={}){
       </div>
       <section class="detail-panel eq">
         <div class="detail-panel-head"><div><h3>Equipment</h3><p>${equipmentCount?`${fmtNum(equipmentCount)} included features · grouped by category`:"Equipment supplied by the vehicle API"}</p></div></div>
+        ${packages.length?`<div class="equipment-packages">${packages.map(([name,items])=>`<div class="equipment-package"><div class="pkg-head"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg><b>${esc(name)}</b><span class="pkg-tag">package</span></div>${items?`<p>${esc(items)}</p>`:""}</div>`).join("")}</div>`:""}
         <div class="detail-equipment">${equipmentGroups.length?equipmentGroups.map((g,i)=>`<section class="equipment-panel" aria-labelledby="eqHeading${i}"><div class="equipment-panel-head"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><div><h4 class="title" id="eqHeading${i}">${esc(g.title)}</h4><p>${esc(g.description)}</p></div><span class="count">${g.items.length} included</span></div><ul class="equipment-list">${g.items.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></section>`).join(""):'<div class="detail-price-note">No equipment details provided by the API.</div>'}</div>
       </section>
       ${colors.length?`<section class="detail-panel"><div class="detail-panel-head"><div><h3>Color availability</h3><p>${colors.length} variants supplied for this configuration</p></div></div><div class="detail-colors">${colors.map(cl=>`<div class="detail-color"><span class="sw"${vehicleColorStyle(cl.color_hex)}></span><span class="name">${esc(cl.color_specific||"Unnamed color")}</span><span class="date">${esc(fmtDate(cl.availability_date))}</span></div>`).join("")}</div></section>`:""}
-      <div class="detail-meta">config ${esc(c.config_id)} · ${esc(c.id||"no product id")}</div>
+      <div class="detail-meta">config ${esc(c.config_id)} · ${esc(c.id||"no product id")}${c._firstSeen?` · first seen ${esc(fmtDateTime(c._firstSeen))}`:""}</div>
     </div>`;
   const main = dlg.querySelector("#galMain");
   const setMain = i => { main.src = pics[i] && pics[i].url ? pics[i].url : PLACEHOLDER; };

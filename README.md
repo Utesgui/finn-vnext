@@ -71,11 +71,17 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Business ↔ Private pricing toggle** (uses the API's `is_for_business` pricing).
 - **Sorting**: recommended, recently added, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
 - The app requests `view=available_cars` in newest-first (`last_added`) pages (default `limit=200`) and separately attempts
+- **"New" tracking (first seen)** — the API exposes no created/added timestamp, so the
+  app records when it first sees each config (locally, after a baseline first load).
+  Newly appeared configs get a **new** badge with the exact first-seen day & time,
+  a result-stats counter, and power the "Recently added" sort; the detail view's
+  footer line shows the precise timestamp.
 - **Modern detail view**: immersive photo gallery, prominent all-inclusive subscription
   summary, and a live quote configurator: select real mileage packages and contract terms to
   update monthly price, baseline delta, selected price-table row and full contract total.
   It also includes key-spec highlights, technical pricing, all equipment categories shown
-  as stacked sections, color availability, finn.com offer link, plus **Open PDF** and reliable
+  as stacked sections, named option **packages**, tire type & size, interior color,
+  color availability, finn.com offer link, plus **Open PDF** and reliable
   **Download PDF** actions. **←/→ navigation** stays within the selected model when opened
   through the version picker, with a back-to-versions action; direct results continue to
   navigate the full filtered list.

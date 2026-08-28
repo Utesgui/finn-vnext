@@ -28,6 +28,32 @@ function trackPrices(){
   try{ localStorage.setItem(PRICE_LS, JSON.stringify(db)); }catch(e){}
 }
 
+  /* ---------------- first-seen tracking (persists across visits) ----------------
+     The API exposes no created/added timestamp, so we record when THIS tool first
+     sees a config. The very first catalog load is treated as a baseline: those
+     configs get no timestamp, so only configs appearing later count as "new". */
+  const SEEN_LS = "finnvnext.firstseen.v1";
+  const NEW_BADGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+  function trackFirstSeen(){
+    let db = null; try{ db = JSON.parse(localStorage.getItem(SEEN_LS)||"null"); }catch(e){}
+    const baseline = !db || typeof db !== "object";
+    if (baseline) db = {};
+    const now = Date.now();
+    for(const c of state.cars){
+      const key = carKey(c);
+      if (db[key]==null) db[key] = baseline ? 0 : now;   // 0 = existed before tracking began
+      c._firstSeen = db[key] || null;
+      c._isNew = !!db[key] && (now - db[key]) < NEW_BADGE_WINDOW_MS;
+    }
+    // prune configs that left the catalog once the store gets large
+    const keys = Object.keys(db);
+    if (keys.length > 15000){
+      const live = new Set(state.cars.map(carKey));
+      for(const k of keys) if (!live.has(k)) delete db[k];
+    }
+    try{ localStorage.setItem(SEEN_LS, JSON.stringify(db)); }catch(e){}
+  }
+
 /* ---------------- API layer ---------------- */
 const REQUEST_TIMEOUT_MS = 30000;
 const PROBE_TIMEOUT_MS = 6000;
@@ -176,6 +202,7 @@ async function probeEndpoint(signal){
 function commitCatalog(cars,{cached=false}={}){
   state.cars=cars;
   trackPrices();
+  trackFirstSeen();
   state.facets=buildFacets(state.cars);
   buildFilterUI();
   // Default to electric on an unfiltered first visit; shared URLs remain exact.

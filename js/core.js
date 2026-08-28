@@ -120,6 +120,7 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const fmtEur  = n => n==null ? "–" : new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n);
 const fmtEur2 = n => n==null ? "–" : new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR",minimumFractionDigits:2}).format(n);
 const fmtNum  = n => n==null ? "–" : new Intl.NumberFormat("en-GB").format(n);
+const fmtDateTime = t => t ? new Date(t).toLocaleString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "–";
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const debounce = (fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
 const vehicleColorStyle = value => {
