@@ -1012,6 +1012,18 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
   display: flex; flex-direction: column; gap: 0.75rem; border: 1px solid var(--cp-border);
   border-radius: var(--cp-r-xl); background: var(--cp-surface); padding: 1rem; box-shadow: var(--cp-shadow-sm);
 }
+.detail-summary.is-preview .detail-availability,
+.detail-summary.is-preview .detail-configurator,
+.detail-summary.is-preview .detail-price-block { opacity: 0.42; }
+.preview-note {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--cp-warning) 40%, transparent);
+  border-radius: var(--cp-r-md); background: color-mix(in srgb, var(--cp-warning) 8%, transparent);
+  color: var(--cp-text); padding: 0.6rem 0.7rem; font-size: 0.74rem; line-height: 1.5;
+}
+.preview-note > .ic { flex: none; margin-block-start: 0.1rem; color: var(--cp-warning); }
+.card.price-preview .price .val, .version-card.price-preview .vprice { opacity: 0.4; }
+.card.price-preview .price .incl { color: var(--cp-warning); }
 .detail-availability { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 0.6rem; color: var(--cp-text-muted); font-size: 0.72rem; }
 .detail-stock {
   display: inline-flex; align-items: center; gap: 0.35rem; flex: none;

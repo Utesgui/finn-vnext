@@ -240,6 +240,18 @@ function cardCarouselMarkup(pics,label){
   const dots=pics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
   return `<button class="navarr prev" data-shot="-1" aria-label="Previous ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><button class="navarr next" data-shot="1" aria-label="Next ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><div class="dots">${dots}</div><span class="shots">1/${pics.length}</span>`;
 }
+/* Terms available across ALL colors of a version (own + resolved siblings). */
+function versionTermsList(c){
+  const terms = new Set(carTermsList(c));
+  const selfUid = String(c.uid ?? carKey(c));
+  for (const cl of (Array.isArray(c.color_list)?c.color_list:[])){
+    const uid = cl && cl.uid!=null ? String(cl.uid) : null;
+    if (!uid || uid===selfUid) continue;
+    const rec = siblingStockRec(uid);
+    if (rec && Array.isArray(rec.tm)) rec.tm.forEach(t=>terms.add(Number(t)));
+  }
+  return Array.from(terms).filter(Boolean).sort((a,b)=>a-b);
+}
 /* Does a color sibling satisfy the active term/price/power filters?
    Unknown data fails open so colors are never hidden by missing info. */
 function variantMatchesFilters(cl){
@@ -324,14 +336,18 @@ function applyCardPalette(card, btn){
   // and stock on the card (live once a fetched sibling resolves).
   const applyCarData = (src)=>{
     if (!src || !card.isConnected) return;
+    setCardPreviewState(card, false);
     const terms = state.f.terms.map(Number);
-    const p = minPrice(src, terms.length?terms:null);
+    const p = minPrice(src, terms.length?terms:null) ?? minPrice(src);
     const priceEl = card.querySelector(".price .val") || card.querySelector(".vprice");
     if (priceEl && p!=null) priceEl.innerHTML = `${fmtEur(p)}<small> /month</small>`;
     const av = availLabel(src);
     const availTxt = av.txt==="available now" ? '<span class="now">available now</span>' : esc(av.txt);
     const cardAvail = card.querySelector(".avail");
-    if (cardAvail) cardAvail.innerHTML = `${availTxt}<div class="terms">${Array.isArray(src.available_terms)&&src.available_terms.length?esc(src.available_terms.join(" / "))+" mo":""}</div>`;
+    if (cardAvail){
+      const tl = carTermsList(src);
+      cardAvail.innerHTML = `${availTxt}<div class="terms" title="Contract terms of this color">${tl.length?esc(tl.join("/"))+" mo":""}</div>`;
+    }
     const vAvail = card.querySelector(".vavail");
     if (vAvail) vAvail.innerHTML = availTxt;
     const n = stockCount(src);
@@ -345,7 +361,26 @@ function applyCardPalette(card, btn){
   else {
     const sibling = state.cars.find(x=>String(x.uid??"")===uid);
     if (sibling) applyCarData(sibling);
-    else fetchConfigByUid(uid).then(car=>{ if (card._palUid===uid) applyCarData(car); });
+    else fetchConfigByUid(uid).then(car=>{
+      if (card._palUid!==uid) return;
+      if (car) applyCarData(car);
+      else setCardPreviewState(card, true, cl);   // not bookable yet — grey the numbers
+    });
+  }
+}
+/* Grey a card's price when the selected color has no published pricing yet. */
+function setCardPreviewState(card, on, cl){
+  card.classList.toggle("price-preview", on);
+  const incl = card.querySelector(".price .incl");
+  if (incl){
+    if (card._inclText==null) card._inclText = incl.textContent;
+    incl.textContent = on ? `no pricing published yet${cl&&cl.availability_date?` · expected ${fmtDate(cl.availability_date)}`:""}` : card._inclText;
+  }
+  const priceWrap = card.querySelector(".price") || card.querySelector(".vprice");
+  if (priceWrap) priceWrap.title = on ? `${(cl&&cl.color_specific)||"This color"} isn't bookable yet — the shown price belongs to the previously selected color` : "";
+  if (on){
+    const availEl = card.querySelector(".avail") || card.querySelector(".vavail");
+    if (availEl && cl && cl.availability_date) availEl.innerHTML = `from ${esc(fmtDate(cl.availability_date))}`;
   }
 }
 function modelCardEl(group){
@@ -552,7 +587,7 @@ function cardEl(c){
         </div>
         <div class="avail">
           ${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}
-          <div class="terms">${Array.isArray(c.available_terms)&&c.available_terms.length?esc(c.available_terms.join(" / "))+" mo":""}</div>
+          <div class="terms" title="Contract terms across all colors of this version">${(()=>{const t=versionTermsList(c);return t.length?esc(t.join("/"))+" mo":"";})()}</div>
         </div>
       </div>
     </div>`;
@@ -932,6 +967,7 @@ function openDetail(c, options={}){
     if (!v || b.getAttribute("aria-busy")==="true") return;
     if (v.isSelf){
       pics = pics0; renderGallery();
+      setDetailPreview(false);
       dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
       return;
     }
@@ -944,17 +980,31 @@ function openDetail(c, options={}){
         b.removeAttribute("aria-busy");
         if (!dlg.open || state.detailKey!==openedKey) return;   // dialog moved on meanwhile
         if (car){ openDetail(car, {keepContext:true}); return; }
-        applyVariantPics(v, b);
+        if (applyVariantPics(v, b)) setDetailPreview(true, v);
       });
       return;
     }
-    applyVariantPics(v, b);
+    if (applyVariantPics(v, b)) setDetailPreview(true, v);
   }));
   function applyVariantPics(v, b){
-    if (!v.pics.length){ toast(`${v.name} is not currently offered — no data supplied`); return; }
+    if (!v.pics.length){ toast(`${v.name} isn't listed by the API yet${v.date?` — expected from ${fmtDate(v.date)}`:""}`); return false; }
     pics = v.pics.map(url=>({url}));
     renderGallery();
     dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
+    return true;
+  }
+  /* Selected color has no published pricing yet: dim the figures and explain
+     that they still belong to the listed color. */
+  function setDetailPreview(on, v){
+    const summary = dlg.querySelector(".detail-summary");
+    if (!summary) return;
+    summary.classList.toggle("is-preview", on);
+    let note = summary.querySelector(".preview-note");
+    if (on){
+      if (!note){ note = document.createElement("div"); note.className = "preview-note"; summary.prepend(note); }
+      const baseName = (c.color && c.color.specific) || "the listed color";
+      note.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-help"/></svg><span><b>${esc(v.name)}</b> isn't bookable yet${v.date?` — expected from <b>${esc(fmtDate(v.date))}</b>`:""}. The figures below still show <b>${esc(baseName)}</b>.</span>`;
+    } else if (note) note.remove();
   }
   // Each color is its own config with its own stock — resolve counts lazily
   // (from the catalog when listed, otherwise via a cached config_id lookup).
