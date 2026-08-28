@@ -245,6 +245,33 @@ function applyCardPalette(card, btn){
   if (dots) dots.innerHTML = newPics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
   const shots = card.querySelector(".shots");
   if (shots) shots.textContent = `1/${newPics.length}`;
+  // Colors are configs of their own — reflect the variant's price, availability
+  // and stock on the card (live once a fetched sibling resolves).
+  const applyCarData = (src)=>{
+    if (!src || !card.isConnected) return;
+    const terms = state.f.terms.map(Number);
+    const p = minPrice(src, terms.length?terms:null);
+    const priceEl = card.querySelector(".price .val") || card.querySelector(".vprice");
+    if (priceEl && p!=null) priceEl.innerHTML = `${fmtEur(p)}<small> /month</small>`;
+    const av = availLabel(src);
+    const availTxt = av.txt==="available now" ? '<span class="now">available now</span>' : esc(av.txt);
+    const cardAvail = card.querySelector(".avail");
+    if (cardAvail) cardAvail.innerHTML = `${availTxt}<div class="terms">${Array.isArray(src.available_terms)&&src.available_terms.length?esc(src.available_terms.join(" / "))+" mo":""}</div>`;
+    const vAvail = card.querySelector(".vavail");
+    if (vAvail) vAvail.innerHTML = availTxt;
+    const n = stockCount(src);
+    const stockEl = card.querySelector(".card-stock");
+    if (stockEl && n!=null){
+      stockEl.querySelector("strong").textContent = fmtNum(n);
+      stockEl.querySelector("span").textContent = n===1?"car":"cars";
+    }
+  };
+  if (!card._palUid) applyCarData(c);
+  else {
+    const sibling = state.cars.find(x=>String(x.uid??"")===uid);
+    if (sibling) applyCarData(sibling);
+    else fetchConfigByUid(uid).then(car=>{ if (card._palUid===uid) applyCarData(car); });
+  }
 }
 function modelCardEl(group){
   const c = group.representative;
