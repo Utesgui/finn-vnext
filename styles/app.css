@@ -620,7 +620,7 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 }
 .card .imgwrap img.hero.loaded { opacity: 1; }
 .card:hover .imgwrap img.hero { transform: translateY(var(--hero-ty, 0%)) scale(calc(var(--hero-scale, 1) * 1.03)); }
-.version-card .vimg > img { padding: 0.45rem; transform: translateY(var(--hero-ty, 0%)) scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
+.version-card .vimg > img { padding: 0.55rem; transform: translateY(var(--hero-ty, 0%)) scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
 .badges {
   position: absolute; inset-block-start: 0.65rem; inset-inline-start: 0.65rem; z-index: 4;
   display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: calc(100% - 8.6rem); pointer-events: none;
@@ -753,11 +753,14 @@ html[data-theme="dark"] .blogo {
 .cpal:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1.5px var(--cp-surface), 0 0 0 1.5px var(--cp-border-strong); }
 .cpal.on { box-shadow: inset 0 0 0 1.5px var(--cp-surface), 0 0 0 1.5px var(--cp-text); }
 .cpal-more { position: relative; z-index: 4; flex: none; color: var(--cp-text-soft); font-size: 0.66rem; font-weight: 650; }
-.version-card .cpalette { padding-block: 0.1rem; }
-/* compact mode: finn-style dots overlaid in the picture's bottom-left corner */
+.version-card .vbody > .cpalette { padding-block: 0.1rem; }
+/* compact mode: finn-style dots overlaid in the picture's bottom-left corner;
+   they wrap to extra rows instead of pushing the (always centered) photo dots */
 .imgwrap > .cpalette, .vimg > .cpalette {
   position: absolute; inset-block-end: 0.55rem; inset-inline-start: 0.65rem; z-index: 6;
-  inline-size: auto; justify-content: flex-start; gap: 0.3rem;
+  inline-size: auto; max-inline-size: var(--palmax, calc(50% - 3rem));
+  flex-wrap: wrap; align-content: flex-end; justify-content: flex-start;
+  gap: 0.3rem; row-gap: 0.28rem;
 }
 .imgwrap > .cpalette .cpal, .vimg > .cpalette .cpal {
   flex: none; min-inline-size: 0; inline-size: 16px; max-inline-size: 16px; block-size: 16px;
@@ -769,12 +772,6 @@ html[data-theme="dark"] .blogo {
   border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent); border-radius: 999px;
   background: var(--cp-panel-strong); backdrop-filter: blur(8px); padding: 0 0.32rem;
 }
-/* keep the photo dots centered, but slide them right when many color dots share the row */
-.imgwrap:has(> .cpalette .cpal:nth-child(5)) .dots,
-.imgwrap:has(> .cpalette .cpal-more) .dots,
-.vimg:has(> .cpalette .cpal:nth-child(5)) .dots,
-.vimg:has(> .cpalette .cpal-more) .dots { inset-inline: 8.3rem 3.1rem; }
-.imgwrap:has(> .cpalette .cpal:nth-child(7)) .dots { inset-inline: 11.4rem 3.1rem; }
 .price .from {
   color: var(--cp-text-soft); font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.09em; text-transform: uppercase;
@@ -1029,10 +1026,9 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .versions-summary .pilllet { border: 1px solid var(--cp-border); border-radius: 999px; background: var(--cp-surface); padding: 0.3rem 0.62rem; font-weight: 550; }
 .versions-summary .pilllet b { font-variant-numeric: tabular-nums; }
 .versions-summary .stock-summary { border-color: color-mix(in srgb, var(--cp-accent-secondary) 45%, transparent); color: var(--cp-accent-secondary); }
-.version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 0.8rem; }
+.version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 1.1rem; }
 .version-card { display: flex; flex-direction: column; }
-.version-card .vimg { aspect-ratio: 16 / 9; border-block-end: 1px solid var(--cp-border); }
-.version-card .vimg > img { padding: 0.3rem; }
+.version-card .vimg { aspect-ratio: 16 / 10; border-block-end: 1px solid var(--cp-border); }
 .version-card .vbody { display: flex; flex: 1; flex-direction: column; gap: 0.42rem; padding: 0.8rem 0.85rem 0.9rem; }
 .version-card .vtitle { overflow: hidden; padding-inline-end: 4.5rem; font-size: 0.88rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .version-card .vmeta { overflow: hidden; color: var(--cp-text-muted); font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -1054,10 +1050,6 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .version-card .vprice { font-size: 1.08rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .version-card .vprice small { color: var(--cp-text-muted); font-size: 0.7rem; font-weight: 500; }
 .version-card .vavail { color: var(--cp-text-muted); font-size: 0.7rem; text-align: end; }
-.version-card .sharebtn, .version-card .favbtn, .version-card .cmpbtn { inline-size: 30px; block-size: 30px; }
-.version-card .sharebtn { inset-inline-end: 5.1rem; }
-.version-card .favbtn { inset-inline-end: 2.85rem; }
-.version-card .cmpbtn { inset-inline-end: 0.6rem; }
 
 /* ---------- Detail dialog --------------------------------------------------- */
 #detailDlg { inline-size: min(1180px, calc(100vw - 2rem)); max-inline-size: 1180px; }

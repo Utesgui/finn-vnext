@@ -413,7 +413,7 @@ function measureImageContent(src){
 const HERO_PROFILES = {
   /* cards: content ends up spanning ~[0.27..0.85] of the box height, clear of
      the 34px button strip above and the color dots below */
-  card:   { max: 1.35, tw: 0.94, th: 0.58, center: 0.56, clamp: 0.14 },
+  card:   { max: 1.35, tw: 0.94, th: 0.56, center: 0.575, clamp: 0.15 },
   detail: { max: 1.30, tw: 0.94, th: 0.84, center: 0.50, clamp: 0 }
 };
 function normalizeHeroScale(img, profile="card"){
@@ -464,7 +464,7 @@ function openLightbox(pics, idx=0, alt="Vehicle photo", onNavigate){
 }
 /* finn.com-style mini color palette; clicking a swatch previews that color.
    Single-color cars show their one color so the absence of choice is explicit. */
-function paletteHtml(c, limit=6){
+function paletteHtml(c, limit=6, dotsCount=0){
   const selfUid = String(c.uid ?? carKey(c));
   const rawList = Array.isArray(c.color_list) ? c.color_list.filter(Boolean) : [];
   // the listed color is filtered like any other — the card auto-presents a
@@ -478,12 +478,19 @@ function paletteHtml(c, limit=6){
   const single = list.length === 1;
   const shown = list.slice(0, limit);
   const more = list.length - shown.length;
-  return `<div class="cpalette" role="group" aria-label="Available colors">${shown.map(cl=>{
+  return `<div class="cpalette" role="group" aria-label="Available colors" style="--palmax:${palMaxFor(dotsCount)}">${shown.map(cl=>{
     const uid = cl && cl.uid!=null ? String(cl.uid) : "";
     const on = uid===selfUid;
     const name = cl.color_specific || "Color";
     return `<button class="cpal${on?" on":""}" data-pal="${esc(uid)}" title="${esc(name)}${single?" — only color":on?" — shown":""}" aria-label="Show ${esc(name)}" aria-pressed="${on}"${vehicleColorStyle(cl.color_hex)}></button>`;
   }).join("")}${more>0?`<span class="cpal-more">+${more}</span>`:""}</div>`;
+}
+/* how far the color dots may extend before touching the always-centered
+   photo dots: half the dot strip width plus a small breathing gap */
+function palMaxFor(dotsCount){
+  if (!dotsCount || dotsCount < 2) return "calc(100% - 1.2rem)";
+  const half = Math.ceil((15 + (Math.min(dotsCount,8)-1) * 9.5) / 2);
+  return `calc(50% - ${half + 9}px)`;
 }
 /* In-place color preview on result/version cards: swap the carousel to the
    chosen color and remember it so opening the card targets that variant. */
@@ -643,7 +650,7 @@ function modelCardEl(group){
     bodies.length ? {ic:"i-car",txt:bodies.join(" / ")} : null
   ].filter(x=>x&&x.txt);
   const meta = [group.trims.size?`${group.trims.size} ${group.trims.size===1?"trim":"trims"}`:null,group.colors.size?`${group.colors.size} ${group.colors.size===1?"color":"colors"}`:null].filter(Boolean).join(" · ");
-  const palMarkup = colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:"";
+  const palMarkup = colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions" style="--palmax:${palMaxFor(pics.length)}">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:"";
   el.innerHTML = `
     <button class="card-open" data-open-group aria-label="${esc(openLabel)}"></button>
     <div class="imgwrap">
@@ -700,7 +707,7 @@ function versionCardEl(c){
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c)+" "+title)}" loading="lazy">
-      ${state.cfg.largePalette?"":paletteHtml(c)}
+      ${state.cfg.largePalette?"":paletteHtml(c, 6, pics.length)}
       ${cardCarouselMarkup(pics,"version")}
     </div>
     <div class="vbody">
@@ -787,7 +794,7 @@ function cardEl(c){
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c))}" loading="lazy">
-      ${state.cfg.largePalette?"":paletteHtml(c)}
+      ${state.cfg.largePalette?"":paletteHtml(c, 6, pics.length)}
       ${pics.length>1?`
         <button class="navarr prev" data-shot="-1" aria-label="Previous photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="navarr next" data-shot="1" aria-label="Next photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
