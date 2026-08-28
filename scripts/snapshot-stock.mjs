@@ -36,6 +36,13 @@ function stockOf(car) {
   return Number.isFinite(total) && total >= 0 ? total : null;
 }
 
+/* Terms a config can be subscribed for: available_terms plus price-key terms. */
+function termsOf(car) {
+  const terms = new Set((Array.isArray(car.available_terms) ? car.available_terms : []).map(Number).filter(Boolean));
+  for (const k of Object.keys(car.price || {})) { const m = /^b2[bc]_(\d+)$/.exec(k); if (m) terms.add(Number(m[1])); }
+  return [...terms].sort((a, b) => a - b);
+}
+
 async function main() {
   let previous = { stock: {} };
   try { previous = JSON.parse(await readFile(OUT, "utf8")); } catch { /* first run */ }
@@ -54,7 +61,7 @@ async function main() {
     if (results.length < PAGE_LIMIT || offset > 8000) break;
     await sleep(400);
   }
-  for (const [uid, car] of listed) stock[uid] = { n: stockOf(car), t: now };
+  for (const [uid, car] of listed) stock[uid] = { n: stockOf(car), t: now, tm: termsOf(car) };
   console.log(`catalog: ${listed.size} listed configs`);
 
   // 2) Collect sibling color uids that are not listed themselves.
@@ -78,7 +85,7 @@ async function main() {
         const json = await api({ config_id: uid, is_for_business: true, pricing_type: "normal", limit: 3 });
         const results = Array.isArray(json.results) ? json.results : [];
         const car = results.find(x => String(x.uid ?? x.config_id) === uid) || results[0] || null;
-        stock[uid] = { n: car ? stockOf(car) : null, t: Date.now() };
+        stock[uid] = car ? { n: stockOf(car), t: Date.now(), tm: termsOf(car) } : { n: null, t: Date.now() };
         failures = 0;
         if (++fetched % 100 === 0) console.log(`…${fetched}/${siblings.size} siblings`);
       } catch (e) {

@@ -87,7 +87,9 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   in the detail chips instead of blocking the total). Result cards and version cards
   show a finn.com-style **color palette**: click a dot to open that exact color variant.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
-  (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
+  (inputs + slider), gearshift, power (kW/PS), electric range, term length (matching any
+  color variant of a version, since colors can carry different contract terms), seats,
+  doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are
   **negatable**: click a value once to include it, again to exclude it (e.g. "not Dacia",
   shown struck-through in red and as a `not …` pill), a third time to clear it.

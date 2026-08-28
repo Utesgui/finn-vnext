@@ -55,6 +55,11 @@ function apply(){
     if (terms.length){
       const avail = new Set(priceList(c).map(x=>x.term));
       (Array.isArray(c.available_terms)?c.available_terms:[]).forEach(t=>avail.add(Number(t)));
+      // colors of this version are separate configs and may offer other terms
+      for (const cl of (Array.isArray(c.color_list)?c.color_list:[])){
+        const rec = cl && cl.uid!=null ? siblingStockRec(cl.uid) : null;
+        if (rec && Array.isArray(rec.tm)) rec.tm.forEach(t=>avail.add(Number(t)));
+      }
       if (!terms.some(t=>avail.has(t))) return false;
     }
     const p = minPrice(c, terms.length?terms:null);
@@ -106,7 +111,7 @@ function buildModelGroups(cars){
   }
   const terms = state.f.terms.map(Number);
   return Array.from(groups.values()).map(g=>{
-    const prices = g.versions.map(c=>minPrice(c,terms.length?terms:null)).filter(p=>p!=null);
+    const prices = g.versions.map(c=>minPrice(c,terms.length?terms:null) ?? minPrice(c)).filter(p=>p!=null);
     const dated = g.versions.filter(c=>availDate(c)).sort((a,b)=>availDate(a)-availDate(b));
     g.representative = g.versions.find(c=>pictureUrl(c)) || g.versions[0];
     g.priceMin = prices.length ? Math.min(...prices) : null;
@@ -399,7 +404,8 @@ function openVersionDetail(key, colorUid){
 function cardEl(c){
   const key = carKey(c);
   const terms = state.f.terms.map(Number);
-  const price = minPrice(c, terms.length?terms:null);
+  // fall back to the base price when only a color sibling carries the filtered term
+  const price = minPrice(c, terms.length?terms:null) ?? minPrice(c);
   const inventory = stockCount(c);
   const av = availLabel(c);
   const label = displayProductLabel(c.product_label&&c.product_label.label);

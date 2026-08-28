@@ -74,10 +74,17 @@ function rememberSiblingStock(car, {defer=false}={}){
   if (!car) return;
   const uid = String(car.uid ?? car.config_id ?? "");
   if (!uid) return;
-  loadSiblingDb()[uid] = { n: stockCount(car), t: Date.now() };
+  loadSiblingDb()[uid] = { n: stockCount(car), t: Date.now(), tm: carTermsList(car) };
   if (!defer) saveSiblingDb();
 }
 function siblingStockRec(uid){ return loadSiblingDb()[String(uid)] || null; }
+/* Terms a config can be subscribed for: available_terms plus price-key terms. */
+function carTermsList(car){
+  const terms = new Set((Array.isArray(car.available_terms)?car.available_terms:[]).map(Number).filter(Boolean));
+  const p = car.price || {};
+  for(const k of Object.keys(p)){ const m = /^b2[bc]_(\d+)$/.exec(k); if(m) terms.add(Number(m[1])); }
+  return Array.from(terms).sort((a,b)=>a-b);
+}
 function absorbCatalogStock(){
   for (const c of state.cars) rememberSiblingStock(c, {defer:true});
   saveSiblingDb();
@@ -116,7 +123,11 @@ async function hydrateStockSnapshot(){
       if(!rec) continue;
       const t = Number(rec.t)||0;
       const cur = db[uid];
-      if(!cur || t > cur.t){ db[uid] = {n: rec.n==null?null:Number(rec.n), t}; merged++; }
+      if(!cur || t > cur.t){
+        db[uid] = {n: rec.n==null?null:Number(rec.n), t};
+        if (Array.isArray(rec.tm)) db[uid].tm = rec.tm.map(Number).filter(Boolean);
+        merged++;
+      }
     }
     if(merged){
       saveSiblingDb();
@@ -484,6 +495,11 @@ function buildFacets(cars){
     if (c.color && c.color.specific) colors.set(c.color.specific, c.color.color_hex||"");
     (Array.isArray(c.available_terms)?c.available_terms:[]).forEach(t=>termSet.add(Number(t)));
     priceList(c).forEach(x=>termSet.add(x.term));
+    // color siblings are separate configs and may offer additional terms
+    for(const cl of (Array.isArray(c.color_list)?c.color_list:[])){
+      const rec = cl && cl.uid!=null ? siblingStockRec(cl.uid) : null;
+      if (rec && Array.isArray(rec.tm)) rec.tm.forEach(t=>termSet.add(Number(t)));
+    }
     const p = minPrice(c);
     if(p!=null){ pMin=Math.min(pMin,p); pMax=Math.max(pMax,p); }
     powMax=Math.max(powMax, Number(c.power)||0);
