@@ -1346,6 +1346,7 @@ footer a:hover { color: var(--cp-accent); }
 }
 @media (max-width: 760px) {
   header { min-block-size: 0; padding: 0.65rem 1rem; }
+  #wideBtn { display: none; }
   .iconbtn.utility-menu-toggle { display: inline-grid; }
   .utility-actions {
     position: absolute; inset-block-start: calc(100% + 0.5rem); inset-inline-end: 0; z-index: 120;
