@@ -16,7 +16,7 @@
   function freshFilters() {
     return {
       q: "", fuels: [], brands: [], types: [], gears: [], terms: [], seats: [], doors: [], colors: [],
-      priceMin: null, priceMax: null, powerMin: 0, rangeMin: 0,
+      priceMin: null, priceMax: null, powerMin: 0, powerMax: null, rangeMin: 0,
       deals: false, hitch: false, soon: false, realPics: false, drops: false, favOnly: false
     };
   }
@@ -163,6 +163,7 @@
     if (filters.priceMin != null) params.set("pmin", filters.priceMin);
     if (filters.priceMax != null) params.set("pmax", filters.priceMax);
     if (filters.powerMin > 0) params.set("pow", filters.powerMin);
+    if (filters.powerMax != null) params.set("powx", filters.powerMax);
     if (filters.rangeMin > 0) params.set("rng", filters.rangeMin);
     if (filters.deals) params.set("deals", "1");
     if (filters.hitch) params.set("ahk", "1");
@@ -192,6 +193,8 @@
     filters.priceMin = finiteOr("pmin", null);
     filters.priceMax = finiteOr("pmax", null);
     filters.powerMin = Math.max(0, finiteOr("pow", 0));
+    const powx = finiteOr("powx", null);
+    filters.powerMax = powx != null && powx > 0 ? powx : null;
     filters.rangeMin = Math.max(0, finiteOr("rng", 0));
     filters.deals = params.get("deals") === "1";
     filters.hitch = params.get("ahk") === "1";

@@ -176,6 +176,7 @@ function startSiblingCrawl(){
 
 /* ---------------- single-config lookup (color variants) ---------------- */
 const configFetchCache = new Map();
+function cachedConfigByUid(uid){ return configFetchCache.get(`${uid}:${state.cfg.biz?"b":"c"}`) || null; }
 async function fetchConfigByUid(uid){
   const key = `${uid}:${state.cfg.biz?"b":"c"}`;
   if (configFetchCache.has(key)) return configFetchCache.get(key);

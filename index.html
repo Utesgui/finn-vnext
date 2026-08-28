@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-16"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-16">
+<script src="js/domain.js?v=20260828-17"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-17">
 </head>
 <body>
 
@@ -119,7 +119,7 @@
           <input type="number" id="priceMax" min="0" step="10" placeholder="max" aria-label="Maximum monthly price">
           <span>€</span>
         </div>
-        <input type="range" id="priceSlider" min="0" max="2000" step="10" aria-label="Maximum monthly price">
+        <div class="dualrange" id="priceRange" role="group" aria-label="Monthly price range"></div>
         <div class="rangeout" id="priceOut"></div>
         <div class="chips top-gap" id="priceQuick">
           <button class="chip" data-pq="200">≤ 200 €</button>
@@ -132,7 +132,7 @@
     <details><summary>Gearshift</summary><div class="fbody"><div class="chips" id="gearChips"></div></div></details>
     <details><summary>Power</summary>
       <div class="fbody">
-        <input type="range" id="powerSlider" min="0" max="400" step="5" aria-label="Minimum power">
+        <div class="dualrange" id="powerRange" role="group" aria-label="Power range"></div>
         <div class="rangeout" id="powerOut">any</div>
       </div>
     </details>
@@ -142,7 +142,12 @@
         <div class="rangeout" id="rangeOut">any</div>
       </div>
     </details>
-    <details><summary>Term length</summary><div class="fbody"><div class="chips" id="termChips"></div></div></details>
+    <details><summary>Term length</summary>
+      <div class="fbody">
+        <div class="dualrange" id="termRange" role="group" aria-label="Contract term range"></div>
+        <div class="rangeout" id="termOut">any</div>
+      </div>
+    </details>
     <details><summary>Seats &amp; doors</summary>
       <div class="fbody">
         <div class="chips" id="seatChips"></div>
@@ -307,9 +312,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-16"></script>
-<script src="js/api.js?v=20260828-16"></script>
-<script src="js/ui.js?v=20260828-16"></script>
-<script src="js/events.js?v=20260828-16"></script>
+<script src="js/core.js?v=20260828-17"></script>
+<script src="js/api.js?v=20260828-17"></script>
+<script src="js/ui.js?v=20260828-17"></script>
+<script src="js/events.js?v=20260828-17"></script>
 </body>
 </html>

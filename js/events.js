@@ -55,10 +55,8 @@ function wireEvents(){
   $("#priceQuick").addEventListener("click", e=>{
     const btn = e.target.closest("[data-pq]"); if(!btn) return;
     const v = Number(btn.dataset.pq);
-    state.f.priceMax = (state.f.priceMax===v) ? null : v;
-    $("#priceMax").value = state.f.priceMax??"";
-    $("#priceSlider").value = state.f.priceMax??$("#priceSlider").max;
-    updateRangeOuts(); apply();
+    setPriceMax(state.f.priceMax===v ? null : v);
+    apply();
   });
   // share the current view (filters live in the URL)
   $("#shareBtn").addEventListener("click", async ()=>{
@@ -83,7 +81,6 @@ function wireEvents(){
   chipGroup("#fuelChips", "fuels");
   chipGroup("#typeChips", "types");
   chipGroup("#gearChips", "gears");
-  chipGroup("#termChips", "terms", false);
   chipGroup("#seatChips", "seats");
   chipGroup("#doorChips", "doors");
   chipGroup("#colorSwatches", "colors");
@@ -96,14 +93,8 @@ function wireEvents(){
     syncChipStates();
     apply();
   });
-  $("#priceMin").addEventListener("change", e=>{ state.f.priceMin = e.target.value===""?null:Number(e.target.value); apply(); });
-  $("#priceMax").addEventListener("change", e=>{ state.f.priceMax = e.target.value===""?null:Number(e.target.value); $("#priceSlider").value = e.target.value||$("#priceSlider").max; apply(); });
-  $("#priceSlider").addEventListener("input", debounce(e=>{
-    state.f.priceMax = Number(e.target.value)>=Number(e.target.max)?null:Number(e.target.value);
-    $("#priceMax").value = state.f.priceMax??"";
-    updateRangeOuts(); apply();
-  }, 120));
-  $("#powerSlider").addEventListener("input", debounce(e=>{ state.f.powerMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
+  $("#priceMin").addEventListener("change", e=>{ state.f.priceMin = e.target.value===""?null:Number(e.target.value); syncRangeControls(); apply(); });
+  $("#priceMax").addEventListener("change", e=>{ state.f.priceMax = e.target.value===""?null:Number(e.target.value); syncRangeControls(); apply(); });
   $("#rangeSlider").addEventListener("input", debounce(e=>{ state.f.rangeMin = Number(e.target.value); updateRangeOuts(); apply(); }, 120));
   $("#kmSel").addEventListener("change", e=>{
     state.cfg.km = Number(e.target.value)||500; saveCfg();

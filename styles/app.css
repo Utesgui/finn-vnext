@@ -455,6 +455,33 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
   margin-block-start: 0.2rem; color: var(--cp-accent); font-size: 0.72rem; font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
+.dualrange { position: relative; block-size: 30px; }
+.dualrange .dr-rail {
+  position: absolute; inset-inline: 0; inset-block-start: 13px; block-size: 4px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cp-border-strong) 72%, transparent);
+}
+.dualrange .dr-fill { position: absolute; inset-block-start: 13px; block-size: 4px; border-radius: 999px; background: var(--cp-accent); }
+.dualrange input[type="range"] {
+  position: absolute; inset: 0; inline-size: 100%; min-block-size: 30px; margin: 0; padding: 0;
+  border: 0; background: none; box-shadow: none; appearance: none; -webkit-appearance: none;
+  pointer-events: none;
+}
+.dualrange input[type="range"]::-webkit-slider-runnable-track { block-size: 30px; background: transparent; }
+.dualrange input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto; appearance: none; -webkit-appearance: none;
+  inline-size: 18px; block-size: 18px; margin-block-start: 6px;
+  border: 2px solid var(--cp-accent); border-radius: 50%;
+  background: var(--cp-surface); box-shadow: var(--cp-shadow-sm);
+  transition: transform 0.15s var(--ease-spring);
+}
+.dualrange input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.dualrange input[type="range"]::-moz-range-track { block-size: 30px; background: transparent; }
+.dualrange input[type="range"]::-moz-range-progress { background: transparent; }
+.dualrange input[type="range"]::-moz-range-thumb {
+  pointer-events: auto; inline-size: 14px; block-size: 14px;
+  border: 2px solid var(--cp-accent); border-radius: 50%;
+  background: var(--cp-surface); box-shadow: var(--cp-shadow-sm);
+}
 .swatch {
   position: relative; inline-size: 30px; block-size: 30px; border: 1px solid var(--cp-border-strong);
   border-radius: 50%; background: var(--vehicle-color, var(--cp-border-strong));

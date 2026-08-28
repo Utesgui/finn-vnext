@@ -6,17 +6,42 @@ function buildFilterUI(){
   $("#fuelChips").innerHTML = F.fuels.map(([v,n])=>chipHtml(v,displayValue("fuel",v),n)).join("");
   $("#typeChips").innerHTML = F.types.map(([v,n])=>chipHtml(v,displayValue("body",v),n)).join("");
   $("#gearChips").innerHTML = F.gears.map(([v,n])=>chipHtml(v,displayValue("gear",v),n)).join("");
-  $("#termChips").innerHTML = F.terms.map(t=>chipHtml(t, t+" mo")).join("");
   $("#seatChips").innerHTML = F.seats.map(s=>chipHtml(s, s+" seats")).join("");
   $("#doorChips").innerHTML = F.doors.map(d=>chipHtml(d, d+" doors")).join("");
   renderBrandList("");
   $("#colorSwatches").innerHTML = F.colors.map(([name,hex])=>
     `<button class="swatch" data-chip="${esc(name)}" title="${esc(name)}" aria-label="${esc(name)}"${vehicleColorStyle(hex)}></button>`).join("");
-  const ps = $("#priceSlider");
-  ps.min = F.priceMin; ps.max = F.priceMax; ps.value = F.priceMax;
-  $("#powerSlider").max = F.powerMax; $("#powerSlider").value = 0;
+  const applyDebounced = debounce(apply, 140);
+  initDualRange($("#priceRange"), {
+    min: F.priceMin, max: F.priceMax, step: 10,
+    labelLo: "Minimum monthly price", labelHi: "Maximum monthly price",
+    onInput: (lo, hi, atMin, atMax) => {
+      state.f.priceMin = atMin ? null : lo;
+      state.f.priceMax = atMax ? null : hi;
+      $("#priceMin").value = state.f.priceMin??""; $("#priceMax").value = state.f.priceMax??"";
+      updateRangeOuts(); applyDebounced();
+    }
+  });
+  initDualRange($("#powerRange"), {
+    min: 0, max: F.powerMax, step: 5,
+    labelLo: "Minimum power", labelHi: "Maximum power",
+    onInput: (lo, hi, atMin, atMax) => {
+      state.f.powerMin = atMin ? 0 : lo;
+      state.f.powerMax = atMax ? null : hi;
+      updateRangeOuts(); applyDebounced();
+    }
+  });
+  const termValues = F.terms.length ? F.terms : [6, 12, 24];
+  initDualRange($("#termRange"), {
+    values: termValues,
+    labelLo: "Shortest contract term", labelHi: "Longest contract term",
+    onInput: (lo, hi, atMin, atMax) => {
+      state.f.terms = (atMin && atMax) ? [] : termValues.filter(t=>t>=lo && t<=hi).map(String);
+      updateRangeOuts(); applyDebounced();
+    }
+  });
   $("#rangeSlider").max = F.rangeMax; $("#rangeSlider").value = 0;
-  updateRangeOuts();
+  syncRangeControls();
 }
 function renderBrandList(filterText){
   const q = filterText.toLowerCase();
@@ -29,8 +54,21 @@ function renderBrandList(filterText){
 function updateRangeOuts(){
   syncPriceQuick();
   const f=state.f;
-  $("#priceOut").textContent = `up to ${fmtEur(Number($("#priceSlider").value))} / month`;
-  $("#powerOut").textContent = f.powerMin>0 ? `≥ ${f.powerMin} kW (${Math.round(f.powerMin*1.35962)} PS)` : "any";
+  $("#priceOut").textContent =
+    f.priceMin==null && f.priceMax==null ? "any budget"
+    : f.priceMin!=null && f.priceMax!=null ? `${fmtEur(f.priceMin)} – ${fmtEur(f.priceMax)} / month`
+    : f.priceMax!=null ? `up to ${fmtEur(f.priceMax)} / month`
+    : `from ${fmtEur(f.priceMin)} / month`;
+  const ps = v => `${v} kW (${Math.round(v*1.35962)} PS)`;
+  $("#powerOut").textContent =
+    f.powerMin<=0 && f.powerMax==null ? "any"
+    : f.powerMin>0 && f.powerMax!=null ? `${ps(f.powerMin)} – ${ps(f.powerMax)}`
+    : f.powerMax!=null ? `≤ ${ps(f.powerMax)}`
+    : `≥ ${ps(f.powerMin)}`;
+  const terms = f.terms.map(Number);
+  $("#termOut").textContent = terms.length
+    ? (Math.min(...terms)===Math.max(...terms) ? `${terms[0]} months` : `${Math.min(...terms)} – ${Math.max(...terms)} months`)
+    : "any";
   $("#rangeOut").textContent = f.rangeMin>0 ? `≥ ${fmtNum(f.rangeMin)} km` : "any";
 }
 
@@ -67,6 +105,7 @@ function apply(){
     if (f.priceMin!=null && (p==null || p < f.priceMin)) return false;
     if (f.priceMax!=null && (p==null || p > f.priceMax)) return false;
     if (f.powerMin>0 && (Number(c.power)||0) < f.powerMin) return false;
+    if (f.powerMax!=null && Number(c.power) > f.powerMax) return false;
     if (f.rangeMin>0 && (evRange(c)||0) < f.rangeMin) return false;
     if (f.deals && !hasDeal(c)) return false;
     if (f.hitch && !hasHitch(c)) return false;
@@ -201,16 +240,41 @@ function cardCarouselMarkup(pics,label){
   const dots=pics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
   return `<button class="navarr prev" data-shot="-1" aria-label="Previous ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><button class="navarr next" data-shot="1" aria-label="Next ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><div class="dots">${dots}</div><span class="shots">1/${pics.length}</span>`;
 }
+/* Does a color sibling satisfy the active term/price/power filters?
+   Unknown data fails open so colors are never hidden by missing info. */
+function variantMatchesFilters(cl){
+  const f = state.f;
+  const uid = cl && cl.uid!=null ? String(cl.uid) : null;
+  const terms = f.terms.map(Number);
+  const full = uid ? (state.cars.find(x=>String(x.uid??"")===uid) || cachedConfigByUid(uid)) : null;
+  if (terms.length){
+    const rec = uid ? siblingStockRec(uid) : null;
+    const tm = full ? carTermsList(full) : (rec && Array.isArray(rec.tm) ? rec.tm : null);
+    if (Array.isArray(tm) && tm.length && !terms.some(t=>tm.includes(t))) return false;
+  }
+  if (full){
+    if (f.priceMin!=null || f.priceMax!=null){
+      const p = minPrice(full, terms.length?terms:null) ?? minPrice(full);
+      if (f.priceMin!=null && (p==null || p < f.priceMin)) return false;
+      if (f.priceMax!=null && (p==null || p > f.priceMax)) return false;
+    }
+    if (f.powerMin>0 && (Number(full.power)||0) < f.powerMin) return false;
+    if (f.powerMax!=null && Number(full.power) > f.powerMax) return false;
+  }
+  return true;
+}
 /* finn.com-style mini color palette; clicking a swatch previews that color.
    Single-color cars show their one color so the absence of choice is explicit. */
 function paletteHtml(c, limit=6){
-  let list = Array.isArray(c.color_list) ? c.color_list.filter(Boolean) : [];
+  const selfUid = String(c.uid ?? carKey(c));
+  let list = Array.isArray(c.color_list)
+    ? c.color_list.filter(cl=>cl && (String(cl.uid)===selfUid || variantMatchesFilters(cl)))
+    : [];
   if (!list.length && c.color && (c.color.specific || c.color.color_hex)){
     list = [{ uid: c.uid ?? carKey(c), color_specific: c.color.specific, color_hex: c.color.color_hex }];
   }
   if (!list.length) return "";
   const single = list.length === 1;
-  const selfUid = String(c.uid ?? carKey(c));
   const shown = list.slice(0, limit);
   const more = list.length - shown.length;
   return `<div class="cpalette" role="group" aria-label="Available colors">${shown.map(cl=>{
@@ -298,9 +362,11 @@ function modelCardEl(group){
   {
     const seen = new Set();
     outer: for (const v of group.versions){
+      const vSelf = String(v.uid ?? carKey(v));
       for (const cl of (Array.isArray(v.color_list)?v.color_list:[])){
         const name = (cl && cl.color_specific) || "";
         if (!name || seen.has(name)) continue;
+        if (String(cl && cl.uid)!==vSelf && !variantMatchesFilters(cl)) continue;
         const sib = state.cars.find(x=>String(x.uid??"")===String(cl && cl.uid));
         const url = sib ? galleryPics(sib)[0] : (cl && cl.picture_front_url);
         if (typeof url !== "string" || !url) continue;
@@ -308,6 +374,11 @@ function modelCardEl(group){
         colorShots.push({url, name, hex: cl.color_hex});
         if (colorShots.length >= 8) break outer;
       }
+    }
+    if (!colorShots.length){
+      const cl0 = group.versions.flatMap(v=>Array.isArray(v.color_list)?v.color_list:[]).find(x=>x&&(x.color_specific||x.color_hex));
+      if (cl0) colorShots.push({url: null, name: cl0.color_specific || "Color", hex: cl0.color_hex});
+      else if (c.color && (c.color.specific || c.color.color_hex)) colorShots.push({url: null, name: c.color.specific || "Color", hex: c.color.color_hex});
     }
   }
   const useColors = colorShots.length >= 2;
@@ -332,7 +403,7 @@ function modelCardEl(group){
       ${cardCarouselMarkup(pics,"model")}
     </div>
     <div class="cbody">
-      ${useColors?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:""}
+      ${colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:""}
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
@@ -550,8 +621,7 @@ function renderQuickBar(){
 }
 function setPriceMax(v){
   state.f.priceMax = v;
-  $("#priceMax").value = v ?? "";
-  $("#priceSlider").value = v ?? $("#priceSlider").max;
+  syncRangeControls();
 }
 function renderStats(pulse=true){
   const n = state.filtered.length;
@@ -612,13 +682,18 @@ function renderActiveFilters(){
   f.brands.forEach(v=>add(`brand:${v}`, tag(v), ()=>f.brands=f.brands.filter(x=>x!==v)));
   f.types.forEach(v=>add(`type:${v}`, facetTag("body",v), ()=>f.types=f.types.filter(x=>x!==v)));
   f.gears.forEach(v=>add(`gear:${v}`, facetTag("gear",v), ()=>f.gears=f.gears.filter(x=>x!==v)));
-  f.terms.forEach(v=>add(`term:${v}`, v+" mo", ()=>f.terms=f.terms.filter(x=>x!==v)));
+  if (f.terms.length){
+    const t = f.terms.map(Number);
+    const lbl = Math.min(...t)===Math.max(...t) ? `${t[0]} mo` : `${Math.min(...t)}–${Math.max(...t)} mo`;
+    add("terms", lbl, ()=>{f.terms=[];syncRangeControls();});
+  }
   f.seats.forEach(v=>add(`seat:${v}`, tag(v)+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
   f.doors.forEach(v=>add(`door:${v}`, tag(v)+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
   f.colors.forEach(v=>add(`color:${v}`, tag(v), ()=>f.colors=f.colors.filter(x=>x!==v)));
-  if (f.priceMin!=null) add(`priceMin:${f.priceMin}`, "≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;$("#priceMin").value="";});
-  if (f.priceMax!=null) add(`priceMax:${f.priceMax}`, "≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;$("#priceMax").value="";$("#priceSlider").value=$("#priceSlider").max;});
-  if (f.powerMin>0) add(`powerMin:${f.powerMin}`, `≥ ${f.powerMin} kW`, ()=>{f.powerMin=0;$("#powerSlider").value=0;});
+  if (f.priceMin!=null) add(`priceMin:${f.priceMin}`, "≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;syncRangeControls();});
+  if (f.priceMax!=null) add(`priceMax:${f.priceMax}`, "≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;syncRangeControls();});
+  if (f.powerMin>0) add(`powerMin:${f.powerMin}`, `≥ ${f.powerMin} kW`, ()=>{f.powerMin=0;syncRangeControls();});
+  if (f.powerMax!=null) add(`powerMax:${f.powerMax}`, `≤ ${f.powerMax} kW`, ()=>{f.powerMax=null;syncRangeControls();});
   if (f.rangeMin>0) add(`rangeMin:${f.rangeMin}`, `≥ ${f.rangeMin} km`, ()=>{f.rangeMin=0;$("#rangeSlider").value=0;});
   if (f.deals) add("deals", "deals", ()=>{f.deals=false;$("#fltDeals").checked=false;});
   if (f.hitch) add("hitch", "towbar", ()=>{f.hitch=false;$("#fltHitch").checked=false;});
@@ -639,7 +714,7 @@ function renderActiveFilters(){
 function syncChipStates(){
   const f=state.f;
   const groups = [["#fuelChips",f.fuels],["#typeChips",f.types],["#gearChips",f.gears],
-                  ["#termChips",f.terms.map(String)],["#seatChips",f.seats],["#doorChips",f.doors],["#colorSwatches",f.colors]];
+                  ["#seatChips",f.seats],["#doorChips",f.doors],["#colorSwatches",f.colors]];
   for(const [sel,arr] of groups)
     $$(sel+" [data-chip]").forEach(ch=>{
       ch.classList.toggle("on", arr.includes(ch.dataset.chip));
@@ -655,10 +730,10 @@ function syncChipStates(){
 function resetFilters(){
   state.f = freshFilters();
   $("#q").value=""; $("#priceMin").value=""; $("#priceMax").value="";
-  const ps=$("#priceSlider"); ps.value=ps.max;
-  $("#powerSlider").value=0; $("#rangeSlider").value=0;
+  $("#rangeSlider").value=0;
   ["fltDeals","fltHitch","fltNow","fltRealPics","fltDrops"].forEach(id=>{$("#"+id).checked=false;});
   renderFavCount();
+  syncRangeControls();
   syncChipStates(); apply();
 }
 
@@ -1069,13 +1144,60 @@ function readHash(){
     return decoded.hasState;
   }catch(e){ return false; }
 }
+/* Minimal dual-thumb range slider built from two stacked native inputs.
+   opts.values snaps to a discrete list (used for contract terms). */
+function initDualRange(el, opts){
+  const values = opts.values || null;
+  const min = values ? 0 : opts.min, max = values ? values.length-1 : opts.max, step = values ? 1 : (opts.step||1);
+  el.innerHTML = `<div class="dr-rail"></div><div class="dr-fill"></div>
+    <input type="range" class="dr-lo" aria-label="${esc(opts.labelLo||"Minimum")}">
+    <input type="range" class="dr-hi" aria-label="${esc(opts.labelHi||"Maximum")}">`;
+  const lo = el.querySelector(".dr-lo"), hi = el.querySelector(".dr-hi"), fill = el.querySelector(".dr-fill");
+  lo.min = hi.min = min; lo.max = hi.max = max; lo.step = hi.step = step;
+  lo.value = min; hi.value = max;
+  const paint = () => {
+    const a = Number(lo.value), b = Number(hi.value), span = Math.max(1, max-min);
+    fill.style.insetInlineStart = ((a-min)/span*100)+"%";
+    fill.style.inlineSize = ((b-a)/span*100)+"%";
+    // keep the reachable thumb on top when both sit at an extreme
+    lo.style.zIndex = a > min + span/2 ? 4 : 2;
+  };
+  const emit = () => opts.onInput(values ? values[Number(lo.value)] : Number(lo.value),
+                                  values ? values[Number(hi.value)] : Number(hi.value),
+                                  Number(lo.value)<=min, Number(hi.value)>=max);
+  lo.addEventListener("input", ()=>{ if(Number(lo.value)>Number(hi.value)) lo.value = hi.value; paint(); emit(); });
+  hi.addEventListener("input", ()=>{ if(Number(hi.value)<Number(lo.value)) hi.value = lo.value; paint(); emit(); });
+  el._dr = {
+    set(a, b){ // raw values (or snap-list values); null = full bound
+      const idx = v => values ? Math.max(0, values.indexOf(v)) : v;
+      lo.value = a==null ? min : Math.max(min, Math.min(max, idx(a)));
+      hi.value = b==null ? max : (values ? (values.indexOf(b)>=0?values.indexOf(b):max) : Math.max(min, Math.min(max, b)));
+      if(Number(lo.value)>Number(hi.value)) lo.value = hi.value;
+      paint();
+    },
+    setBounds(newMin, newMax){ if(values) return; lo.min = hi.min = newMin; lo.max = hi.max = newMax; paint(); },
+  };
+  paint();
+  return el;
+}
+/* Push state.f into all range widgets + readouts (single source of truth). */
+function syncRangeControls(){
+  const f = state.f, F = state.facets;
+  const price = $("#priceRange"), power = $("#powerRange"), term = $("#termRange");
+  if (price && price._dr) price._dr.set(f.priceMin, f.priceMax);
+  if (power && power._dr) power._dr.set(f.powerMin>0?f.powerMin:null, f.powerMax);
+  if (term && term._dr && F){
+    const sel = f.terms.map(Number).filter(t=>F.terms.includes(t));
+    term._dr.set(sel.length?Math.min(...sel):null, sel.length?Math.max(...sel):null);
+  }
+  $("#priceMin").value = f.priceMin??""; $("#priceMax").value = f.priceMax??"";
+  updateRangeOuts();
+}
 /* push current state.f back into the visible controls (after load / restore) */
 function restoreControls(){
   const f = state.f;
   $("#q").value = f.q; $("#qClear").hidden = !f.q;
-  $("#priceMin").value = f.priceMin??""; $("#priceMax").value = f.priceMax??"";
-  const ps=$("#priceSlider"); ps.value = f.priceMax!=null ? f.priceMax : ps.max;
-  $("#powerSlider").value = f.powerMin||0; $("#rangeSlider").value = f.rangeMin||0;
+  $("#rangeSlider").value = f.rangeMin||0;
   $("#fltDeals").checked=f.deals; $("#fltHitch").checked=f.hitch;
   $("#fltNow").checked=f.soon; $("#fltRealPics").checked=f.realPics;
   $("#fltDrops").checked=f.drops;
@@ -1083,7 +1205,7 @@ function restoreControls(){
   $("#sort").value = state.sort;
   syncBrowseMode();
   renderFavCount();
-  updateRangeOuts();
+  syncRangeControls();
 }
 function syncPriceQuick(){
   $$("#priceQuick [data-pq]").forEach(b=>b.classList.toggle("on", state.f.priceMax===Number(b.dataset.pq)));
@@ -1099,10 +1221,9 @@ function refreshPriceBounds(){
   const F = state.facets;
   F.priceMin = pMin===Infinity?0:Math.floor(pMin/10)*10;
   F.priceMax = Math.ceil(pMax/10)*10 || 2000;
-  const ps = $("#priceSlider");
-  ps.min = F.priceMin; ps.max = F.priceMax;
-  ps.value = state.f.priceMax!=null ? Math.min(state.f.priceMax, F.priceMax) : F.priceMax;
-  updateRangeOuts();
+  const pr = $("#priceRange");
+  if (pr && pr._dr) pr._dr.setBounds(F.priceMin, F.priceMax);
+  syncRangeControls();
 }
 function syncBrowseMode(){
   const mode = state.cfg.browseMode==="models" ? "models" : "cars";
