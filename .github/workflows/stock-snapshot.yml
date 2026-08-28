@@ -1,0 +1,32 @@
+name: Stock snapshot
+
+# Gently refreshes data/stock-snapshot.json so the deployed app starts with a
+# warm sibling-stock cache. Scheduled workflows run from the default branch
+# only. The commit to main retriggers the Pages deployment automatically.
+
+on:
+  schedule:
+    - cron: "23 5,11,17 * * *" # three gentle sweeps per day (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build snapshot (one request every ~2 s)
+        run: node scripts/snapshot-stock.mjs
+      - name: Commit snapshot if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stock-snapshot.json
+          git diff --cached --quiet || { git commit -m "chore: refresh stock snapshot"; git push; }

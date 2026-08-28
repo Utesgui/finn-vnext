@@ -19,6 +19,25 @@ endpoint fallback, and a five-minute IndexedDB catalog cache.
 
 Run the zero-dependency regression tests with `npm test` (Node.js 20+ recommended).
 
+### GitHub Pages deployment
+
+Two workflows support a static deployment from the default branch:
+
+- `.github/workflows/deploy-pages.yml` publishes the app to GitHub Pages on every
+  push to `main` (enable **Settings → Pages → Source: GitHub Actions** once).
+- `.github/workflows/stock-snapshot.yml` runs `scripts/snapshot-stock.mjs` three times
+  a day: it pages the catalog and gently resolves every color-sibling config (one
+  request every ~2 s) into `data/stock-snapshot.json`, committing only on change.
+  The client hydrates its local sibling-stock DB from that file at boot, so even a
+  first-ever visit starts with warm stock data; local setups without the file just
+  skip it. Scheduled workflows only run once the branch is merged to `main`.
+
+On Pages there is no `proxy.py`, so API calls use the configured CORS proxy.
+Mind the access-control warning below: public Pages makes the tool publicly
+reachable. Locally, browser storage already makes startup fast after the first
+visit — the catalog renders instantly from IndexedDB (refreshing silently in the
+background) and resolved stock persists for 12 hours.
+
 ### Access control
 
 `<meta name="robots" content="noindex">` prevents indexing; it is **not authentication**.

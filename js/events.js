@@ -212,5 +212,6 @@ function wireEvents(){
   renderFavCount();
   wireEvents();
   ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ state.userTouched = true; }, {once:true, capture:true}));
+  hydrateStockSnapshot();
   loadCatalog();
 })();

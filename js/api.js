@@ -99,6 +99,31 @@ function versionStockInfo(c){
   return { total: any ? total : null, known };
 }
 let crawlGen = 0, crawlTimer = null;
+/* Hydrate the sibling-stock DB from the snapshot the GitHub Actions bot
+   publishes alongside the app. Optional — local dev setups simply 404 here. */
+async function hydrateStockSnapshot(){
+  try{
+    const res = await fetch("data/stock-snapshot.json", {cache:"no-store"});
+    if(!res.ok) return;
+    const snap = await res.json();
+    if(!snap || typeof snap.stock !== "object" || !snap.stock) return;
+    const db = loadSiblingDb();
+    let merged = 0;
+    for(const [uid, rec] of Object.entries(snap.stock)){
+      if(!rec) continue;
+      const t = Number(rec.t)||0;
+      const cur = db[uid];
+      if(!cur || t > cur.t){ db[uid] = {n: rec.n==null?null:Number(rec.n), t}; merged++; }
+    }
+    if(merged){
+      saveSiblingDb();
+      if(state.cars.length){
+        if(typeof updateStockDisplays === "function") updateStockDisplays();
+        startSiblingCrawl();   // re-plan the sweep with the new data folded in
+      }
+    }
+  }catch(e){ /* snapshot is an optional enhancement */ }
+}
 function startSiblingCrawl(){
   crawlGen++; clearTimeout(crawlTimer);
   if (state.cfg.stockCrawl === false) return;
