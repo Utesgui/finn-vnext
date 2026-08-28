@@ -403,6 +403,7 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
   transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out),
     background 0.15s var(--ease-out), transform 0.15s var(--ease-spring), box-shadow 0.15s var(--ease-out);
 }
+.chip.dim, .checkrow.dim { opacity: 0.45; }
 .chip-count { opacity: 0.55; font-variant-numeric: tabular-nums; }
 .chip:hover { border-color: var(--cp-border-strong); color: var(--cp-text); box-shadow: var(--cp-shadow-sm); }
 .chip:active { transform: scale(0.96); }

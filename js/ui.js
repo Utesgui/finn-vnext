@@ -6,8 +6,6 @@ function buildFilterUI(){
   $("#fuelChips").innerHTML = F.fuels.map(([v,n])=>chipHtml(v,displayValue("fuel",v),n)).join("");
   $("#typeChips").innerHTML = F.types.map(([v,n])=>chipHtml(v,displayValue("body",v),n)).join("");
   $("#gearChips").innerHTML = F.gears.map(([v,n])=>chipHtml(v,displayValue("gear",v),n)).join("");
-  $("#seatChips").innerHTML = F.seats.map(s=>chipHtml(s, s+" seats")).join("");
-  $("#doorChips").innerHTML = F.doors.map(d=>chipHtml(d, d+" doors")).join("");
   renderBrandList("");
   $("#colorSwatches").innerHTML = F.colors.map(([name,hex])=>
     `<button class="swatch" data-chip="${esc(name)}" title="${esc(name)}" aria-label="${esc(name)}"${vehicleColorStyle(hex)}></button>`).join("");
@@ -40,14 +38,36 @@ function buildFilterUI(){
       updateRangeOuts(); applyDebounced();
     }
   });
+  const seatValues = (F.seats||[]).map(Number).filter(n=>Number.isFinite(n)).sort((a,b)=>a-b);
+  if (seatValues.length) initDualRange($("#seatRange"), {
+    values: seatValues,
+    labelLo: "Minimum seats", labelHi: "Maximum seats",
+    onInput: (lo, hi, atMin, atMax) => {
+      state.f.seats = (atMin && atMax) ? [] : seatValues.filter(v=>v>=lo && v<=hi).map(String);
+      updateRangeOuts(); applyDebounced();
+    }
+  });
+  const doorValues = (F.doors||[]).map(Number).filter(n=>Number.isFinite(n)).sort((a,b)=>a-b);
+  if (doorValues.length) initDualRange($("#doorRange"), {
+    values: doorValues,
+    labelLo: "Minimum doors", labelHi: "Maximum doors",
+    onInput: (lo, hi, atMin, atMax) => {
+      state.f.doors = (atMin && atMax) ? [] : doorValues.filter(v=>v>=lo && v<=hi).map(String);
+      updateRangeOuts(); applyDebounced();
+    }
+  });
   $("#rangeSlider").max = F.rangeMax; $("#rangeSlider").value = 0;
   syncRangeControls();
 }
 function renderBrandList(filterText){
   const q = filterText.toLowerCase();
+  const live = state.liveBrandCounts;
   $("#brandList").innerHTML = state.facets.brands
     .filter(([b])=>!q||b.toLowerCase().includes(q))
-    .map(([b,n])=>`<label class="checkrow ${state.f.brands.includes("!"+b)?"ex":""}" title="Click: include \u00b7 again: exclude \u00b7 again: clear"><input type="checkbox" data-brand="${esc(b)}" ${state.f.brands.includes(b)?"checked":""}> ${esc(b)} <span class="cnt">${n}</span></label>`)
+    .map(([b,n])=>{
+      const count = live ? (live.get(b)||0) : n;
+      return `<label class="checkrow ${state.f.brands.includes("!"+b)?"ex":""}${count===0&&!state.f.brands.includes(b)&&!state.f.brands.includes("!"+b)?" dim":""}" title="Click: include \u00b7 again: exclude \u00b7 again: clear"><input type="checkbox" data-brand="${esc(b)}" ${state.f.brands.includes(b)?"checked":""}> ${esc(b)} <span class="cnt">${fmtNum(count)}</span></label>`;
+    })
     .join("") || '<div class="filter-empty">No brand matches</div>';
   $$("#brandList [data-brand]").forEach(cb=>{ cb.indeterminate = state.f.brands.includes("!"+cb.dataset.brand); });
 }
@@ -69,62 +89,106 @@ function updateRangeOuts(){
   $("#termOut").textContent = terms.length
     ? (Math.min(...terms)===Math.max(...terms) ? `${terms[0]} months` : `${Math.min(...terms)} – ${Math.max(...terms)} months`)
     : "any";
+  const rangeText = (arr, unit) => {
+    const v = arr.map(Number).filter(Number.isFinite);
+    if (!v.length) return "any";
+    const lo = Math.min(...v), hi = Math.max(...v);
+    return lo===hi ? `${lo} ${unit}` : `${lo} – ${hi} ${unit}`;
+  };
+  const seatOut = $("#seatOut"), doorOut = $("#doorOut");
+  if (seatOut) seatOut.textContent = rangeText(f.seats, "seats");
+  if (doorOut) doorOut.textContent = rangeText(f.doors, "doors");
   $("#rangeOut").textContent = f.rangeMin>0 ? `≥ ${fmtNum(f.rangeMin)} km` : "any";
 }
 
 /* ---------------- filtering & sorting ---------------- */
-function apply(){
-  const f = state.f, terms = f.terms.map(Number);
+/* One predicate for filtering and for facet counting: `skip` names a facet
+   whose own selection is ignored (counts then reflect all OTHER filters). */
+function carPasses(c, skip){
+  const f = state.f;
+  const terms = f.terms.map(Number);
   const q = f.q.trim().toLowerCase();
-  state.filtered = state.cars.filter(c=>{
-    if (f.favOnly && !state.favs.has(carKey(c))) return false;
-    if (q){
-      const hay = [brandName(c), c.model, c.trim_name, c.equipment_line, c.engine, c.cartype, c.fuel, c.config&&c.config.name]
-        .filter(Boolean).join(" ").toLowerCase();
-      if (!hay.includes(q)) return false;
+  if (f.favOnly && !state.favs.has(carKey(c))) return false;
+  if (q){
+    const hay = [brandName(c), c.model, c.trim_name, c.equipment_line, c.engine, c.cartype, c.fuel, c.config&&c.config.name]
+      .filter(Boolean).join(" ").toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  if (skip!=="fuels" && !facetPass(f.fuels, c.fuel)) return false;
+  if (skip!=="brands" && !facetPass(f.brands, brandName(c))) return false;
+  if (skip!=="types" && !facetPass(f.types, c.cartype)) return false;
+  if (skip!=="gears" && !facetPass(f.gears, c.gearshift)) return false;
+  if (skip!=="seats" && !facetPass(f.seats, c.seats)) return false;
+  if (skip!=="doors" && !facetPass(f.doors, c.doors)) return false;
+  if (!facetPass(f.colors, c.color && c.color.specific)) return false;
+  if (terms.length){
+    const avail = new Set(priceList(c).map(x=>x.term));
+    (Array.isArray(c.available_terms)?c.available_terms:[]).forEach(t=>avail.add(Number(t)));
+    // colors of this version are separate configs and may offer other terms
+    for (const cl of (Array.isArray(c.color_list)?c.color_list:[])){
+      const rec = cl && cl.uid!=null ? siblingStockRec(cl.uid) : null;
+      if (rec && Array.isArray(rec.tm)) rec.tm.forEach(t=>avail.add(Number(t)));
     }
-    if (!facetPass(f.fuels, c.fuel)) return false;
-    if (!facetPass(f.brands, brandName(c))) return false;
-    if (!facetPass(f.types, c.cartype)) return false;
-    if (!facetPass(f.gears, c.gearshift)) return false;
-    if (!facetPass(f.seats, c.seats)) return false;
-    if (!facetPass(f.doors, c.doors)) return false;
-    if (!facetPass(f.colors, c.color && c.color.specific)) return false;
-    if (terms.length){
-      const avail = new Set(priceList(c).map(x=>x.term));
-      (Array.isArray(c.available_terms)?c.available_terms:[]).forEach(t=>avail.add(Number(t)));
-      // colors of this version are separate configs and may offer other terms
-      for (const cl of (Array.isArray(c.color_list)?c.color_list:[])){
-        const rec = cl && cl.uid!=null ? siblingStockRec(cl.uid) : null;
-        if (rec && Array.isArray(rec.tm)) rec.tm.forEach(t=>avail.add(Number(t)));
-      }
-      if (!terms.some(t=>avail.has(t))) return false;
-    }
-    // base-price fallback: a color sibling may carry the filtered term
-    const p = minPrice(c, terms.length?terms:null) ?? minPrice(c);
-    if (f.priceMin!=null && (p==null || p < f.priceMin)) return false;
-    if (f.priceMax!=null && (p==null || p > f.priceMax)) return false;
-    if (f.powerMin>0 && (Number(c.power)||0) < f.powerMin) return false;
-    if (f.powerMax!=null && Number(c.power) > f.powerMax) return false;
-    if (f.rangeMin>0 && (evRange(c)||0) < f.rangeMin) return false;
-    if (f.deals && !hasDeal(c)) return false;
-    if (f.hitch && !hasHitch(c)) return false;
-    if (f.realPics && !c.has_real_pictures) return false;
-    if (f.drops && !(c._drop>0)) return false;
-    if (f.soon){
-      const availability = FinnDomain.availabilityInfo(c.available_from);
-      if (!availability.date || !availability.soon) return false;
-    }
-    return true;
-  });
+    if (!terms.some(t=>avail.has(t))) return false;
+  }
+  // base-price fallback: a color sibling may carry the filtered term
+  const p = minPrice(c, terms.length?terms:null) ?? minPrice(c);
+  if (f.priceMin!=null && (p==null || p < f.priceMin)) return false;
+  if (f.priceMax!=null && (p==null || p > f.priceMax)) return false;
+  if (f.powerMin>0 && (Number(c.power)||0) < f.powerMin) return false;
+  if (f.powerMax!=null && Number(c.power) > f.powerMax) return false;
+  if (f.rangeMin>0 && (evRange(c)||0) < f.rangeMin) return false;
+  if (f.deals && !hasDeal(c)) return false;
+  if (f.hitch && !hasHitch(c)) return false;
+  if (f.realPics && !c.has_real_pictures) return false;
+  if (f.drops && !(c._drop>0)) return false;
+  if (f.soon){
+    const availability = FinnDomain.availabilityInfo(c.available_from);
+    if (!availability.date || !availability.soon) return false;
+  }
+  return true;
+}
+function apply(){
+  state.filtered = state.cars.filter(c=>carPasses(c, null));
   sortCars();
   refreshDisplayItems();
   state.renderCount = 0;
   renderGrid(true);
   renderStats();
   renderActiveFilters();
+  updateFacetCounts();
   writeHash();
   if (state.userTouched && window.scrollY > 380) window.scrollTo({top:0, behavior:"smooth"});
+}
+/* Live facet counts: each group's numbers reflect all OTHER active filters. */
+function updateFacetCounts(){
+  if (!state.facets) return;
+  state.liveBrandCounts = new Map();
+  for (const c of state.cars) if (carPasses(c, "brands")){
+    const b = brandName(c);
+    state.liveBrandCounts.set(b, (state.liveBrandCounts.get(b)||0)+1);
+  }
+  $$("#brandList [data-brand]").forEach(cb=>{
+    const row = cb.closest(".checkrow");
+    const n = state.liveBrandCounts.get(cb.dataset.brand)||0;
+    const cnt = row.querySelector(".cnt");
+    if (cnt) cnt.textContent = fmtNum(n);
+    row.classList.toggle("dim", n===0 && !cb.checked && !cb.indeterminate);
+  });
+  for (const [prop, sel, get] of [["fuels","#fuelChips",c=>c.fuel],["types","#typeChips",c=>c.cartype],["gears","#gearChips",c=>c.gearshift]]){
+    const counts = new Map();
+    for (const c of state.cars) if (carPasses(c, prop)){
+      const v = String(get(c)??"").trim();
+      if (v) counts.set(v, (counts.get(v)||0)+1);
+    }
+    $$(sel+" .chip").forEach(ch=>{
+      const n = counts.get(ch.dataset.chip)||0;
+      let span = ch.querySelector(".chip-count");
+      if (!span){ span = document.createElement("span"); span.className = "chip-count"; ch.append(" ", span); }
+      span.textContent = fmtNum(n);
+      ch.classList.toggle("dim", n===0 && !ch.classList.contains("on") && !ch.classList.contains("ex"));
+    });
+  }
 }
 function sortCars(){
   const terms = state.f.terms.map(Number);
@@ -668,14 +732,11 @@ function renderQuickBar(){
   const inList = (arr,v) => arr.includes(v);
   const flip = (arr,v) => { const n=arr.indexOf("!"+v); if(n>=0) arr.splice(n,1); const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); };
   const items = [];
-  const ev = val(F.fuels,/elek|electr/i), phev = val(F.fuels,/hybrid/i);
-  const suv = val(F.types,/suv|gelände/i), kombi = val(F.types,/kombi|estate/i);
+  const ev = val(F.fuels,/elek|electr/i);
   const auto = val(F.gears,/automat/i);
   if (ev)   items.push({ic:"i-bolt",  label:"Electric",   on:inList(f.fuels,ev),    covers:`fuel:${ev}`, go:()=>flip(f.fuels,ev)});
-  if (phev) items.push({ic:"i-fuel",  label:"Hybrid",     on:inList(f.fuels,phev),  covers:`fuel:${phev}`, go:()=>flip(f.fuels,phev)});
-  if (suv)  items.push({ic:"i-car",   label:"SUV",        on:inList(f.types,suv),   covers:`type:${suv}`, go:()=>flip(f.types,suv)});
-  if (kombi)items.push({ic:"i-car",   label:"Estate",     on:inList(f.types,kombi), covers:`type:${kombi}`, go:()=>flip(f.types,kombi)});
   if (auto) items.push({ic:"i-gear",  label:"Automatic",  on:inList(f.gears,auto),  covers:`gear:${auto}`, go:()=>flip(f.gears,auto)});
+  items.push({ic:"i-car",      label:"Towbar (AHK)", on:f.hitch, covers:"hitch", go:()=>{f.hitch=!f.hitch;$("#fltHitch").checked=f.hitch;}});
   items.push({ic:"i-tag",      label:"under 300 €", on:f.priceMax===300, covers:"priceMax:300", go:()=>setPriceMax(f.priceMax===300?null:300)});
   items.push({ic:"i-calendar", label:"≤ 4 weeks",   on:f.soon, covers:"soon", go:()=>{f.soon=!f.soon;$("#fltNow").checked=f.soon;}});
   items.push({ic:"i-shield",   label:"Deals",       on:f.deals, covers:"deals", go:()=>{f.deals=!f.deals;$("#fltDeals").checked=f.deals;}});
@@ -747,13 +808,15 @@ function renderActiveFilters(){
   f.brands.forEach(v=>add(`brand:${v}`, tag(v), ()=>f.brands=f.brands.filter(x=>x!==v)));
   f.types.forEach(v=>add(`type:${v}`, facetTag("body",v), ()=>f.types=f.types.filter(x=>x!==v)));
   f.gears.forEach(v=>add(`gear:${v}`, facetTag("gear",v), ()=>f.gears=f.gears.filter(x=>x!==v)));
-  if (f.terms.length){
-    const t = f.terms.map(Number);
-    const lbl = Math.min(...t)===Math.max(...t) ? `${t[0]} mo` : `${Math.min(...t)}–${Math.max(...t)} mo`;
-    add("terms", lbl, ()=>{f.terms=[];syncRangeControls();});
-  }
-  f.seats.forEach(v=>add(`seat:${v}`, tag(v)+" seats", ()=>f.seats=f.seats.filter(x=>x!==v)));
-  f.doors.forEach(v=>add(`door:${v}`, tag(v)+" doors", ()=>f.doors=f.doors.filter(x=>x!==v)));
+  const rangePill = (key, arr, unit, clear) => {
+    if (!arr.length) return;
+    const v = arr.map(Number).filter(Number.isFinite);
+    const lbl = Math.min(...v)===Math.max(...v) ? `${v[0]} ${unit}` : `${Math.min(...v)}–${Math.max(...v)} ${unit}`;
+    add(key, lbl, ()=>{clear();syncRangeControls();});
+  };
+  rangePill("terms", f.terms, "mo", ()=>f.terms=[]);
+  rangePill("seats", f.seats, "seats", ()=>f.seats=[]);
+  rangePill("doors", f.doors, "doors", ()=>f.doors=[]);
   f.colors.forEach(v=>add(`color:${v}`, tag(v), ()=>f.colors=f.colors.filter(x=>x!==v)));
   if (f.priceMin!=null) add(`priceMin:${f.priceMin}`, "≥ "+fmtEur(f.priceMin), ()=>{f.priceMin=null;syncRangeControls();});
   if (f.priceMax!=null) add(`priceMax:${f.priceMax}`, "≤ "+fmtEur(f.priceMax), ()=>{f.priceMax=null;syncRangeControls();});
@@ -779,7 +842,7 @@ function renderActiveFilters(){
 function syncChipStates(){
   const f=state.f;
   const groups = [["#fuelChips",f.fuels],["#typeChips",f.types],["#gearChips",f.gears],
-                  ["#seatChips",f.seats],["#doorChips",f.doors],["#colorSwatches",f.colors]];
+                  ["#colorSwatches",f.colors]];
   for(const [sel,arr] of groups)
     $$(sel+" [data-chip]").forEach(ch=>{
       ch.classList.toggle("on", arr.includes(ch.dataset.chip));
@@ -1278,6 +1341,15 @@ function syncRangeControls(){
   if (term && term._dr && F){
     const sel = f.terms.map(Number).filter(t=>F.terms.includes(t));
     term._dr.set(sel.length?Math.min(...sel):null, sel.length?Math.max(...sel):null);
+  }
+  const seatR = $("#seatRange"), doorR = $("#doorRange");
+  if (seatR && seatR._dr){
+    const sel = f.seats.map(Number).filter(Number.isFinite);
+    seatR._dr.set(sel.length?Math.min(...sel):null, sel.length?Math.max(...sel):null);
+  }
+  if (doorR && doorR._dr){
+    const sel = f.doors.map(Number).filter(Number.isFinite);
+    doorR._dr.set(sel.length?Math.min(...sel):null, sel.length?Math.max(...sel):null);
   }
   $("#priceMin").value = f.priceMin??""; $("#priceMax").value = f.priceMax??"";
   updateRangeOuts();

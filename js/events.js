@@ -88,8 +88,6 @@ function wireEvents(){
   chipGroup("#fuelChips", "fuels");
   chipGroup("#typeChips", "types");
   chipGroup("#gearChips", "gears");
-  chipGroup("#seatChips", "seats");
-  chipGroup("#doorChips", "doors");
   chipGroup("#colorSwatches", "colors");
   $("#brandSearch").addEventListener("input", e=>renderBrandList(e.target.value));
   $("#brandList").addEventListener("click", e=>{
