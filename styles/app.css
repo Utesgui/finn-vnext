@@ -816,17 +816,17 @@ dialog {
   box-shadow: var(--cp-shadow-lg);
 }
 dialog::backdrop { background: rgba(8, 10, 12, 0.55); backdrop-filter: blur(6px); }
-dialog[open] { animation: dialogIn 0.28s var(--ease-spring) both; }
+dialog[open] { display: flex; flex-direction: column; animation: dialogIn 0.28s var(--ease-spring) both; }
 @keyframes dialogIn { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
 .dhead {
   position: sticky; inset-block-start: 0; z-index: 10; display: flex; align-items: center; gap: 0.75rem;
-  min-block-size: 66px; padding: 0.8rem 1.1rem; border-block-end: 1px solid var(--cp-border);
+  flex: none; min-block-size: 66px; padding: 0.8rem 1.1rem; border-block-end: 1px solid var(--cp-border);
   background: var(--cp-panel-strong); backdrop-filter: blur(14px);
 }
 .dhead .t { font-size: 1.02rem; font-weight: 750; letter-spacing: -0.02em; }
 .dhead .s { color: var(--cp-text-muted); font-size: 0.72rem; }
 .dhead .x { margin-inline-start: auto; }
-.dbody { max-block-size: calc(90vh - 66px); overflow: auto; overscroll-behavior: contain; padding: 1.1rem; }
+.dbody { flex: 1 1 auto; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 1.1rem; }
 .dgrid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1rem; }
 .gallery .main {
   overflow: hidden; aspect-ratio: 16 / 9; border: 1px solid var(--cp-border);
@@ -962,7 +962,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .dnav { display: flex; align-items: center; gap: 0.35rem; margin-inline-start: auto; }
 .dnav .iconbtn { border-color: var(--cp-border); }
 .dpos { margin-inline-end: 0.15rem; color: var(--cp-text-soft); font-size: 0.7rem; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.detail-body { max-block-size: calc(90vh - 72px); padding: 1.1rem; scrollbar-gutter: stable; }
+.detail-body { padding: 1.1rem; scrollbar-gutter: stable; }
 .detail-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); align-items: start; gap: 1.1rem; }
 .detail-gallery .main { position: relative; aspect-ratio: 16 / 10; border-radius: var(--cp-r-xl); }
 .detail-gallery .main img { position: relative; z-index: 1; padding: 0.5rem; }
@@ -1133,7 +1133,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-document .doc-download { inline-size: 32px; padding: 0; }
 .detail-document .doc-download[aria-busy="true"] .ic { animation: docSpin 0.7s linear infinite; }
 @keyframes docSpin { to { transform: rotate(360deg); } }
-.detail-meta { display: flex; justify-content: flex-end; margin: 0.6rem 0.2rem 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", monospace; font-size: 0.68rem; }
+.detail-meta { display: flex; justify-content: flex-end; margin: 0.6rem 0.2rem 0.15rem; color: var(--cp-text-soft); font-family: Consolas, "Courier New", monospace; font-size: 0.68rem; }
 /* ---------- Toast, FAB, footer ---------------------------------------------- */
 .toast {
   position: fixed; inset-inline-start: 50%; inset-block-end: max(5rem, calc(env(safe-area-inset-bottom) + 4rem));
@@ -1255,9 +1255,8 @@ footer a:hover { color: var(--cp-accent); }
   .grid.list .avail { font-size: 0.68rem; }
   dialog, #versionsDlg, #detailDlg { inline-size: 100vw; max-inline-size: 100vw; max-block-size: 100dvh; border: 0; border-radius: 0; }
   dialog[open] { margin: 0; }
-  .dbody { max-block-size: calc(100dvh - 62px); }
   #detailDlg .detail-head { min-block-size: 62px; padding: 0.55rem 0.65rem; }
-  .detail-body { max-block-size: calc(100dvh - 62px); padding: 0.7rem; }
+  .detail-body { padding: 0.7rem; }
   .detail-head-main > .blogo, .detail-heading .eyebrow { display: none; }
   .detail-heading .t { max-inline-size: 150px; font-size: 0.88rem; }
   .detail-heading .s { overflow: hidden; max-inline-size: 150px; font-size: 0.68rem; text-overflow: ellipsis; white-space: nowrap; }
