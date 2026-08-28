@@ -632,7 +632,9 @@ function openDetail(c, options={}){
     const catalogCar = !isSelf&&uid ? state.cars.find(x=>String(x.uid??"")===uid||carKey(x)===uid) : null;
     return {
       name: cl.color_specific||"Unnamed color", hex: cl.color_hex, date: cl.availability_date,
-      uid, pics: Array.isArray(cl.pictures)?cl.pictures.map(p=>(p&&p.url)||p).filter(u=>typeof u==="string"):[],
+      uid,
+      pics: (Array.isArray(cl.pictures)&&cl.pictures.length ? cl.pictures.map(p=>(p&&p.url)||p) : [cl.picture_front_url])
+        .filter(u=>typeof u==="string"&&u),
       catalogCar, isSelf
     };
   });

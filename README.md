@@ -103,7 +103,10 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Live stats** — cheapest, median price, EV share, brand count for the current result set.
 - **CSV export** of the filtered result list (semicolon-separated and Excel-friendly).
 - **Resilient API layer** — bounded requests, active cancellation, endpoint fallback,
-  adaptive page size for server errors, five-minute IndexedDB caching, and stale-load guards.
+  adaptive page size for server errors, **cache-first startup** (any catalog cached within
+  7 days renders instantly; anything older than 5 minutes is refreshed silently in the
+  background and swapped in — if the refresh fails, the cached data stays usable), and
+  stale-load guards.
 
 ---
 

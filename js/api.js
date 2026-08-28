@@ -157,6 +157,7 @@ async function fetchConfigByUid(uid){
 const REQUEST_TIMEOUT_MS = 30000;
 const PROBE_TIMEOUT_MS = 6000;
 const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
+const CATALOG_CACHE_MAX_STALE_MS = 7 * 24 * 60 * 60 * 1000;   // serve-stale ceiling
 const CATALOG_CACHE_DB = "finnvnext-cache-v2";
 const CATALOG_CACHE_STORE = "catalogs";
 
@@ -209,7 +210,10 @@ async function readCatalogCache(key){
     const request=db.transaction(CATALOG_CACHE_STORE,"readonly").objectStore(CATALOG_CACHE_STORE).get(key);
     request.onsuccess=()=>{
       const record=request.result;
-      resolve(record&&Date.now()-record.savedAt<CATALOG_CACHE_TTL_MS&&Array.isArray(record.cars)?record.cars:null);
+      const age=record?Date.now()-record.savedAt:Infinity;
+      resolve(record&&Array.isArray(record.cars)&&age<CATALOG_CACHE_MAX_STALE_MS
+        ? {cars:record.cars, stale:age>=CATALOG_CACHE_TTL_MS}
+        : null);
     };
     request.onerror=()=>resolve(null);
   });
@@ -330,20 +334,24 @@ async function loadCatalog(options={}){
   const {signal}=controller;
   state.loading = true;
   setStatus("busy", "Loading catalog…");
-  renderSkeletons();
   hideBanner();
+  // Cache-first: any cached catalog (up to 7 days old) renders immediately;
+  // anything older than the fresh TTL is then refreshed silently in the
+  // background and swapped in when ready.
+  let servedStale = false;
   try{
     if(!force){
       const cached=await readCatalogCache(catalogCacheKey());
       if(gen!==state.loadGen||signal.aborted) return;
-      if(cached){ commitCatalog(cached,{cached:true}); return; }
+      if(cached){
+        commitCatalog(cached.cars,{cached:true});
+        if(!cached.stale) return;
+        servedStale = true;
+        setStatus("busy", `${fmtNum(cached.cars.length)} configurations · cached — refreshing…`);
+      }
     }
+    if(!servedStale) renderSkeletons();
     await probeEndpoint(signal);
-    if(!force){
-      const cached=await readCatalogCache(catalogCacheKey());
-      if(gen!==state.loadGen||signal.aborted) return;
-      if(cached){ commitCatalog(cached,{cached:true}); return; }
-    }
     async function fetchView(view, seen, markSoon){
       let offset = 0, limit = Number(state.cfg.limit)||200, pages = 0;
       for(;;){
@@ -386,10 +394,15 @@ async function loadCatalog(options={}){
     commitCatalog(cars);
   }catch(err){
     if (gen !== state.loadGen) return;
-    state.cars = []; state.filtered = [];
-    $("#grid").innerHTML = "";
-    setStatus("err", "API unreachable");
-    showBanner(err);
+    if (servedStale){
+      // the cached catalog stays usable — report the failed refresh quietly
+      setStatus("ok", `${fmtNum(state.cars.length)} configurations · cached (refresh failed: ${String((err&&err.message)||err)})`);
+    } else {
+      state.cars = []; state.filtered = [];
+      $("#grid").innerHTML = "";
+      setStatus("err", "API unreachable");
+      showBanner(err);
+    }
   }finally{
     if (gen === state.loadGen){
       state.loading = false;
