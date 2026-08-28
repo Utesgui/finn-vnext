@@ -23,7 +23,7 @@
   })();
 </script>
 <script src="js/domain.js?v=20260828-1"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-1">
+<link rel="stylesheet" href="styles/app.css?v=20260828-2">
 </head>
 <body>
 
@@ -75,20 +75,21 @@
     <button class="sclear" id="qClear" hidden aria-label="Clear search"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     <kbd>/</kbd>
   </div>
-  <div class="hspacer"></div>
-  <div class="seg" id="bizSeg" title="Pricing mode" role="group" aria-label="Pricing mode">
-    <button data-biz="true" class="on" aria-pressed="true">Business</button>
-    <button data-biz="false" aria-pressed="false">Private</button>
-  </div>
-  <div class="pill busy" id="status" role="status" aria-live="polite" title="Connecting…"><span class="dot" aria-hidden="true"></span><span id="statusTxt">Connecting…</span></div>
-  <div class="header-actions">
-    <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
-    <button class="iconbtn utility-menu-toggle" id="utilityMenuBtn" aria-controls="utilityActions" aria-expanded="false" title="More tools" aria-label="More tools"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
-    <div class="utility-actions" id="utilityActions" role="group" aria-label="Sharing and settings">
-      <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)" aria-label="Copy link to this view"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
-      <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
-      <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
-      <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+  <div class="header-right">
+    <div class="seg" id="bizSeg" title="Pricing mode" role="group" aria-label="Pricing mode">
+      <button data-biz="true" class="on" aria-pressed="true">Business</button>
+      <button data-biz="false" aria-pressed="false">Private</button>
+    </div>
+    <div class="pill busy" id="status" role="status" aria-live="polite" title="Connecting…"><span class="dot" aria-hidden="true"></span><span id="statusTxt">Connecting…</span></div>
+    <div class="header-actions">
+      <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
+      <button class="iconbtn utility-menu-toggle" id="utilityMenuBtn" aria-controls="utilityActions" aria-expanded="false" title="More tools" aria-label="More tools"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
+      <div class="utility-actions" id="utilityActions" role="group" aria-label="Sharing and settings">
+        <button class="iconbtn" id="shareBtn" title="Copy a link to this exact view (filters included)" aria-label="Copy link to this view"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+        <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
+        <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
+        <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+      </div>
     </div>
   </div>
 </header>

@@ -249,14 +249,15 @@ a { color: var(--cp-link); text-decoration-thickness: 1px; text-underline-offset
 /* ---------- Header --------------------------------------------------------- */
 header {
   position: sticky; inset-block-start: 0; z-index: 100;
-  display: grid; grid-template-columns: auto minmax(220px, 560px) minmax(12px, 1fr) auto auto auto;
+  display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(220px, 620px) minmax(max-content, 1fr);
   align-items: center; gap: 0.75rem; min-block-size: 68px; padding: 0.7rem clamp(1rem, 2.5vw, 2.25rem);
   border-block-end: 1px solid color-mix(in srgb, var(--cp-border) 86%, transparent);
   background: var(--cp-overlay);
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
 }
-.logo { display: flex; align-items: center; gap: 0.7rem; min-inline-size: max-content; user-select: none; }
+.header-right { display: flex; align-items: center; justify-self: end; gap: 0.5rem; min-inline-size: max-content; }
+.logo { display: flex; align-items: center; justify-self: start; gap: 0.7rem; min-inline-size: max-content; user-select: none; }
 .logo .mark {
   position: relative; display: grid; place-items: center; inline-size: 38px; block-size: 38px;
   border-radius: 0.7rem; background: linear-gradient(135deg, #1b1f23, #0a0c0e);
@@ -308,7 +309,6 @@ html[data-theme="dark"] .logo .mark {
   transform: translateY(-50%); border: 0; background: none; color: var(--cp-text-muted); padding: 0.35rem;
 }
 .sclear:hover { color: var(--cp-danger); }
-.hspacer { min-inline-size: 0; }
 .header-actions { position: relative; display: flex; align-items: center; gap: 0.3rem; }
 .utility-actions { display: flex; align-items: center; gap: 0.3rem; }
 .iconbtn {
@@ -605,6 +605,11 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .badge.ev { border-color: transparent; background: var(--cp-accent); color: var(--cp-accent-fg); }
 .badge.drop { border-color: transparent; background: var(--cp-success); color: var(--cp-success-fg); font-variant-numeric: tabular-nums; }
 .model-card .group-count { border-color: transparent; background: var(--cp-ink); color: var(--cp-ink-fg); }
+html[data-theme="dark"] .model-card .group-count {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: color-mix(in srgb, #0d0f12 45%, transparent);
+  color: #fff;
+}
 .badge.soon {
   border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent);
   background: var(--cp-panel-strong); color: var(--cp-warning);
@@ -657,6 +662,15 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .blogo {
   flex: none; inline-size: 34px; block-size: 34px; object-fit: contain;
   border: 1px solid var(--cp-border); border-radius: 0.55rem; background: #fff; padding: 3px;
+}
+/* Dark mode: invert brand logos onto a dark tile instead of a white box.
+   The filter inverts the whole element, so background/border are set to the
+   pre-inverted values of surface-soft (#1e2226) and border (#262b30);
+   hue-rotate keeps colored marks close to their real hue. */
+html[data-theme="dark"] .blogo {
+  background: #e1ddd9;
+  border-color: #d9d4cf;
+  filter: invert(1) hue-rotate(180deg);
 }
 .chead .txt { flex: 1; min-inline-size: 0; }
 .ctitle { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
@@ -1117,10 +1131,7 @@ footer a:hover { color: var(--cp-accent); }
   .navarr { opacity: 1; }
 }
 @media (max-width: 1800px) {
-  header {
-    grid-template-columns: auto minmax(180px, 560px) minmax(8px, 1fr) auto auto auto;
-    gap: 0.5rem; padding-inline: 1rem;
-  }
+  header { gap: 0.5rem; padding-inline: 1rem; }
   .logo .sub { display: none; }
   #statusTxt { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .pill { inline-size: 36px; justify-content: center; padding: 0; }
@@ -1128,8 +1139,7 @@ footer a:hover { color: var(--cp-accent); }
   .header-actions .iconbtn { inline-size: 36px; block-size: 36px; }
 }
 @media (max-width: 1220px) {
-  header { grid-template-columns: auto minmax(160px, 1fr) auto auto auto; gap: 0.5rem; }
-  .hspacer { display: none; }
+  header { grid-template-columns: auto minmax(160px, 1fr) auto; }
   .logo .sub { display: none; }
   #statusTxt { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .pill { inline-size: 36px; justify-content: center; padding: 0; }
@@ -1138,15 +1148,13 @@ footer a:hover { color: var(--cp-accent); }
 }
 @media (max-width: 960px) {
   header {
-    grid-template-columns: auto auto auto 1fr;
-    grid-template-areas: "logo biz status actions" "search search search search";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "logo right" "search search";
     gap: 0.5rem; padding: 0.65rem 1rem;
   }
   .logo { grid-area: logo; }
   .searchwrap { grid-area: search; }
-  #bizSeg { grid-area: biz; justify-self: end; }
-  #status { grid-area: status; justify-self: start; }
-  .header-actions { grid-area: actions; justify-self: end; }
+  .header-right { grid-area: right; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   aside {
     position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 145; inline-size: min(340px, 90vw);
@@ -1182,16 +1190,7 @@ footer a:hover { color: var(--cp-accent); }
   .detail-kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "logo biz status" "search search actions";
-    min-block-size: 0; padding: 0.65rem 1rem;
-  }
-  .logo { grid-area: logo; }
-  .searchwrap { grid-area: search; }
-  #bizSeg { grid-area: biz; justify-self: end; }
-  #status { grid-area: status; justify-self: end; }
-  .header-actions { grid-area: actions; justify-self: end; }
+  header { min-block-size: 0; padding: 0.65rem 1rem; }
   .iconbtn.utility-menu-toggle { display: inline-grid; }
   .utility-actions {
     position: absolute; inset-block-start: calc(100% + 0.5rem); inset-inline-end: 0; z-index: 120;
@@ -1210,7 +1209,7 @@ footer a:hover { color: var(--cp-accent); }
   .equipment-list li:last-child { border-block-end-color: transparent; }
 }
 @media (max-width: 600px) {
-  header { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "logo biz actions" "search search search"; }
+  .header-right { gap: 0.35rem; }
   .logo { min-inline-size: 0; overflow: hidden; }
   .logo > div { min-inline-size: 0; overflow: hidden; }
   .logo .name { overflow: hidden; font-size: 0.92rem; text-overflow: ellipsis; }
