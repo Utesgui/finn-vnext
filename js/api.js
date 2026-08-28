@@ -368,7 +368,9 @@ function commitCatalog(cars,{cached=false}={}){
   syncChipStates();
   restoreControls();
   const catalogStock=aggregateStock(state.cars);
-  setStatus("ok",`${fmtNum(state.cars.length)} configurations${catalogStock==null?"":` · ${stockText(catalogStock)}`} · ${state.cfg.biz?"business":"private"} prices${cached?" · cached":state.cfg.proxy?" · via proxy":""}`);
+  setStatus("ok",
+    `${fmtNum(state.cars.length)} configurations${catalogStock==null?"":` · ${stockText(catalogStock)}`}`,
+    `${state.cfg.biz?"business":"private"} prices${cached?" · cached":state.cfg.proxy?" · via proxy":""}`);
   apply();
   // shared deep links (car / color / model) open once, on the first commit
   if(!state.deepLinked){ state.deepLinked=true; setTimeout(()=>openFromHash(), 60); }
@@ -462,11 +464,13 @@ async function loadCatalog(options={}){
     }
   }
 }
-function setStatus(kind, txt){
+function setStatus(kind, txt, extra){
   const el = $("#status");
-  el.className = "pill " + kind;
-  el.title = txt;
+  el.className = "pill " + kind + (el.classList.contains("expanded") ? " expanded" : "");
+  el.title = extra ? `${txt} · ${extra} — click for details` : txt;
   $("#statusTxt").textContent = txt;
+  const ex = $("#statusExtra");
+  if (ex) ex.textContent = extra ? ` · ${extra}` : "";
 }
 function showBanner(err){
   const el = $("#banner");

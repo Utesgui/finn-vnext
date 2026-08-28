@@ -367,6 +367,13 @@ html[data-theme="dark"] .logo .mark {
 .pill.err .dot { background: var(--cp-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-danger) 20%, transparent); }
 .pill.busy .dot { background: var(--cp-warning); animation: statusPulse 1.2s ease-in-out infinite; }
 @keyframes statusPulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+#status { cursor: pointer; user-select: none; }
+#status .stat-extra {
+  display: inline-block; overflow: hidden; max-inline-size: 0; opacity: 0; white-space: nowrap;
+  margin-inline-start: -0.45rem;
+  transition: max-inline-size 0.35s var(--ease-out), opacity 0.25s var(--ease-out), margin 0.35s var(--ease-out);
+}
+#status.expanded .stat-extra { max-inline-size: 260px; margin-inline-start: 0; opacity: 1; }
 /* ---------- Layout + sidebar ----------------------------------------------- */
 .layout {
   display: grid; grid-template-columns: 17.25rem minmax(0, 1fr); align-items: start; gap: 1.5rem;
@@ -477,6 +484,27 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
   font-variant-numeric: tabular-nums; text-decoration: none;
 }
 .filter-empty { padding: 0.35rem; color: var(--cp-text-soft); font-size: 0.72rem; }
+/* brand cells: two-up grid with logo, live count, hidden checkbox */
+.brandgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; }
+.brandgrid.zero { margin-block-start: 0.25rem; }
+.brandcell { gap: 0.4rem; min-block-size: 34px; padding: 0.2rem 0.4rem; font-size: 0.8rem; }
+.brandcell input[type="checkbox"] { display: none; }
+.brandcell .blogo {
+  flex: none; inline-size: 22px; block-size: 22px; border-radius: 6px;
+  border: 1px solid var(--cp-border); background: #fff; object-fit: contain; padding: 2px;
+}
+.brandcell .bname { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brandcell .cnt { flex: none; }
+.brandcell.on { color: var(--cp-text); background: color-mix(in srgb, var(--cp-accent) 10%, transparent); box-shadow: inset 0 0 0 1.5px var(--cp-accent); }
+.brandcell.ex { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cp-danger) 60%, transparent); }
+.brand-collapse {
+  display: flex; align-items: center; gap: 0.3rem; inline-size: 100%; margin-block-start: 0.35rem;
+  border: 0; border-block-start: 1px dashed var(--cp-border); background: none;
+  color: var(--cp-text-soft); padding: 0.35rem 0.4rem 0.15rem; font-size: 0.68rem; font-weight: 600;
+}
+.brand-collapse:hover { color: var(--cp-text); }
+.brand-collapse .ic { font-size: 0.6rem; transition: transform 0.2s var(--ease-out); }
+.brand-collapse[aria-expanded="true"] .ic { transform: rotate(90deg); }
 .rangerow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: 0.35rem; margin-block-end: 0.45rem; }
 .rangerow input[type="number"] { inline-size: 100%; min-inline-size: 0; font-variant-numeric: tabular-nums; }
 .rangerow span { color: var(--cp-text-soft); font-size: 0.75rem; }
@@ -1477,4 +1505,11 @@ footer a:hover { color: var(--cp-accent); }
 .detail-document .doc-open, .detail-document .doc-download, .detail-meta,
 footer, .fab .n, .grid.list .avail {
   font-size: 0.75rem;
+}
+
+/* expanded status pill reveals its text even where the pill is dot-only */
+#status.expanded { inline-size: auto; padding: 0.4rem 0.7rem; }
+#status.expanded #statusTxt {
+  position: static; inline-size: auto; block-size: auto;
+  overflow: visible; clip: auto; white-space: nowrap;
 }
