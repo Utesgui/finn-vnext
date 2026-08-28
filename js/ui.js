@@ -296,6 +296,7 @@ function renderGrid(reset){
   els.forEach(el=>frag.appendChild(el));
   grid.appendChild(frag);
   els.forEach((el,i)=>{ if(!slice[i].versions) autoSelectMatchingColor(el, slice[i]); });
+  requestAnimationFrame(balancePalettes);
   state.renderCount += slice.length;
   $("#moreBtn").hidden = !hasMoreResults() || AUTO_LOAD;
   $("#moreBtn").textContent = `Show more  (${fmtNum(state.displayItems.length-state.renderCount)} remaining)`;
@@ -491,6 +492,26 @@ function palMaxFor(dotsCount){
   if (!dotsCount || dotsCount < 2) return "calc(100% - 1.2rem)";
   const half = Math.ceil((15 + (Math.min(dotsCount,8)-1) * 9.5) / 2);
   return `calc(50% - ${half + 9}px)`;
+}
+/* When a color row has to wrap, split it near 50/50 instead of leaving a
+   lonely swatch on the second line. */
+function balancePalettes(){
+  document.querySelectorAll(".imgwrap > .cpalette, .vimg > .cpalette").forEach(el=>{
+    el.style.inlineSize = "";
+    const items = [...el.children];
+    if (items.length < 3 || el.clientHeight <= 26) return;   // fits on one line
+    const k = Math.ceil(items.length / 2);
+    const gap = 4.8;
+    const width = items.slice(0, k).reduce((s,it)=>s+it.getBoundingClientRect().width, 0) + (k-1)*gap;
+    el.style.inlineSize = `${Math.ceil(width) + 2}px`;
+  });
+}
+/* page width: 0 standard · 1 wide · 2 full */
+function applyWide(){
+  const w = Number(state.cfg.wide) || 0;
+  document.body.dataset.wide = String(w);
+  const btn = $("#wideBtn");
+  if (btn) btn.classList.toggle("on", w > 0);
 }
 /* In-place color preview on result/version cards: swap the carousel to the
    chosen color and remember it so opening the card targets that variant. */
@@ -758,6 +779,7 @@ function openVersions(group){
   vEls.forEach(el=>frag.appendChild(el));
   grid.appendChild(frag);
   vEls.forEach((el,i)=>autoSelectMatchingColor(el, group.versions[i]));
+  requestAnimationFrame(balancePalettes);
   if(!dlg.open) dlg.showModal();
   dlg.querySelector(".dbody").scrollTop = 0;
 }
@@ -1121,8 +1143,8 @@ function openDetail(c, options={}){
   ].filter(Boolean);
   dlg.innerHTML = `
     <div class="dhead detail-head">
+      ${state.detailGroupKey?`<button class="ghost detail-back" data-back-versions><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> Versions</button>`:""}
       <div class="detail-head-main">
-        ${state.detailGroupKey?`<button class="ghost detail-back" data-back-versions><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg> Versions</button>`:""}
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" onerror="this.remove()">`:""}
         <div class="detail-heading">
           <div class="eyebrow">${esc(brandName(c))}${c.model_year?` · model year ${esc(c.model_year)}`:""}</div>

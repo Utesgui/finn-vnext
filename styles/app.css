@@ -353,6 +353,8 @@ html[data-theme="dark"] .logo .mark {
   inline-size: min(1780px, 100%); margin-inline: auto;
   padding: 1.4rem clamp(1rem, 2.5vw, 2.25rem) 2rem;
 }
+body[data-wide="1"] .layout { inline-size: min(2280px, 100%); }
+body[data-wide="2"] .layout { inline-size: 100%; }
 .layout > main { min-inline-size: 0; }
 aside {
   position: sticky; inset-block-start: 84px; max-block-size: calc(100vh - 100px); overflow: auto;
@@ -624,6 +626,7 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .cardbar {
   display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
   min-block-size: 46px; padding: 0.5rem 0.6rem 0.15rem;
+  background: var(--cp-bg-elevated);
 }
 .cardbar .badges { display: flex; flex-wrap: wrap; gap: 0.3rem; min-inline-size: 0; }
 .cardbar .actions { display: flex; flex: none; gap: 0.35rem; }
@@ -1381,9 +1384,11 @@ footer a:hover { color: var(--cp-accent); }
   dialog, #versionsDlg, #detailDlg { inline-size: 100vw; max-inline-size: 100vw; max-block-size: 100dvh; border: 0; border-radius: 0; }
   dialog[open] { margin: 0; }
   #detailDlg .detail-head { flex-wrap: wrap; min-block-size: 62px; padding: 0.55rem 0.65rem; row-gap: 0.3rem; }
-  /* stack: buttons get their own top row, title row sits below with full width */
-  #detailDlg .dnav { order: -1; inline-size: 100%; justify-content: flex-end; }
-  #detailDlg .detail-head-main { inline-size: 100%; }
+  /* stack: back button top-left, nav/fav/compare/share/close top-right, title row below */
+  #detailDlg .detail-back { order: -2; }
+  #detailDlg .dnav { order: -1; flex: 1 1 auto; justify-content: flex-end; }
+  #detailDlg .dnav .x { margin-inline-start: 0; }
+  #detailDlg .detail-head-main { flex: 0 0 100%; inline-size: 100%; }
   .detail-body { padding: 0.7rem; }
   .detail-head-main > .blogo, .detail-heading .eyebrow { display: none; }
   .detail-heading .t { font-size: 0.88rem; }

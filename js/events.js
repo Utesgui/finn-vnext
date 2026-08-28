@@ -208,6 +208,11 @@ function wireEvents(){
   $("#cmpClear").addEventListener("click", ()=>{ state.compare=[]; $$(".cmpbtn").forEach(b=>{b.classList.remove("on");b.setAttribute("aria-pressed","false");}); renderCmpBar(); });
   $("#exportBtn").addEventListener("click", exportCsv);
   $("#themeBtn").addEventListener("click", toggleTheme);
+  $("#wideBtn").addEventListener("click", ()=>{
+    state.cfg.wide = ((Number(state.cfg.wide)||0) + 1) % 3;
+    saveCfg(); applyWide();
+    toast(["Standard width","Wide layout","Full width"][state.cfg.wide]);
+  });
   $("#helpBtn").addEventListener("click", ()=>$("#helpDlg").showModal());
   $("#favToggle").addEventListener("click", ()=>{
     state.f.favOnly = !state.f.favOnly;
@@ -242,6 +247,7 @@ function wireEvents(){
 /* ---------------- boot ---------------- */
 (function boot(){
   applyTheme();
+  applyWide();
   state.bootHash = location.hash;   // deep-link params survive the first writeHash
   // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
   if (readHash()) state.evDefaulted = true;
