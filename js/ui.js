@@ -112,9 +112,16 @@ function buildModelGroups(cars){
     g.priceMin = prices.length ? Math.min(...prices) : null;
     g.priceMax = prices.length ? Math.max(...prices) : null;
     g.stockCount = aggregateStock(g.versions);
+    // Listed configs carry only their own color's stock; color siblings from
+    // color_list are separate configs whose stock isn't in the catalog payload.
+    g.stockPartial = g.versions.some(c=>Array.isArray(c.color_list)&&c.color_list.length>1);
     g.earliest = dated[0] || g.representative;
     g.trims = new Set(g.versions.map(c=>c.trim_name||c.equipment_line||c.engine).filter(Boolean));
-    g.colors = new Set(g.versions.map(c=>c.color&&c.color.specific).filter(Boolean));
+    g.colors = new Set(g.versions.flatMap(c=>
+      Array.isArray(c.color_list)&&c.color_list.length
+        ? c.color_list.map(x=>x&&x.color_specific)
+        : [c.color&&c.color.specific]
+    ).filter(Boolean));
     return g;
   });
 }
@@ -217,7 +224,7 @@ function modelCardEl(group){
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
-        ${group.stockCount==null?"":`<div class="card-stock" title="Customer-visible stock across matching configurations; availability dates still apply"><strong>${fmtNum(group.stockCount)}</strong><span>${group.stockCount===1?"car":"cars"}</span></div>`}
+        ${group.stockCount==null?"":`<div class="card-stock" title="Stock of the listed configurations${group.stockPartial?" — further color variants of these versions carry their own stock":""}; availability dates still apply"><strong>${fmtNum(group.stockCount)}${group.stockPartial?"+":""}</strong><span>${group.stockCount===1&&!group.stockPartial?"car":"cars"}</span></div>`}
       </div>
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
       <div class="cfoot">
@@ -241,11 +248,12 @@ function versionCardEl(c){
   const openLabel=`Open ${carName(c)} ${title}, ${stockText(inventory)?stockText(inventory)+", ":""}${fmtEur(price)} per month`;
   const meta = [c.engine,displayValue("drive",c.config_drive),c.color&&c.color.specific].filter(Boolean).join(" · ");
   const chips = [
+    Array.isArray(c.color_list)&&c.color_list.length>1?`${c.color_list.length} colors`:null,
     c.model_year,
     c.power?`${Math.round(c.power*1.35962)} PS`:null,
     evRange(c)?`${fmtNum(evRange(c))} km`:null,
     displayValue("gear",c.gearshift)
-  ].filter(Boolean).slice(0,4);
+  ].filter(Boolean).slice(0,5);
   el.innerHTML = `
     <button class="card-open" data-open-version aria-label="${esc(openLabel)}"></button>
     <div class="vimg">
@@ -257,7 +265,7 @@ function versionCardEl(c){
     <div class="vbody">
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${esc(meta||[displayValue("fuel",c.fuel),displayValue("body",c.cartype)].filter(Boolean).join(" · "))}</div>
-      <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${inventory==null?"":`<span class="stock-chip" title="Customer-visible stock; availability date still applies">${esc(stockText(inventory))}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${inventory==null?"":`<span class="stock-chip" title="Customer-visible stock of this color${Array.isArray(c.color_list)&&c.color_list.length>1?" — other colors of this version carry their own stock":""}; availability date still applies">${esc(stockText(inventory))}${Array.isArray(c.color_list)&&c.color_list.length>1?"+":""}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
   const img = el.querySelector(".vimg>img");
@@ -280,7 +288,7 @@ function openVersions(group){
       <button class="iconbtn x" data-close="versionsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="dbody">
-      <div class="versions-summary">${group.stockCount==null?"":`<span class="pilllet stock-summary" title="Customer-visible stock across matching configurations; availability dates still apply"><b>${fmtNum(group.stockCount)}</b> ${group.stockCount===1?"car":"cars"}</span>`}<span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span><span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
+      <div class="versions-summary">${group.stockCount==null?"":`<span class="pilllet stock-summary" title="Stock of the listed configurations${group.stockPartial?" — further color variants of these versions carry their own stock":""}; availability dates still apply"><b>${fmtNum(group.stockCount)}${group.stockPartial?"+":""}</b> ${group.stockCount===1&&!group.stockPartial?"car":"cars"}</span>`}<span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span>${group.colors.size?`<span class="pilllet"><b>${fmtNum(group.colors.size)}</b> ${group.colors.size===1?"color":"colors"}</span>`:""}<span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
       <div class="version-grid"></div>
     </div>`;
   const grid = dlg.querySelector(".version-grid"), frag = document.createDocumentFragment();
@@ -438,7 +446,7 @@ function renderStats(){
   const median = prices.length ? prices.slice().sort((a,b)=>a-b)[Math.floor(prices.length/2)] : null;
   const drops = state.filtered.filter(c=>c._drop>0).length;
   $("#stats").innerHTML = [
-    stock!=null?`<span class="statchip" title="Customer-visible stock across matching configurations; availability dates still apply">cars <b>${fmtNum(stock)}</b></span>`:"",
+    stock!=null?`<span class="statchip" title="Stock of the listed configurations — color variants of a version carry their own stock; availability dates still apply">cars <b>${fmtNum(stock)}</b></span>`:"",
     cheapest!=null?`<span class="statchip">cheapest <b>${fmtEur(cheapest)}</b></span>`:"",
     median!=null?`<span class="statchip">median <b>${fmtEur(median)}</b></span>`:"",
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,
@@ -541,7 +549,10 @@ function openDetail(c, options={}){
   else if(!options.keepContext){ state.detailList = state.filtered; state.detailGroupKey = null; }
   const detailList = state.detailList || state.filtered;
   state.detailKey = carKey(c);
-  state.detailIdx = detailList.findIndex(x=>carKey(x)===state.detailKey);
+  const foundDetailIdx = detailList.findIndex(x=>carKey(x)===state.detailKey);
+  // Color-variant switches keep the original list position as an anchor so
+  // prev/next navigation keeps working from where the user was.
+  state.detailIdx = foundDetailIdx>=0 ? foundDetailIdx : (options.keepContext && state.detailIdx>=0 ? state.detailIdx : -1);
   const dlg = $("#detailDlg");
   dlg.setAttribute("aria-label", `${carName(c)} ${c.trim_name||""} details`.trim());
   const pics0 = galleryPics(c).map(url=>({url}));
@@ -724,6 +735,25 @@ function openDetail(c, options={}){
     renderGallery();
     dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
   }
+  // Each color is its own config with its own stock — resolve counts lazily
+  // (from the catalog when listed, otherwise via a cached config_id lookup).
+  const setChipStock = (i,n) => {
+    const btn = dlg.querySelector(`[data-color-idx="${i}"]`);
+    if (!btn || n==null) return;
+    let s = btn.querySelector(".stock");
+    if (!s){ s = document.createElement("span"); s.className = "stock"; btn.appendChild(s); }
+    s.textContent = `${fmtNum(n)} ${n===1?"car":"cars"}`;
+    s.title = "Customer-visible stock for this color";
+  };
+  const stockOpenKey = carKey(c);
+  colorVariants.forEach((v,i)=>{
+    if (v.isSelf){ setChipStock(i, stockCount(c)); return; }
+    const source = v.catalogCar ? Promise.resolve(v.catalogCar) : (v.uid ? fetchConfigByUid(v.uid) : Promise.resolve(null));
+    source.then(car=>{
+      if (!dlg.open || state.detailKey!==stockOpenKey || !car) return;
+      setChipStock(i, stockCount(car));
+    });
+  });
   const updateDetailQuote = () => {
     quotePrices = priceList(c,quoteKm);
     if(!quotePrices.some(x=>x.term===quoteTerm)){

@@ -55,8 +55,11 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Model explorer** — the visible **Configurations / By model** switch groups only the currently
   matching configurations. Both model cards and individual version cards retain their own
   photo carousel; the version grid also exposes prices, specs, availability, favorites and
-  compare actions before entering full details. Model cards aggregate the API's real
-  customer-visible stock across matching configurations; version cards show their own units.
+  compare actions before entering full details. Model cards count colors across each
+  version's full color set and mark stock totals with **+** when hidden color variants
+  carry additional stock (the API lists one config per version; its color siblings are
+  separate configs whose stock isn't in the listing payload). Version cards show their
+  own units plus a color count.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are
@@ -81,9 +84,11 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   update monthly price, baseline delta, selected price-table row and full contract total.
   It also includes key-spec highlights, technical pricing, all equipment categories shown
   as stacked sections, named option **packages**, tire type & size, interior color,
-  and an **interactive color switcher** below the gallery: click a color chip to jump
-  to that variant with its own photos, pricing and availability (resolved from the
-  local catalog, or fetched live via `config_id` when the sibling isn't loaded),
+  and an **interactive color switcher** below the gallery: chips show each color's own
+  availability date and (lazily fetched) per-color stock; clicking a chip jumps to that
+  variant with its own photos, pricing and availability (resolved from the local catalog,
+  or fetched live via `config_id` when the sibling isn't loaded) while ←/→ keep
+  navigating from the original list position,
   finn.com offer link, plus **Open PDF** and reliable
   **Download PDF** actions. **←/→ navigation** stays within the selected model when opened
   through the version picker, with a back-to-versions action; direct results continue to
