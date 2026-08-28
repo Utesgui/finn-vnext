@@ -413,7 +413,7 @@ function measureImageContent(src){
 const HERO_PROFILES = {
   /* cards: content ends up spanning ~[0.27..0.85] of the box height, clear of
      the 34px button strip above and the color dots below */
-  card:   { max: 1.35, tw: 0.94, th: 0.56, center: 0.575, clamp: 0.15 },
+  card:   { max: 1.40, tw: 0.94, th: 0.70, center: 0.47, clamp: 0.20 },
   detail: { max: 1.30, tw: 0.94, th: 0.84, center: 0.50, clamp: 0 }
 };
 function normalizeHeroScale(img, profile="card"){
@@ -653,9 +653,13 @@ function modelCardEl(group){
   const palMarkup = colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions" style="--palmax:${palMaxFor(pics.length)}">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:"";
   el.innerHTML = `
     <button class="card-open" data-open-group aria-label="${esc(openLabel)}"></button>
-    <div class="imgwrap">
+    <div class="cardbar">
       <div class="badges"><span class="badge group-count">${fmtNum(group.versions.length)} ${versionLabel}</span></div>
-      <button class="sharebtn" data-share-model="${esc(group.key)}" title="Share this model overview" aria-label="Share this model overview"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+      <div class="actions">
+        <button class="sharebtn" data-share-model="${esc(group.key)}" title="Share this model overview" aria-label="Share this model overview"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+      </div>
+    </div>
+    <div class="imgwrap">
       <img class="hero" alt="${esc(group.brand+" "+group.model)}" loading="lazy">
       ${state.cfg.largePalette?"":palMarkup}
       ${cardCarouselMarkup(pics,"model")}
@@ -702,10 +706,15 @@ function versionCardEl(c){
   ].filter(Boolean).slice(0,5);
   el.innerHTML = `
     <button class="card-open" data-open-version aria-label="${esc(openLabel)}"></button>
+    <div class="cardbar">
+      <div class="badges"></div>
+      <div class="actions">
+        <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+        <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+        <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
+      </div>
+    </div>
     <div class="vimg">
-      <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
-      <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
-      <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c)+" "+title)}" loading="lazy">
       ${state.cfg.largePalette?"":paletteHtml(c, 6, pics.length)}
       ${cardCarouselMarkup(pics,"version")}
@@ -783,16 +792,20 @@ function cardEl(c){
   const logo = brandLogo(c);
   el.innerHTML = `
     <button class="card-open" data-open-car aria-label="${esc(openLabel)}"></button>
-    <div class="imgwrap">
+    <div class="cardbar">
       <div class="badges">
         ${c._isNew?`<span class="badge new" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}
         ${c._drop>0?`<span class="badge drop" title="Base price dropped since your previous visit">▼ ${fmtEur(c._drop)}</span>`:""}
         ${label?`<span class="badge">${esc(label)}</span>`:""}
         ${c._soonView?'<span class="badge soon">coming soon</span>':""}
       </div>
-      <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
-      <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
-      <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
+      <div class="actions">
+        <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+        <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+        <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
+      </div>
+    </div>
+    <div class="imgwrap">
       <img class="hero" alt="${esc(carName(c))}" loading="lazy">
       ${state.cfg.largePalette?"":paletteHtml(c, 6, pics.length)}
       ${pics.length>1?`
@@ -908,12 +921,10 @@ function renderStats(pulse=true){
              partial: infos.some(i=>!i.known) };
   })();
   const cheapest = prices.length?Math.min(...prices):null;
-  const median = prices.length ? prices.slice().sort((a,b)=>a-b)[Math.floor(prices.length/2)] : null;
   const drops = state.filtered.filter(c=>c._drop>0).length;
   $("#stats").innerHTML = [
     stock.n!=null?`<span class="statchip" title="Customer-visible stock across listed configurations and resolved color variants${stock.partial?" — some colors not yet fetched":""}; availability dates still apply">cars <b>${fmtNum(stock.n)}${stock.partial?"+":""}</b></span>`:"",
     cheapest!=null?`<span class="statchip">cheapest <b>${fmtEur(cheapest)}</b></span>`:"",
-    median!=null?`<span class="statchip">median <b>${fmtEur(median)}</b></span>`:"",
     `<span class="statchip">EV share <b>${n?Math.round(evs/n*100):0}%</b></span>`,
     `<span class="statchip">brands <b>${brands}</b></span>`,
     drops?`<span class="statchip">▼ price drops <b>${drops}</b></span>`:"",
@@ -1124,6 +1135,7 @@ function openDetail(c, options={}){
         <button class="iconbtn" id="dPrev" title="Previous vehicle (←)" aria-label="Previous vehicle" ${state.detailIdx<=0?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=detailList.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
         <button class="iconbtn ${favOn?"on":""}" data-fav="${esc(carKey(c))}" title="Favorite (f)" aria-label="Toggle favorite" aria-pressed="${favOn}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+        <button class="iconbtn ${state.compare.includes(carKey(c))?"on":""}" data-cmp="${esc(carKey(c))}" title="Add to comparison" aria-label="Add to comparison" aria-pressed="${state.compare.includes(carKey(c))}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
         <button class="iconbtn" data-share-key="${esc(carKey(c))}" title="Share this configuration (current color included)" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
         <button class="iconbtn x" data-close="detailDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
@@ -1156,7 +1168,6 @@ function openDetail(c, options={}){
           ${configPdf?`<div class="detail-document"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg><div><div class="doc-title">Configuration PDF</div><div class="doc-meta">Factory specification · PDF document</div></div><div class="doc-actions"><a class="doc-open" href="${esc(configPdf)}" target="_blank" rel="noreferrer" title="Open configuration PDF in a new tab">Open PDF <svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></a><button class="doc-download" data-pdf-download title="Download configuration PDF" aria-label="Download configuration PDF"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button></div></div>`:""}
           <div class="detail-actions">
             ${link?`<a class="linkout" href="${esc(link)}" target="_blank" rel="noreferrer">View offer on finn.com <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></a>`:'<span></span>'}
-            <button class="ghost" data-cmp="${esc(carKey(c))}" title="Add to comparison" aria-label="Add to comparison"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
           </div>
         </div>
       </div>

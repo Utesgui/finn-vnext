@@ -621,11 +621,12 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .card .imgwrap img.hero.loaded { opacity: 1; }
 .card:hover .imgwrap img.hero { transform: translateY(var(--hero-ty, 0%)) scale(calc(var(--hero-scale, 1) * 1.03)); }
 .version-card .vimg > img { padding: 0.55rem; transform: translateY(var(--hero-ty, 0%)) scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
-.badges {
-  position: absolute; inset-block-start: 0.65rem; inset-inline-start: 0.65rem; z-index: 4;
-  display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: calc(100% - 8.6rem); pointer-events: none;
+.cardbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
+  min-block-size: 46px; padding: 0.5rem 0.6rem 0.15rem;
 }
-.model-card .badges { max-inline-size: calc(100% - 3.6rem); }
+.cardbar .badges { display: flex; flex-wrap: wrap; gap: 0.3rem; min-inline-size: 0; }
+.cardbar .actions { display: flex; flex: none; gap: 0.35rem; }
 .badge {
   display: inline-flex; align-items: center; gap: 0.25rem; min-block-size: 24px;
   border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent); border-radius: 999px;
@@ -651,22 +652,20 @@ html[data-theme="dark"] .model-card .group-count {
   border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent);
   background: var(--cp-panel-strong); color: var(--cp-warning);
 }
-.favbtn, .cmpbtn, .sharebtn, .navarr {
+.favbtn, .cmpbtn, .sharebtn {
+  position: relative; z-index: 7; display: grid; place-items: center;
+  inline-size: 32px; block-size: 32px; border-radius: 50%; padding: 0;
+  border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent);
+  background: var(--cp-surface); color: var(--cp-text-muted);
+  transition: color 0.15s var(--ease-out), border-color 0.15s var(--ease-out),
+    background 0.15s var(--ease-out), transform 0.15s var(--ease-spring);
+}
+.navarr {
   position: absolute; display: grid; place-items: center;
   border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent);
   background: var(--cp-panel-strong); backdrop-filter: blur(8px);
   color: var(--cp-text-muted); box-shadow: var(--cp-shadow-sm);
 }
-.favbtn, .cmpbtn, .sharebtn {
-  inset-block-start: 0.6rem; z-index: 7; inline-size: 34px; block-size: 34px;
-  border-radius: 50%; padding: 0;
-  transition: color 0.15s var(--ease-out), border-color 0.15s var(--ease-out),
-    background 0.15s var(--ease-out), transform 0.15s var(--ease-spring);
-}
-.sharebtn { inset-inline-end: 5.6rem; }
-.favbtn { inset-inline-end: 3.1rem; }
-.cmpbtn { inset-inline-end: 0.6rem; }
-.model-card .sharebtn { inset-inline-end: 0.6rem; }
 .favbtn:hover, .cmpbtn:hover, .sharebtn:hover { border-color: var(--cp-border-strong); color: var(--cp-text); transform: scale(1.08); }
 .favbtn:active, .cmpbtn:active, .sharebtn:active { transform: scale(0.95); }
 .favbtn.on { border-color: transparent; background: color-mix(in srgb, var(--cp-rose) 14%, var(--cp-surface)); color: var(--cp-rose); }
@@ -799,6 +798,7 @@ html[data-theme="dark"] .blogo {
 .model-card:hover .model-cta .ic { transform: translateX(3px); }
 .grid.list { grid-template-columns: 1fr; gap: 0.75rem; }
 .grid.list .card { display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+.grid.list .cardbar { grid-column: 1 / -1; min-block-size: 0; padding-block: 0.45rem 0.1rem; }
 .grid.list .imgwrap { inline-size: auto; aspect-ratio: 4 / 3; border-block-end: 0; border-inline-end: 1px solid var(--cp-border); }
 .grid.list .cbody { padding: 0.85rem 1.05rem; }
 .grid.list .dots, .grid.list .shots { display: none; }
@@ -1030,7 +1030,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .version-card { display: flex; flex-direction: column; }
 .version-card .vimg { aspect-ratio: 16 / 10; border-block-end: 1px solid var(--cp-border); }
 .version-card .vbody { display: flex; flex: 1; flex-direction: column; gap: 0.42rem; padding: 0.8rem 0.85rem 0.9rem; }
-.version-card .vtitle { overflow: hidden; padding-inline-end: 4.5rem; font-size: 0.88rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.version-card .vtitle { overflow: hidden; font-size: 0.88rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .version-card .vmeta { overflow: hidden; color: var(--cp-text-muted); font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
 .version-card .vchips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .version-card .vchips span {
@@ -1278,10 +1278,8 @@ footer a:hover { color: var(--cp-accent); }
 
 /* ---------- Responsive ------------------------------------------------------- */
 @media (pointer: coarse) {
-  .favbtn, .cmpbtn, .sharebtn, .navarr { inline-size: 40px; block-size: 40px; }
-  .sharebtn { inset-inline-end: 6.6rem; }
-  .favbtn { inset-inline-end: 3.6rem; }
-  .model-card .sharebtn { inset-inline-end: 0.6rem; }
+  .favbtn, .cmpbtn, .sharebtn { inline-size: 38px; block-size: 38px; }
+  .navarr { inline-size: 40px; block-size: 40px; }
   .navarr { opacity: 1; }
 }
 @media (max-width: 1800px) {
@@ -1382,7 +1380,10 @@ footer a:hover { color: var(--cp-accent); }
   .grid.list .avail { font-size: 0.68rem; }
   dialog, #versionsDlg, #detailDlg { inline-size: 100vw; max-inline-size: 100vw; max-block-size: 100dvh; border: 0; border-radius: 0; }
   dialog[open] { margin: 0; }
-  #detailDlg .detail-head { min-block-size: 62px; padding: 0.55rem 0.65rem; }
+  #detailDlg .detail-head { flex-wrap: wrap; min-block-size: 62px; padding: 0.55rem 0.65rem; row-gap: 0.3rem; }
+  /* stack: buttons get their own top row, title row sits below with full width */
+  #detailDlg .dnav { order: -1; inline-size: 100%; justify-content: flex-end; }
+  #detailDlg .detail-head-main { inline-size: 100%; }
   .detail-body { padding: 0.7rem; }
   .detail-head-main > .blogo, .detail-heading .eyebrow { display: none; }
   .detail-heading .t { font-size: 0.88rem; }
