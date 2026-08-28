@@ -614,10 +614,12 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .card .imgwrap img.hero, .version-card .vimg > img { inline-size: 100%; block-size: 100%; object-fit: contain; }
 .card .imgwrap img.hero {
   padding: 0.55rem; opacity: 0;
+  transform: scale(var(--hero-scale, 1));
   transition: opacity 0.3s var(--ease-out), transform 0.4s var(--ease-out);
 }
 .card .imgwrap img.hero.loaded { opacity: 1; }
-.card:hover .imgwrap img.hero { transform: scale(1.035); }
+.card:hover .imgwrap img.hero { transform: scale(calc(var(--hero-scale, 1) * 1.03)); }
+.version-card .vimg > img { padding: 0.45rem; transform: scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
 .badges {
   position: absolute; inset-block-start: 0.65rem; inset-inline-start: 0.65rem; z-index: 4;
   display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: 62%; pointer-events: none;
@@ -647,22 +649,23 @@ html[data-theme="dark"] .model-card .group-count {
   border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent);
   background: var(--cp-panel-strong); color: var(--cp-warning);
 }
-.favbtn, .cmpbtn, .navarr {
+.favbtn, .cmpbtn, .sharebtn, .navarr {
   position: absolute; display: grid; place-items: center;
   border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent);
   background: var(--cp-panel-strong); backdrop-filter: blur(8px);
   color: var(--cp-text-muted); box-shadow: var(--cp-shadow-sm);
 }
-.favbtn, .cmpbtn {
-  inset-block-start: 0.6rem; z-index: 7; inline-size: 34px; block-size: 34px;
+.favbtn, .cmpbtn, .sharebtn {
+  inset-block-end: 0.55rem; z-index: 7; inline-size: 34px; block-size: 34px;
   border-radius: 50%; padding: 0;
   transition: color 0.15s var(--ease-out), border-color 0.15s var(--ease-out),
     background 0.15s var(--ease-out), transform 0.15s var(--ease-spring);
 }
-.favbtn { inset-inline-end: 3.1rem; }
-.cmpbtn { inset-inline-end: 0.6rem; }
-.favbtn:hover, .cmpbtn:hover { border-color: var(--cp-border-strong); color: var(--cp-text); transform: scale(1.08); }
-.favbtn:active, .cmpbtn:active { transform: scale(0.95); }
+.sharebtn { inset-inline-start: 0.6rem; }
+.favbtn { inset-inline-start: 3.1rem; }
+.cmpbtn { inset-inline-start: 5.6rem; }
+.favbtn:hover, .cmpbtn:hover, .sharebtn:hover { border-color: var(--cp-border-strong); color: var(--cp-text); transform: scale(1.08); }
+.favbtn:active, .cmpbtn:active, .sharebtn:active { transform: scale(0.95); }
 .favbtn.on { border-color: transparent; background: color-mix(in srgb, var(--cp-rose) 14%, var(--cp-surface)); color: var(--cp-rose); }
 .cmpbtn.on { border-color: transparent; background: var(--cp-ink); color: var(--cp-ink-fg); }
 .navarr {
@@ -675,9 +678,10 @@ html[data-theme="dark"] .model-card .group-count {
 .card:hover .navarr, .version-card:hover .navarr, .navarr:focus-visible { opacity: 1; }
 .navarr:hover { background: var(--cp-ink); border-color: var(--cp-ink); color: var(--cp-ink-fg); }
 .dots {
-  position: absolute; inset-block-end: 0.6rem; inset-inline: 0; z-index: 5;
+  position: absolute; inset-block-end: 0.85rem; inset-inline: 8.2rem 3.6rem; z-index: 5;
   display: flex; justify-content: center; gap: 0.28rem; pointer-events: none;
 }
+.model-card .dots { inset-inline: 3.4rem 3.6rem; }
 .dots i {
   inline-size: 5px; block-size: 5px; border-radius: 999px;
   background: color-mix(in srgb, var(--cp-text-soft) 55%, transparent);
@@ -988,7 +992,9 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .version-card .vprice { font-size: 1.08rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .version-card .vprice small { color: var(--cp-text-muted); font-size: 0.7rem; font-weight: 500; }
 .version-card .vavail { color: var(--cp-text-muted); font-size: 0.7rem; text-align: end; }
-.version-card .favbtn { inset-inline-end: 3.1rem; }
+.version-card .sharebtn, .version-card .favbtn, .version-card .cmpbtn { inline-size: 30px; block-size: 30px; }
+.version-card .favbtn { inset-inline-start: 2.85rem; }
+.version-card .cmpbtn { inset-inline-start: 5.1rem; }
 
 /* ---------- Detail dialog --------------------------------------------------- */
 #detailDlg { inline-size: min(1180px, calc(100vw - 2rem)); max-inline-size: 1180px; }
@@ -997,7 +1003,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-head-main > .blogo { inline-size: 42px; block-size: 42px; }
 .detail-heading { min-inline-size: 0; }
 .detail-heading .eyebrow { margin-block-end: 0.12rem; color: var(--cp-accent); font-size: 0.64rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
-.detail-heading .t { overflow: hidden; font-size: 1.1rem; text-overflow: ellipsis; white-space: nowrap; }
+.detail-heading .t { font-size: 1.1rem; }
 .detail-heading .trim { color: var(--cp-text-muted); font-weight: 450; }
 .detail-back { display: inline-flex; align-items: center; gap: 0.32rem; flex: none; border-radius: 999px; padding: 0.46rem 0.75rem; }
 .dnav { display: flex; align-items: center; gap: 0.35rem; margin-inline-start: auto; }
@@ -1211,8 +1217,10 @@ footer a:hover { color: var(--cp-accent); }
 
 /* ---------- Responsive ------------------------------------------------------- */
 @media (pointer: coarse) {
-  .favbtn, .cmpbtn, .navarr { inline-size: 40px; block-size: 40px; }
-  .favbtn { inset-inline-end: 3.6rem; }
+  .favbtn, .cmpbtn, .sharebtn, .navarr { inline-size: 40px; block-size: 40px; }
+  .favbtn { inset-inline-start: 3.6rem; }
+  .cmpbtn { inset-inline-start: 6.6rem; }
+  .dots { inset-inline-start: 9.6rem; }
   .navarr { opacity: 1; }
 }
 @media (max-width: 1800px) {
@@ -1316,8 +1324,8 @@ footer a:hover { color: var(--cp-accent); }
   #detailDlg .detail-head { min-block-size: 62px; padding: 0.55rem 0.65rem; }
   .detail-body { padding: 0.7rem; }
   .detail-head-main > .blogo, .detail-heading .eyebrow { display: none; }
-  .detail-heading .t { max-inline-size: 150px; font-size: 0.88rem; }
-  .detail-heading .s { overflow: hidden; max-inline-size: 150px; font-size: 0.68rem; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-heading .t { font-size: 0.88rem; }
+  .detail-heading .s { font-size: 0.68rem; }
   .detail-back { inline-size: 38px; padding: 0.45rem; font-size: 0; }
   .detail-back .ic { font-size: 1rem; }
   .dpos { display: none; }

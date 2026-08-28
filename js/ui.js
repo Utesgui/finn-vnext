@@ -341,6 +341,76 @@ function variantMatchesFilters(cl){
   }
   return true;
 }
+/* ---------------- sharing: deterministic deep links on every layer -------- */
+function buildShareUrl(params){
+  const u = new URL(location.href);
+  const h = new URLSearchParams((u.hash||"").replace(/^#/,""));
+  for (const [k,v] of Object.entries(params)){ if (v==null) h.delete(k); else h.set(k, v); }
+  u.hash = h.toString();
+  return u.toString();
+}
+async function shareLink(url, label="Link"){
+  try{
+    if (navigator.share && matchMedia("(pointer: coarse)").matches){ await navigator.share({url}); return; }
+  }catch(e){ if (e && e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(url); toast(`${label} copied`); }
+  catch(e){ toast("Couldn't copy automatically — use the address bar URL"); }
+}
+/* Open a shared deep link (car/color/model) once the catalog is ready.
+   Uses the hash captured at boot — writeHash scrubs the URL on first apply. */
+async function openFromHash(){
+  const h = new URLSearchParams(String(state.bootHash||"").replace(/^#/,""));
+  state.bootHash = null;
+  const carId = h.get("car"), cc = h.get("cc"), model = h.get("model");
+  if (model){
+    const g = state.modelGroups.find(x=>x.key===model || decodeURIComponent(x.key)===model);
+    if (g) openVersions(g);
+  }
+  if (carId){
+    let c = state.cars.find(x=>carKey(x)===carId || String(x.uid??"")===carId);
+    if (!c) c = await fetchConfigByUid(carId);
+    if (c) openDetail(c, cc?{colorUid:cc}:{});
+    else toast("The shared configuration is no longer listed");
+  }
+}
+/* Cars occupy wildly different fractions of their renders — measure the
+   content box on a tiny CORS canvas and scale small ones up to balance. */
+function normalizeHeroScale(img){
+  const src = img.currentSrc || img.src;
+  if (!src || src.startsWith("data:")) return;
+  const cache = normalizeHeroScale._cache || (normalizeHeroScale._cache = new Map());
+  const apply = s => { if (img.isConnected && (img.currentSrc||img.src)===src) img.style.setProperty("--hero-scale", s); };
+  if (cache.has(src)){ const s = cache.get(src); if (s) apply(s); return; }
+  cache.set(src, null);   // in flight / unknown
+  const probe = new Image();
+  probe.crossOrigin = "anonymous";
+  probe.onload = () => {
+    try{
+      const w = 64, h = 40;
+      const cv = normalizeHeroScale._cv || (normalizeHeroScale._cv = document.createElement("canvas"));
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext("2d", {willReadFrequently: true});
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(probe, 0, 0, w, h);
+      const d = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+        const i = (y*w + x) * 4;
+        if (d[i+3] > 16 && !(d[i] > 242 && d[i+1] > 242 && d[i+2] > 242)){
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+      if (maxX < minX || maxY < minY) return;
+      const fill = Math.max((maxX-minX+1)/w, (maxY-minY+1)/h);
+      const scale = Math.min(1.4, Math.max(1, 0.9/fill)).toFixed(3);
+      cache.set(src, scale);
+      apply(scale);
+    }catch(e){ /* canvas tainted — keep natural size */ }
+  };
+  probe.onerror = () => {};
+  probe.src = src;
+}
 /* finn.com-style mini color palette; clicking a swatch previews that color.
    Single-color cars show their one color so the absence of choice is explicit. */
 function paletteHtml(c, limit=6){
@@ -526,6 +596,7 @@ function modelCardEl(group){
     <button class="card-open" data-open-group aria-label="${esc(openLabel)}"></button>
     <div class="imgwrap">
       <div class="badges"><span class="badge group-count">${fmtNum(group.versions.length)} ${versionLabel}</span></div>
+      <button class="sharebtn" data-share-model="${esc(group.key)}" title="Share this model overview" aria-label="Share this model overview"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
       <img class="hero" alt="${esc(group.brand+" "+group.model)}" loading="lazy">
       ${cardCarouselMarkup(pics,"model")}
     </div>
@@ -543,7 +614,7 @@ function modelCardEl(group){
       </div>
     </div>`;
   const img = el.querySelector("img.hero");
-  img.addEventListener("load",()=>img.classList.add("loaded"));
+  img.addEventListener("load",()=>{ img.classList.add("loaded"); normalizeHeroScale(img); });
   img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
   img.src = pics[0] || PLACEHOLDER;
   el._pics=pics; el._shot=0;
@@ -572,6 +643,7 @@ function versionCardEl(c){
   el.innerHTML = `
     <button class="card-open" data-open-version aria-label="${esc(openLabel)}"></button>
     <div class="vimg">
+      <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c)+" "+title)}" loading="lazy">
@@ -585,6 +657,7 @@ function versionCardEl(c){
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
   const img = el.querySelector(".vimg>img");
+  img.addEventListener("load", ()=>normalizeHeroScale(img));
   img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
   img.src = pics[0] || PLACEHOLDER;
   el._pics=pics; el._shot=0;
@@ -601,7 +674,10 @@ function openVersions(group){
   dlg.innerHTML = `
     <div class="dhead versions-head">
       <div class="model-id">${logo?`<img class="blogo" src="${esc(logo)}" alt="" onerror="this.remove()">`:""}<div><div class="t">${esc(group.brand+" "+group.model)}</div><div class="s">Choose a version to see full pricing, equipment and colors</div></div></div>
-      <button class="iconbtn x" data-close="versionsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <div class="dnav">
+        <button class="iconbtn" data-share-model="${esc(group.key)}" title="Share this model overview" aria-label="Share this model overview"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
+        <button class="iconbtn x" data-close="versionsDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
     </div>
     <div class="dbody">
       <div class="versions-summary">${group.stockCount==null?"":`<span class="pilllet stock-summary" title="${group.stockPartial?"Stock across listed configurations and resolved color variants — some colors not yet fetched":"Customer-visible stock across all colors of the matching versions"}; availability dates still apply"><b>${fmtNum(group.stockCount)}${group.stockPartial?"+":""}</b> ${group.stockCount===1&&!group.stockPartial?"car":"cars"}</span>`}<span class="pilllet"><b>${fmtNum(group.versions.length)}</b> matching ${group.versions.length===1?"version":"versions"}</span>${group.colors.size?`<span class="pilllet"><b>${fmtNum(group.colors.size)}</b> ${group.colors.size===1?"color":"colors"}</span>`:""}<span class="pilllet">from <b>${priceText}</b> / month</span><span>Current filters and sorting are preserved</span></div>
@@ -653,6 +729,7 @@ function cardEl(c){
         ${label?`<span class="badge">${esc(label)}</span>`:""}
         ${c._soonView?'<span class="badge soon">coming soon</span>':""}
       </div>
+      <button class="sharebtn" data-share-key="${esc(key)}" title="Share this configuration" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c))}" loading="lazy">
@@ -686,7 +763,7 @@ function cardEl(c){
       </div>
     </div>`;
   const img = el.querySelector("img.hero");
-  img.addEventListener("load", ()=>img.classList.add("loaded"));
+  img.addEventListener("load", ()=>{ img.classList.add("loaded"); normalizeHeroScale(img); });
   img.addEventListener("error", ()=>{ img.src = PLACEHOLDER; }, {once:true});
   img.src = pics.length ? pics[0] : PLACEHOLDER;
   el._pics = pics; el._shot = 0;
@@ -984,6 +1061,7 @@ function openDetail(c, options={}){
         ${inList?`<span class="dpos">${state.detailIdx+1} / ${fmtNum(detailList.length)}</span>
         <button class="iconbtn" id="dPrev" title="Previous vehicle (←)" aria-label="Previous vehicle" ${state.detailIdx<=0?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=detailList.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
+        <button class="iconbtn" data-share-key="${esc(carKey(c))}" title="Share this configuration (current color included)" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
         <button class="iconbtn ${favOn?"on":""}" data-fav="${esc(carKey(c))}" title="Favorite (f)" aria-label="Toggle favorite" aria-pressed="${favOn}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
         <button class="iconbtn x" data-close="detailDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
@@ -1051,6 +1129,7 @@ function openDetail(c, options={}){
     return true;
   };
   dlg._galStep = galStep;
+  dlg._shareCc = null;
   dlg.querySelectorAll("[data-gal-step]").forEach(btn=>btn.addEventListener("click", e=>{ e.stopPropagation(); galStep(Number(btn.dataset.galStep)); }));
   const renderGallery = () => {
     const wrap = dlg.querySelector("[data-gal-thumbs]");
@@ -1070,6 +1149,7 @@ function openDetail(c, options={}){
     if (v.isSelf){
       pics = pics0; renderGallery();
       setDetailPreview(false);
+      dlg._shareCc = null;
       dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
       return;
     }
@@ -1092,6 +1172,7 @@ function openDetail(c, options={}){
     if (!v.pics.length){ toast(`${v.name} isn't listed by the API yet${v.date?` — expected from ${fmtDate(v.date)}`:""}`); return false; }
     pics = v.pics.map(url=>({url}));
     renderGallery();
+    dlg._shareCc = v.uid || null;
     dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
     return true;
   }

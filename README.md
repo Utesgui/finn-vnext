@@ -96,6 +96,11 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Full-text search** across brand, model, trim, equipment line and engine (`/` to focus).
 - **Favorites** — heart any car (persisted locally), one-click favorites-only view,
   shareable via URL, exported in CSV.
+- **Deep-link sharing on every layer** — the header share button copies the current search
+  (all filters live in the URL); every card, the model versions dialog and the detail view
+  carry their own share button producing links that reopen exactly that model overview or
+  configuration — including the selected color (`car`/`cc`/`model` hash params). On touch
+  devices the native share sheet is used instead of the clipboard.
 - **Light & dark theme** — follows the OS preference on first load, toggle in the header
   (or press `t`); the switch cross-fades via the View Transitions API where available and
   keeps the browser UI (`theme-color`) in sync.

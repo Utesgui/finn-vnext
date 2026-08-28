@@ -65,11 +65,8 @@ function wireEvents(){
     setPriceMax(state.f.priceMax===v ? null : v);
     apply();
   });
-  // share the current view (filters live in the URL)
-  $("#shareBtn").addEventListener("click", async ()=>{
-    try{ await navigator.clipboard.writeText(location.href); toast("Link to this view copied"); }
-    catch(e){ toast("Couldn't copy automatically — use the address bar URL"); }
-  });
+  // share the current view (filters live in the URL; car/model params stripped)
+  $("#shareBtn").addEventListener("click", ()=>shareLink(buildShareUrl({car:null,cc:null,model:null}), "Link to this view"));
   // The button remains a fallback for browsers without IntersectionObserver.
   if (AUTO_LOAD){
     new IntersectionObserver(entries=>{
@@ -84,8 +81,7 @@ function wireEvents(){
     const opener=e.target.closest("[data-open-version]");
     if(opener){const holder=opener.closest("[data-version]");openVersionDetail(holder.dataset.version, holder._palUid||undefined);return;}
     if(e.target.closest("button")) return;
-  });
-  chipGroup("#fuelChips", "fuels");
+  });  chipGroup("#fuelChips", "fuels");
   chipGroup("#typeChips", "types");
   chipGroup("#gearChips", "gears");
   chipGroup("#colorSwatches", "colors");
@@ -163,6 +159,21 @@ function wireEvents(){
   document.addEventListener("click", e=>{
     const closer = e.target.closest("[data-close]");
     if (closer) $("#"+closer.dataset.close).close();
+    const shareKey = e.target.closest("[data-share-key]");
+    if (shareKey){
+      e.stopPropagation();
+      const card = shareKey.closest(".card,.version-card");
+      const dlg = shareKey.closest("dialog");
+      const cc = card ? (card._palUid||null) : (dlg ? (dlg._shareCc||null) : null);
+      shareLink(buildShareUrl({car:shareKey.dataset.shareKey, cc, model:null}), "Configuration link");
+      return;
+    }
+    const shareModel = e.target.closest("[data-share-model]");
+    if (shareModel){
+      e.stopPropagation();
+      shareLink(buildShareUrl({model:shareModel.dataset.shareModel, car:null, cc:null}), "Model overview link");
+      return;
+    }
     const favIn = e.target.closest("dialog [data-fav]");
     if (favIn){ toggleFav(favIn.dataset.fav); return; }
     const cmpIn = e.target.closest("dialog [data-cmp]");
@@ -205,6 +216,7 @@ function wireEvents(){
 /* ---------------- boot ---------------- */
 (function boot(){
   applyTheme();
+  state.bootHash = location.hash;   // deep-link params survive the first writeHash
   // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
   if (readHash()) state.evDefaulted = true;
   $$("#bizSeg button").forEach(b=>{ const on=(b.dataset.biz==="true")===state.cfg.biz; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
