@@ -62,7 +62,8 @@ function apply(){
       }
       if (!terms.some(t=>avail.has(t))) return false;
     }
-    const p = minPrice(c, terms.length?terms:null);
+    // base-price fallback: a color sibling may carry the filtered term
+    const p = minPrice(c, terms.length?terms:null) ?? minPrice(c);
     if (f.priceMin!=null && (p==null || p < f.priceMin)) return false;
     if (f.priceMax!=null && (p==null || p > f.priceMax)) return false;
     if (f.powerMin>0 && (Number(c.power)||0) < f.powerMin) return false;
@@ -290,7 +291,27 @@ function modelCardEl(group){
   const el = document.createElement("article");
   el.className = "card model-card"; el.dataset.group = group.key;
   const openLabel=`Open ${group.brand} ${group.model}, ${inventoryLabel?inventoryLabel+", ":""}${group.versions.length} ${versionLabel}`;
-  const logo = brandLogo(c), pics = galleryPics(c), av = availLabel(group.earliest);
+  const logo = brandLogo(c), av = availLabel(group.earliest);
+  // One shot per distinct color across the group — the carousel then rotates
+  // through the model's whole color range instead of one config's photos.
+  const colorShots = [];
+  {
+    const seen = new Set();
+    outer: for (const v of group.versions){
+      for (const cl of (Array.isArray(v.color_list)?v.color_list:[])){
+        const name = (cl && cl.color_specific) || "";
+        if (!name || seen.has(name)) continue;
+        const sib = state.cars.find(x=>String(x.uid??"")===String(cl && cl.uid));
+        const url = sib ? galleryPics(sib)[0] : (cl && cl.picture_front_url);
+        if (typeof url !== "string" || !url) continue;
+        seen.add(name);
+        colorShots.push({url, name, hex: cl.color_hex});
+        if (colorShots.length >= 8) break outer;
+      }
+    }
+  }
+  const useColors = colorShots.length >= 2;
+  const pics = useColors ? colorShots.map(s=>s.url) : galleryPics(c);
   const powers = group.versions.map(x=>Number(x.power)).filter(x=>x>0).map(x=>Math.round(x*1.35962));
   const ranges = group.versions.map(evRange).filter(x=>x>0);
   const gears = displayValues("gear",group.versions.map(x=>x.gearshift).filter(Boolean));
@@ -311,6 +332,7 @@ function modelCardEl(group){
       ${cardCarouselMarkup(pics,"model")}
     </div>
     <div class="cbody">
+      ${useColors?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:""}
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
@@ -495,6 +517,11 @@ function stepShot(card, dir){
   card.querySelectorAll(".dots i").forEach((d,i)=>d.classList.toggle("on", i===card._shot));
   const shots = card.querySelector(".shots");
   if (shots) shots.textContent = `${card._shot+1}/${pics.length}`;
+  // model cards rotate through colors — keep the palette ring in sync
+  card.querySelectorAll(".cpal[data-pal-idx]").forEach((b,i)=>{
+    const on = i===card._shot;
+    b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+  });
 }
 /* one-tap presets for the filters people reach for first */
 function renderQuickBar(){

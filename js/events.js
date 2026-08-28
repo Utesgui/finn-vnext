@@ -149,6 +149,8 @@ function wireEvents(){
   $("#grid").addEventListener("click", e=>{
     const shot = e.target.closest("[data-shot]");
     if (shot){ e.stopPropagation(); stepShot(shot.closest(".card"), Number(shot.dataset.shot)); return; }
+    const palIdx = e.target.closest("[data-pal-idx]");
+    if (palIdx){ e.stopPropagation(); const card=palIdx.closest(".card"); stepShot(card, Number(palIdx.dataset.palIdx) - (card._shot||0)); return; }
     const pal = e.target.closest("[data-pal]");
     if (pal){ e.stopPropagation(); applyCardPalette(pal.closest(".card"), pal); return; }
     const fav = e.target.closest("[data-fav]");
