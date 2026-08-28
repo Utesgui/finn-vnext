@@ -228,8 +228,10 @@ function renderGrid(reset){
   }
   const slice = state.displayItems.slice(state.renderCount, state.renderCount+PAGE);
   const frag = document.createDocumentFragment();
-  for(const item of slice) frag.appendChild(item.versions ? modelCardEl(item) : cardEl(item));
+  const els = slice.map(item => item.versions ? modelCardEl(item) : cardEl(item));
+  els.forEach(el=>frag.appendChild(el));
   grid.appendChild(frag);
+  els.forEach((el,i)=>{ if(!slice[i].versions) autoSelectMatchingColor(el, slice[i]); });
   state.renderCount += slice.length;
   $("#moreBtn").hidden = !hasMoreResults() || AUTO_LOAD;
   $("#moreBtn").textContent = `Show more  (${fmtNum(state.displayItems.length-state.renderCount)} remaining)`;
@@ -383,6 +385,19 @@ function setCardPreviewState(card, on, cl){
     if (availEl && cl && cl.availability_date) availEl.innerHTML = `from ${esc(fmtDate(cl.availability_date))}`;
   }
 }
+/* When the displayed (listed) color itself fails the active term filter but a
+   sibling color matches, present that sibling on the card automatically. */
+function autoSelectMatchingColor(card, c){
+  const termsF = state.f.terms.map(Number);
+  if (!termsF.length || !card) return;
+  const ownTm = carTermsList(c);
+  if (termsF.some(t=>ownTm.includes(t))) return;
+  const selfUid = String(c.uid ?? carKey(c));
+  const match = (Array.isArray(c.color_list)?c.color_list:[]).find(cl=>cl && String(cl.uid)!==selfUid && variantMatchesFilters(cl));
+  if (!match || match.uid==null) return;
+  const btn = card.querySelector(`.cpal[data-pal="${CSS.escape(String(match.uid))}"]`);
+  if (btn) applyCardPalette(card, btn);
+}
 function modelCardEl(group){
   const c = group.representative;
   const versionLabel = group.versions.length===1 ? "version" : "versions";
@@ -516,8 +531,10 @@ function openVersions(group){
       <div class="version-grid"></div>
     </div>`;
   const grid = dlg.querySelector(".version-grid"), frag = document.createDocumentFragment();
-  group.versions.forEach(c=>frag.appendChild(versionCardEl(c)));
+  const vEls = group.versions.map(c=>versionCardEl(c));
+  vEls.forEach(el=>frag.appendChild(el));
   grid.appendChild(frag);
+  vEls.forEach((el,i)=>autoSelectMatchingColor(el, group.versions[i]));
   if(!dlg.open) dlg.showModal();
   dlg.querySelector(".dbody").scrollTop = 0;
 }
@@ -898,7 +915,11 @@ function openDetail(c, options={}){
     <div class="dbody detail-body">
       <div class="detail-hero">
         <div class="gallery detail-gallery">
-          <div class="main"><img id="galMain" alt="${esc(carName(c))}"></div>
+          <div class="main">
+            <img id="galMain" alt="${esc(carName(c))}">
+            <button class="navarr prev" data-gal-step="-1" aria-label="Previous photo (←)"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+            <button class="navarr next" data-gal-step="1" aria-label="Next photo (→)"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+          </div>
           <div class="thumbs" data-gal-thumbs></div>
           ${colorVariants.length?`<div class="detail-colorbar" role="group" aria-label="Color variants">${colorVariants.map((v,i)=>`<button class="detail-color${v.isSelf?" on":""}" data-color-idx="${i}" title="${esc(v.name)}${v.date?` · available from ${esc(fmtDate(v.date))}`:""}${v.catalogCar?" · open this color":v.isSelf?"":v.pics.length?" · preview photos":""}" aria-pressed="${v.isSelf}"><span class="sw"${vehicleColorStyle(v.hex)}></span><span class="name">${esc(v.name)}</span><span class="date">${esc(fmtDate(v.date))}</span></button>`).join("")}</div>`:""}
         </div>
@@ -913,11 +934,6 @@ function openDetail(c, options={}){
             <div class="detail-price-value" data-quote-monthly>${fmtEur(initialQuote&&initialQuote.price)}<small> / month</small></div>
             <div class="quote-change ${initialDelta>0?"up":initialDelta<0?"down":"same"}" data-quote-delta>${quoteDeltaText(initialDelta)}</div>
             <div class="quote-total" title="Monthly price multiplied by contract length"><span data-quote-total-label>Contract total · ${quoteTerm||"–"} months</span><strong data-quote-total>${initialQuote&&quoteTerm?fmtEur(initialQuote.price*quoteTerm):"–"}</strong></div>
-          </div>
-          <div class="detail-inclusions">
-            <span><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Insurance included</span>
-            <span><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>Maintenance included</span>
-            <span><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>Tax included</span>
           </div>
           <div class="detail-highlights">${highlights.map(x=>`<div class="detail-highlight"><svg class="ic" aria-hidden="true"><use href="#${x.ic}"/></svg><div><div class="hk">${esc(x.k)}</div><div class="hv">${esc(x.v)}</div></div></div>`).join("")}</div>
           ${configPdf?`<div class="detail-document"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg><div><div class="doc-title">Configuration PDF</div><div class="doc-meta">Factory specification · PDF document</div></div><div class="doc-actions"><a class="doc-open" href="${esc(configPdf)}" target="_blank" rel="noreferrer" title="Open configuration PDF in a new tab">Open PDF <svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></a><button class="doc-download" data-pdf-download title="Download configuration PDF" aria-label="Download configuration PDF"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button></div></div>`:""}
@@ -941,24 +957,34 @@ function openDetail(c, options={}){
       <section class="detail-panel eq">
         <div class="detail-panel-head"><div><h3>Equipment</h3><p>${equipmentCount?`${fmtNum(equipmentCount)} included features · grouped by category`:"Equipment supplied by the vehicle API"}</p></div></div>
         ${packages.length?`<div class="equipment-packages">${packages.map(([name,items])=>`<div class="equipment-package"><div class="pkg-head"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg><b>${esc(name)}</b><span class="pkg-tag">package</span></div>${items?`<p>${esc(items)}</p>`:""}</div>`).join("")}</div>`:""}
-        <div class="detail-equipment">${equipmentGroups.length?equipmentGroups.map((g,i)=>`<section class="equipment-panel" aria-labelledby="eqHeading${i}"><div class="equipment-panel-head"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><div><h4 class="title" id="eqHeading${i}">${esc(g.title)}</h4><p>${esc(g.description)}</p></div><span class="count">${g.items.length} included</span></div><ul class="equipment-list">${g.items.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></section>`).join(""):'<div class="detail-price-note">No equipment details provided by the API.</div>'}</div>
+        <div class="detail-equipment">${equipmentGroups.length?equipmentGroups.map((g,i)=>`<section class="equipment-panel" aria-labelledby="eqHeading${i}"><div class="equipment-panel-head"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><div><h4 class="title" id="eqHeading${i}">${esc(g.title)}</h4><p>${esc(g.description)}</p></div><span class="count">${g.items.length} included</span></div><ul class="equipment-list">${[...g.items].sort((a,b)=>String(a).length-String(b).length).map(item=>`<li>${esc(item)}</li>`).join("")}</ul></section>`).join(""):'<div class="detail-price-note">No equipment details provided by the API.</div>'}</div>
       </section>
       <div class="detail-meta">config ${esc(c.config_id)} · ${esc(c.id||"no product id")}${c._firstSeen?` · first seen ${esc(fmtDateTime(c._firstSeen))}`:""}</div>
     </div>`;
   const main = dlg.querySelector("#galMain");
-  const setMain = i => { main.src = pics[i] && pics[i].url ? pics[i].url : PLACEHOLDER; };
+  let galIdx = 0;
+  const setMain = i => {
+    galIdx = pics.length ? ((i % pics.length) + pics.length) % pics.length : 0;
+    main.src = pics[galIdx] && pics[galIdx].url ? pics[galIdx].url : PLACEHOLDER;
+    dlg.querySelectorAll("[data-gal]").forEach((t,idx)=>t.classList.toggle("on", idx===galIdx));
+  };
   main.addEventListener("error", ()=>{ main.src=PLACEHOLDER; }, {once:true});
+  const galStep = dir => {
+    if (pics.length < 2) return false;
+    setMain(galIdx + dir);
+    return true;
+  };
+  dlg._galStep = galStep;
+  dlg.querySelectorAll("[data-gal-step]").forEach(btn=>btn.addEventListener("click", e=>{ e.stopPropagation(); galStep(Number(btn.dataset.galStep)); }));
   const renderGallery = () => {
     const wrap = dlg.querySelector("[data-gal-thumbs]");
-    wrap.innerHTML = pics.length>1 ? pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="${esc(carName(c))} view ${i+1}">`).join("") : "";
+    wrap.innerHTML = pics.length>1 ? pics.map((p,i)=>`<img data-gal="${i}" alt="${esc(carName(c))} view ${i+1}">`).join("") : "";
     wrap.querySelectorAll("[data-gal]").forEach(t=>{
       t.src = pics[Number(t.dataset.gal)].url;
       t.addEventListener("error", ()=>{ t.src=PLACEHOLDER; }, {once:true});
-      t.addEventListener("click", ()=>{
-        wrap.querySelectorAll("[data-gal]").forEach(x=>x.classList.remove("on"));
-        t.classList.add("on"); setMain(Number(t.dataset.gal));
-      });
+      t.addEventListener("click", ()=>setMain(Number(t.dataset.gal)));
     });
+    dlg.querySelectorAll("[data-gal-step]").forEach(btn=>{ btn.hidden = pics.length<2; });
     setMain(0);
   };
   renderGallery();

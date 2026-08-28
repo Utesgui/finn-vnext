@@ -111,18 +111,20 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   summary, and a live quote configurator: select real mileage packages and contract terms to
   update monthly price, baseline delta, selected price-table row and full contract total.
   It also includes key-spec highlights, technical pricing, all equipment categories shown
-  as stacked sections, named option **packages**, tire type & size, interior color,
+  as stacked sections (each category's items sorted by text length so rows pair
+  evenly), named option **packages**, tire type & size, interior color,
   and an **interactive color switcher** below the gallery: chips show each color's own
   availability date and (lazily fetched) per-color stock; clicking a chip jumps to that
   variant with its own photos, pricing and availability (resolved from the local catalog,
   or fetched live via `config_id` when the sibling isn't loaded) while ←/→ keep
   navigating from the original list position,
   finn.com offer link, plus **Open PDF** and reliable
-  **Download PDF** actions. **←/→ navigation** stays within the selected model when opened
+  **Download PDF** actions. **Ctrl+←/→ navigation** stays within the selected model when opened
   through the version picker, with a back-to-versions action; direct results continue to
   navigate the full filtered list.
 - **Compare tray** — pick up to 3 cars, side-by-side spec table.
-- **Keyboard-first** — `/` search, `← →` navigate details, `f` favorite, `t` theme,
+- **Keyboard-first** — `/` search, `← →` browse photos in the detail view
+  (`Ctrl+← →` steps vehicles), `f` favorite, `t` theme,
   `?` shows the shortcut overlay; full focus-visible states and screen-reader labels
   (crisp SVG icons instead of emoji glyphs).
 - **Live stats** — cheapest, median price, EV share, brand count for the current result set.

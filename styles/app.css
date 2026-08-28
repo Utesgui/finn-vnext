@@ -1004,8 +1004,10 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .dpos { margin-inline-end: 0.15rem; color: var(--cp-text-soft); font-size: 0.7rem; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-body { padding: 1.1rem; scrollbar-gutter: stable; }
 .detail-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); align-items: start; gap: 1.1rem; }
-.detail-gallery .main { position: relative; aspect-ratio: 16 / 10; border-radius: var(--cp-r-xl); }
+.detail-gallery .main { position: relative; aspect-ratio: 16 / 11; border-radius: var(--cp-r-xl); }
 .detail-gallery .main img { position: relative; z-index: 1; padding: 0.5rem; }
+.detail-gallery .main .navarr { z-index: 3; }
+.detail-gallery .main:hover .navarr { opacity: 1; }
 .detail-gallery .thumbs { display: grid; grid-auto-flow: column; grid-auto-columns: 76px; }
 .detail-gallery .thumbs img { inline-size: 76px; block-size: 52px; }
 .detail-summary {
@@ -1080,13 +1082,6 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .quote-total strong { color: var(--cp-text); font-size: 0.8rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .detail-price-block.quote-pulse { animation: quotePulse 0.28s var(--ease-out); }
 @keyframes quotePulse { 50% { border-color: var(--cp-accent); box-shadow: 0 0 0 3px var(--cp-accent-soft); } }
-.detail-inclusions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
-.detail-inclusions span {
-  display: flex; flex-direction: column; align-items: center; gap: 0.28rem; min-inline-size: 0;
-  border: 1px solid var(--cp-border); border-radius: var(--cp-r-sm); background: var(--cp-surface);
-  color: var(--cp-text-muted); padding: 0.5rem 0.2rem; font-size: 0.66rem; font-weight: 550; text-align: center;
-}
-.detail-inclusions .ic { color: var(--cp-success); font-size: 0.95rem; }
 .detail-highlights { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 .detail-highlight { display: flex; align-items: center; gap: 0.5rem; min-inline-size: 0; border: 1px solid var(--cp-border); border-radius: var(--cp-r-sm); background: var(--cp-surface); padding: 0.5rem; }
 .detail-highlight > .ic { flex: none; color: var(--cp-accent); font-size: 1rem; }
@@ -1095,7 +1090,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.45rem; }
 .detail-actions .linkout { padding: 0.68rem 0.75rem; }
 .detail-actions .ghost { display: grid; place-items: center; padding: 0.65rem 0.8rem; color: var(--cp-text); }
-.detail-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-block-start: 1.1rem; }
+.detail-content-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.1rem; margin-block-start: 1.1rem; }
 .detail-panel {
   margin-block-start: 1.1rem; border: 1px solid var(--cp-border); border-radius: var(--cp-r-xl);
   background: var(--cp-surface); padding: 1.05rem; box-shadow: var(--cp-shadow-sm);
@@ -1104,7 +1099,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.7rem; margin-block-end: 0.8rem; }
 .detail-panel-head h3 { margin: 0; font-size: 0.9rem; font-weight: 720; letter-spacing: -0.01em; }
 .detail-panel-head p { margin: 0.14rem 0 0; color: var(--cp-text-soft); font-size: 0.7rem; }
-.detail-kv { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.detail-kv { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .detail-kv .v { overflow-wrap: anywhere; font-size: 0.76rem; }
 .detail-price-table { overflow: hidden; border: 1px solid var(--cp-border); border-radius: var(--cp-r-md); }
 .detail-price-table tr:last-child td { border-block-end: 0; }
@@ -1330,7 +1325,6 @@ footer a:hover { color: var(--cp-accent); }
   .detail-summary, .detail-panel { padding: 0.75rem; }
   .quote-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-price-value { font-size: 1.7rem; }
-  .detail-inclusions span { font-size: 0.7rem; overflow-wrap: anywhere; }
   .detail-document .doc-open { inline-size: 32px; padding: 0; font-size: 0; }
   .detail-document .doc-open .ic { font-size: 0.8rem; }
   .detail-kv { grid-template-columns: 1fr 1fr; }
@@ -1372,7 +1366,7 @@ footer a:hover { color: var(--cp-accent); }
 .detail-availability, .detail-stock, .quote-head, .quote-head b,
 .quote-option b, .quote-option small, .detail-price-block .overline,
 .detail-price-value small, .detail-price-note, .quote-change, .quote-total,
-.detail-inclusions span, .detail-highlight .hk, .detail-highlight .hv,
+.detail-highlight .hk, .detail-highlight .hv,
 .detail-panel-head p, .detail-price-table .best-tag,
 .detail-price-table .selected-tag, .detail-km-note, .detail-color,
 .detail-color .date, .detail-color .stock, .equipment-panel-head p, .equipment-panel-head .count,

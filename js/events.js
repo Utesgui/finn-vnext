@@ -25,8 +25,15 @@ function wireEvents(){
     if (e.key==="/" && !typing){ e.preventDefault(); $("#q").focus(); }
     if (e.key==="Escape"){ $$( "dialog[open]" ).forEach(d=>d.close()); setDrawer(false); setUtilityMenu(false); }
     const detailOpen = $("#detailDlg").open;
-    if (detailOpen && e.key==="ArrowLeft"){ e.preventDefault(); stepDetail(-1); }
-    if (detailOpen && e.key==="ArrowRight"){ e.preventDefault(); stepDetail(1); }
+    if (detailOpen && e.key==="ArrowLeft"){
+      e.preventDefault();
+      // plain arrows browse photos; Ctrl/Alt (or single-photo cars) step vehicles
+      if (e.ctrlKey || e.altKey || !($("#detailDlg")._galStep && $("#detailDlg")._galStep(-1))) stepDetail(-1);
+    }
+    if (detailOpen && e.key==="ArrowRight"){
+      e.preventDefault();
+      if (e.ctrlKey || e.altKey || !($("#detailDlg")._galStep && $("#detailDlg")._galStep(1))) stepDetail(1);
+    }
     if (detailOpen && (e.key==="f"||e.key==="F") && !typing && state.detailKey){ e.preventDefault(); toggleFav(state.detailKey); }
     if ((e.key==="t"||e.key==="T") && !typing && !detailOpen){ toggleTheme(); }
     if (e.key==="?" && !typing){ e.preventDefault(); $("#helpDlg").showModal(); }
