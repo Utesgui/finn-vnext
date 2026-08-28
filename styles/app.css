@@ -490,8 +490,8 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .brandcell { gap: 0.4rem; min-block-size: 34px; padding: 0.2rem 0.4rem; font-size: 0.8rem; }
 .brandcell input[type="checkbox"] { display: none; }
 .brandcell .blogo {
-  flex: none; inline-size: 22px; block-size: 22px; border-radius: 6px;
-  border: 1px solid var(--cp-border); background: #fff; object-fit: contain; padding: 2px;
+  flex: none; inline-size: 24px; block-size: 24px; border-radius: 6px;
+  border: 1px solid var(--cp-border); background: #fff; object-fit: contain; padding: 0;
 }
 .brandcell .bname { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brandcell .cnt { flex: none; }
