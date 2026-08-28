@@ -82,5 +82,10 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"FINN vNext · http://localhost:{PORT}  (forwarding /api/* → {UPSTREAM})")
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # Windows cp1252 consoles
+        except (AttributeError, OSError):
+            pass
+    print(f"FINN vNext - http://localhost:{PORT}  (forwarding /api/* -> {UPSTREAM})")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

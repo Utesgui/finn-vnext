@@ -27,8 +27,14 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 
 ### Source layout
 
-- `index.html` — semantic document structure and SVG symbols
-- `styles/app.css` — active visual system and responsive layout
+- `index.html` — semantic document structure, favicon/theme-color wiring, and SVG symbols
+- `styles/app.css` — the visual system: self-hosted Inter variable typography, an
+  ink-and-teal token set with light "showroom" and dark "night garage" themes,
+  layered depth, and the responsive layout
+- `assets/favicon.svg` + `favicon.ico` + `assets/apple-touch-icon.png` — the app icon
+  (regenerate the bitmaps with `make-icons.ps1`)
+- `assets/fonts/` — Inter variable woff2 subsets, bundled under the SIL Open Font
+  License (see `LICENSE-Inter.txt`); served same-origin so the CSP stays strict
 - `js/domain.js` — pure, tested filters/pricing/availability/stock logic
 - `js/core.js` — shared configuration, state, helpers, and equipment utilities
 - `js/api.js` — price tracking, API loading, caching, and catalog facets
@@ -60,7 +66,8 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - **Favorites** — heart any car (persisted locally), one-click favorites-only view,
   shareable via URL, exported in CSV.
 - **Light & dark theme** — follows the OS preference on first load, toggle in the header
-  (or press `t`).
+  (or press `t`); the switch cross-fades via the View Transitions API where available and
+  keeps the browser UI (`theme-color`) in sync.
 - **Business ↔ Private pricing toggle** (uses the API's `is_for_business` pricing).
 - **Sorting**: recommended, recently added, price ↑/↓, price drop, power, EV range, soonest availability, brand A–Z.
 - The app requests `view=available_cars` in newest-first (`last_added`) pages (default `limit=200`) and separately attempts

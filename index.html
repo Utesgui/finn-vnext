@@ -6,17 +6,24 @@
 <meta name="color-scheme" content="dark light">
 <meta name="description" content="FINN vNext — a fast, modern fleet explorer for finding and comparing subscription vehicles.">
 <meta name="robots" content="noindex">
+<meta name="theme-color" id="themeColorMeta" content="#f5f4f1">
 <title>FINN vNext · Fleet Explorer</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/x-icon" sizes="32x32" href="favicon.ico">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var-latin.woff2" crossorigin>
 <script>
   (() => {
     const param = new URLSearchParams(window.location.search).get("scoutTheme");
     const theme =
       param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
+    const meta = document.getElementById("themeColorMeta");
+    if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260813-5"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260731-4">
+<script src="js/domain.js?v=20260828-1"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-1">
 </head>
 <body>
 
@@ -295,9 +302,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260813-5"></script>
-<script src="js/api.js?v=20260813-5"></script>
-<script src="js/ui.js?v=20260813-5"></script>
-<script src="js/events.js?v=20260813-5"></script>
+<script src="js/core.js?v=20260828-1"></script>
+<script src="js/api.js?v=20260828-1"></script>
+<script src="js/ui.js?v=20260828-1"></script>
+<script src="js/events.js?v=20260828-1"></script>
 </body>
 </html>

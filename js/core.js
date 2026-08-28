@@ -93,6 +93,8 @@ function saveFavs(){ try{ localStorage.setItem(FAV_LS, JSON.stringify(Array.from
 function applyTheme(){
   const t = state.cfg.theme==="light" ? "light" : "dark";
   document.documentElement.dataset.theme = t;
+  const meta = document.getElementById("themeColorMeta");
+  if (meta) meta.content = t==="dark" ? "#0d0f12" : "#f5f4f1";
   const button = document.querySelector("#themeBtn");
   const use = button && button.querySelector("use");
   if (use) use.setAttribute("href", t==="dark" ? "#i-sun" : "#i-moon");
@@ -102,7 +104,15 @@ function applyTheme(){
     button.setAttribute("aria-label", `Use ${next} theme`);
   }
 }
-function toggleTheme(){ state.cfg.theme = state.cfg.theme==="light" ? "dark" : "light"; saveCfg(); applyTheme(); }
+function toggleTheme(){
+  state.cfg.theme = state.cfg.theme==="light" ? "dark" : "light";
+  saveCfg();
+  if (document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+    document.startViewTransition(applyTheme);
+  } else {
+    applyTheme();
+  }
+}
 
 /* ---------------- helpers ---------------- */
 const $  = s => document.querySelector(s);
