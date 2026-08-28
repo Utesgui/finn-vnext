@@ -207,6 +207,7 @@ function wireEvents(){
     state.cfg.view  = $("#setView").value;
     state.cfg.limit = Number($("#setLimit").value)||200;
     state.cfg.stockCrawl = $("#setCrawl").checked;
+    state.cfg.largePalette = $("#setLargePal").checked;
     saveCfg();
     $("#settingsDlg").close();
     loadCatalog({force:true});

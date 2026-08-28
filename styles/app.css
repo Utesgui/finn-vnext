@@ -222,6 +222,7 @@ a { color: var(--cp-link); text-decoration-thickness: 1px; text-underline-offset
 }
 .field-full { inline-size: 100%; margin-block-end: 0.4rem; }
 .section-gap { block-size: 0.5rem; }
+.fdivider { margin-block: 0.65rem; border: 0; border-block-start: 1px solid var(--cp-border); }
 .top-gap { margin-block-start: 0.55rem; }
 .ic {
   inline-size: 1em; block-size: 1em; flex: none; fill: none; stroke: currentColor;
@@ -622,8 +623,9 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .version-card .vimg > img { padding: 0.45rem; transform: scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
 .badges {
   position: absolute; inset-block-start: 0.65rem; inset-inline-start: 0.65rem; z-index: 4;
-  display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: 62%; pointer-events: none;
+  display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: calc(100% - 8.6rem); pointer-events: none;
 }
+.model-card .badges { max-inline-size: calc(100% - 3.6rem); }
 .badge {
   display: inline-flex; align-items: center; gap: 0.25rem; min-block-size: 24px;
   border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent); border-radius: 999px;
@@ -656,14 +658,15 @@ html[data-theme="dark"] .model-card .group-count {
   color: var(--cp-text-muted); box-shadow: var(--cp-shadow-sm);
 }
 .favbtn, .cmpbtn, .sharebtn {
-  inset-block-end: 0.55rem; z-index: 7; inline-size: 34px; block-size: 34px;
+  inset-block-start: 0.6rem; z-index: 7; inline-size: 34px; block-size: 34px;
   border-radius: 50%; padding: 0;
   transition: color 0.15s var(--ease-out), border-color 0.15s var(--ease-out),
     background 0.15s var(--ease-out), transform 0.15s var(--ease-spring);
 }
-.sharebtn { inset-inline-start: 0.6rem; }
-.favbtn { inset-inline-start: 3.1rem; }
-.cmpbtn { inset-inline-start: 5.6rem; }
+.sharebtn { inset-inline-end: 5.6rem; }
+.favbtn { inset-inline-end: 3.1rem; }
+.cmpbtn { inset-inline-end: 0.6rem; }
+.model-card .sharebtn { inset-inline-end: 0.6rem; }
 .favbtn:hover, .cmpbtn:hover, .sharebtn:hover { border-color: var(--cp-border-strong); color: var(--cp-text); transform: scale(1.08); }
 .favbtn:active, .cmpbtn:active, .sharebtn:active { transform: scale(0.95); }
 .favbtn.on { border-color: transparent; background: color-mix(in srgb, var(--cp-rose) 14%, var(--cp-surface)); color: var(--cp-rose); }
@@ -678,10 +681,9 @@ html[data-theme="dark"] .model-card .group-count {
 .card:hover .navarr, .version-card:hover .navarr, .navarr:focus-visible { opacity: 1; }
 .navarr:hover { background: var(--cp-ink); border-color: var(--cp-ink); color: var(--cp-ink-fg); }
 .dots {
-  position: absolute; inset-block-end: 0.85rem; inset-inline: 8.2rem 3.6rem; z-index: 5;
+  position: absolute; inset-block-end: 0.6rem; inset-inline: 0; z-index: 5;
   display: flex; justify-content: center; gap: 0.28rem; pointer-events: none;
 }
-.model-card .dots { inset-inline: 3.4rem 3.6rem; }
 .dots i {
   inline-size: 5px; block-size: 5px; border-radius: 999px;
   background: color-mix(in srgb, var(--cp-text-soft) 55%, transparent);
@@ -752,6 +754,27 @@ html[data-theme="dark"] .blogo {
 .cpal.on { box-shadow: inset 0 0 0 1.5px var(--cp-surface), 0 0 0 1.5px var(--cp-text); }
 .cpal-more { position: relative; z-index: 4; flex: none; color: var(--cp-text-soft); font-size: 0.66rem; font-weight: 650; }
 .version-card .cpalette { padding-block: 0.1rem; }
+/* compact mode: finn-style dots overlaid in the picture's bottom-left corner */
+.imgwrap > .cpalette, .vimg > .cpalette {
+  position: absolute; inset-block-end: 0.55rem; inset-inline-start: 0.65rem; z-index: 6;
+  inline-size: auto; justify-content: flex-start; gap: 0.3rem;
+}
+.imgwrap > .cpalette .cpal, .vimg > .cpalette .cpal {
+  flex: none; min-inline-size: 0; inline-size: 16px; max-inline-size: 16px; block-size: 16px;
+  box-shadow: inset 0 0 0 1.5px var(--cp-bg-elevated), var(--cp-shadow-sm);
+}
+.imgwrap > .cpalette .cpal:hover, .vimg > .cpalette .cpal:hover { box-shadow: inset 0 0 0 1.5px var(--cp-bg-elevated), 0 0 0 1.5px var(--cp-border-strong); }
+.imgwrap > .cpalette .cpal.on, .vimg > .cpalette .cpal.on { box-shadow: inset 0 0 0 1.5px var(--cp-bg-elevated), 0 0 0 1.5px var(--cp-text); }
+.imgwrap > .cpalette .cpal-more, .vimg > .cpalette .cpal-more {
+  border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent); border-radius: 999px;
+  background: var(--cp-panel-strong); backdrop-filter: blur(8px); padding: 0 0.32rem;
+}
+/* keep the photo dots centered, but slide them right when many color dots share the row */
+.imgwrap:has(> .cpalette .cpal:nth-child(5)) .dots,
+.imgwrap:has(> .cpalette .cpal-more) .dots,
+.vimg:has(> .cpalette .cpal:nth-child(5)) .dots,
+.vimg:has(> .cpalette .cpal-more) .dots { inset-inline: 8.3rem 3.1rem; }
+.imgwrap:has(> .cpalette .cpal:nth-child(7)) .dots { inset-inline: 11.4rem 3.1rem; }
 .price .from {
   color: var(--cp-text-soft); font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.09em; text-transform: uppercase;
@@ -993,8 +1016,9 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .version-card .vprice small { color: var(--cp-text-muted); font-size: 0.7rem; font-weight: 500; }
 .version-card .vavail { color: var(--cp-text-muted); font-size: 0.7rem; text-align: end; }
 .version-card .sharebtn, .version-card .favbtn, .version-card .cmpbtn { inline-size: 30px; block-size: 30px; }
-.version-card .favbtn { inset-inline-start: 2.85rem; }
-.version-card .cmpbtn { inset-inline-start: 5.1rem; }
+.version-card .sharebtn { inset-inline-end: 5.1rem; }
+.version-card .favbtn { inset-inline-end: 2.85rem; }
+.version-card .cmpbtn { inset-inline-end: 0.6rem; }
 
 /* ---------- Detail dialog --------------------------------------------------- */
 #detailDlg { inline-size: min(1180px, calc(100vw - 2rem)); max-inline-size: 1180px; }
@@ -1097,7 +1121,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.45rem; }
 .detail-actions .linkout { padding: 0.68rem 0.75rem; }
 .detail-actions .ghost { display: grid; place-items: center; padding: 0.65rem 0.8rem; color: var(--cp-text); }
-.detail-content-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.1rem; margin-block-start: 1.1rem; }
+.detail-content-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); gap: 1.1rem; margin-block-start: 1.1rem; }
 .detail-panel {
   margin-block-start: 1.1rem; border: 1px solid var(--cp-border); border-radius: var(--cp-r-xl);
   background: var(--cp-surface); padding: 1.05rem; box-shadow: var(--cp-shadow-sm);
@@ -1218,9 +1242,9 @@ footer a:hover { color: var(--cp-accent); }
 /* ---------- Responsive ------------------------------------------------------- */
 @media (pointer: coarse) {
   .favbtn, .cmpbtn, .sharebtn, .navarr { inline-size: 40px; block-size: 40px; }
-  .favbtn { inset-inline-start: 3.6rem; }
-  .cmpbtn { inset-inline-start: 6.6rem; }
-  .dots { inset-inline-start: 9.6rem; }
+  .sharebtn { inset-inline-end: 6.6rem; }
+  .favbtn { inset-inline-end: 3.6rem; }
+  .model-card .sharebtn { inset-inline-end: 0.6rem; }
   .navarr { opacity: 1; }
 }
 @media (max-width: 1800px) {

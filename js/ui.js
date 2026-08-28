@@ -374,14 +374,24 @@ async function openFromHash(){
   }
 }
 /* Cars occupy wildly different fractions of their renders — measure the
-   content box on a tiny CORS canvas and scale small ones up to balance. */
+   content box on a tiny CORS canvas and scale small ones up to balance.
+   One probe per URL; every <img> showing that URL gets the result. */
 function normalizeHeroScale(img){
   const src = img.currentSrc || img.src;
   if (!src || src.startsWith("data:")) return;
   const cache = normalizeHeroScale._cache || (normalizeHeroScale._cache = new Map());
-  const apply = s => { if (img.isConnected && (img.currentSrc||img.src)===src) img.style.setProperty("--hero-scale", s); };
-  if (cache.has(src)){ const s = cache.get(src); if (s) apply(s); return; }
-  cache.set(src, null);   // in flight / unknown
+  const pending = normalizeHeroScale._pending || (normalizeHeroScale._pending = new Map());
+  const apply = (el, s) => { if (el.isConnected && (el.currentSrc||el.src)===src) el.style.setProperty("--hero-scale", s); };
+  if (cache.has(src)){ apply(img, cache.get(src)); return; }
+  if (pending.has(src)){ pending.get(src).push(img); return; }
+  pending.set(src, [img]);
+  const done = scale => {
+    const imgs = pending.get(src) || [];
+    pending.delete(src);
+    if (scale==null) return;                 // failed — a later load may retry
+    cache.set(src, scale);
+    imgs.forEach(el=>apply(el, scale));
+  };
   const probe = new Image();
   probe.crossOrigin = "anonymous";
   probe.onload = () => {
@@ -401,14 +411,12 @@ function normalizeHeroScale(img){
           if (y < minY) minY = y; if (y > maxY) maxY = y;
         }
       }
-      if (maxX < minX || maxY < minY) return;
+      if (maxX < minX || maxY < minY){ done("1"); return; }
       const fill = Math.max((maxX-minX+1)/w, (maxY-minY+1)/h);
-      const scale = Math.min(1.4, Math.max(1, 0.9/fill)).toFixed(3);
-      cache.set(src, scale);
-      apply(scale);
-    }catch(e){ /* canvas tainted — keep natural size */ }
+      done(Math.min(1.4, Math.max(1, 0.9/fill)).toFixed(3));
+    }catch(e){ done(null); /* canvas tainted — keep natural size */ }
   };
-  probe.onerror = () => {};
+  probe.onerror = () => done(null);
   probe.src = src;
 }
 /* finn.com-style mini color palette; clicking a swatch previews that color.
@@ -592,16 +600,18 @@ function modelCardEl(group){
     bodies.length ? {ic:"i-car",txt:bodies.join(" / ")} : null
   ].filter(x=>x&&x.txt);
   const meta = [group.trims.size?`${group.trims.size} ${group.trims.size===1?"trim":"trims"}`:null,group.colors.size?`${group.colors.size} ${group.colors.size===1?"color":"colors"}`:null].filter(Boolean).join(" · ");
+  const palMarkup = colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:"";
   el.innerHTML = `
     <button class="card-open" data-open-group aria-label="${esc(openLabel)}"></button>
     <div class="imgwrap">
       <div class="badges"><span class="badge group-count">${fmtNum(group.versions.length)} ${versionLabel}</span></div>
       <button class="sharebtn" data-share-model="${esc(group.key)}" title="Share this model overview" aria-label="Share this model overview"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
       <img class="hero" alt="${esc(group.brand+" "+group.model)}" loading="lazy">
+      ${state.cfg.largePalette?"":palMarkup}
       ${cardCarouselMarkup(pics,"model")}
     </div>
     <div class="cbody">
-      ${colorShots.length?`<div class="cpalette" role="group" aria-label="Colors across versions">${colorShots.map((s,i)=>`<button class="cpal${i===0?" on":""}" data-pal-idx="${i}" title="${esc(s.name)}${colorShots.length===1?" — only color":""}" aria-label="Show ${esc(s.name)}" aria-pressed="${i===0}"${vehicleColorStyle(s.hex)}></button>`).join("")}${group.colors.size>colorShots.length?`<span class="cpal-more">+${group.colors.size-colorShots.length}</span>`:""}</div>`:""}
+      ${state.cfg.largePalette?palMarkup:""}
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt"><div class="ctitle"><span class="bm">${esc(group.brand+" "+group.model)}</span></div><div class="ctrim">${esc(meta)}</div></div>
@@ -647,10 +657,11 @@ function versionCardEl(c){
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c)+" "+title)}" loading="lazy">
+      ${state.cfg.largePalette?"":paletteHtml(c)}
       ${cardCarouselMarkup(pics,"version")}
     </div>
     <div class="vbody">
-      ${paletteHtml(c)}
+      ${state.cfg.largePalette?paletteHtml(c):""}
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${metaHtml}</div>
       <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${vsi.total==null?"":`<span class="stock-chip" title="${vsi.known?"Customer-visible stock across all colors of this version":"Stock across resolved colors — some colors not yet fetched"}; availability dates still apply">${fmtNum(vsi.total)}${vsi.known?"":"+"} ${vsi.total===1&&vsi.known?"car":"cars"}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
@@ -733,6 +744,7 @@ function cardEl(c){
       <button class="favbtn ${state.favs.has(key)?"on":""}" data-fav="${esc(key)}" title="Favorite" aria-label="Toggle favorite" aria-pressed="${state.favs.has(key)}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
       <button class="cmpbtn ${state.compare.includes(key)?"on":""}" data-cmp="${esc(key)}" title="Add to compare" aria-label="Add to compare" aria-pressed="${state.compare.includes(key)}"><svg class="ic" aria-hidden="true"><use href="#i-compare"/></svg></button>
       <img class="hero" alt="${esc(carName(c))}" loading="lazy">
+      ${state.cfg.largePalette?"":paletteHtml(c)}
       ${pics.length>1?`
         <button class="navarr prev" data-shot="-1" aria-label="Previous photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="navarr next" data-shot="1" aria-label="Next photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
@@ -740,7 +752,7 @@ function cardEl(c){
         <span class="shots">1/${pics.length}</span>`:""}
     </div>
     <div class="cbody">
-      ${paletteHtml(c)}
+      ${state.cfg.largePalette?paletteHtml(c):""}
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt">
@@ -1061,8 +1073,8 @@ function openDetail(c, options={}){
         ${inList?`<span class="dpos">${state.detailIdx+1} / ${fmtNum(detailList.length)}</span>
         <button class="iconbtn" id="dPrev" title="Previous vehicle (←)" aria-label="Previous vehicle" ${state.detailIdx<=0?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="iconbtn" id="dNext" title="Next vehicle (→)" aria-label="Next vehicle" ${state.detailIdx>=detailList.length-1?"disabled":""}><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>`:""}
-        <button class="iconbtn" data-share-key="${esc(carKey(c))}" title="Share this configuration (current color included)" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
         <button class="iconbtn ${favOn?"on":""}" data-fav="${esc(carKey(c))}" title="Favorite (f)" aria-label="Toggle favorite" aria-pressed="${favOn}"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+        <button class="iconbtn" data-share-key="${esc(carKey(c))}" title="Share this configuration (current color included)" aria-label="Share this configuration"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button>
         <button class="iconbtn x" data-close="detailDlg" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
     </div>
@@ -1482,6 +1494,7 @@ function openSettings(){
   $("#setView").value = state.cfg.view;
   $("#setLimit").value = String(state.cfg.limit);
   $("#setCrawl").checked = state.cfg.stockCrawl !== false;
+  $("#setLargePal").checked = state.cfg.largePalette === true;
   $("#settingsDlg").showModal();
 }
 

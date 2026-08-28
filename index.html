@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-23"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-23">
+<script src="js/domain.js?v=20260828-24"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-24">
 </head>
 <body>
 
@@ -106,7 +106,7 @@
     <details open><summary>Fuel &amp; gearshift</summary>
       <div class="fbody">
         <div class="chips" id="fuelChips"></div>
-        <div class="section-gap"></div>
+        <hr class="fdivider">
         <div class="chips" id="gearChips"></div>
       </div>
     </details>
@@ -308,6 +308,10 @@
       <label class="checkrow"><input type="checkbox" id="setCrawl"> Background stock refinement</label>
       <div class="hint">Each color of a version is its own configuration with its own stock. When enabled, the app gently resolves them in the background (two parallel requests with a half-second pause, only while the tab is visible) so "+" counts become exact totals. Results are cached for 12 hours.</div>
     </div>
+    <div class="set-row">
+      <label class="checkrow"><input type="checkbox" id="setLargePal"> Large color switcher</label>
+      <div class="hint">Shows the color swatches as wide pills below the picture instead of compact dots inside it — easier to hit, but the cards get a little taller.</div>
+    </div>
   </div>
   <div class="dfoot">
     <button class="ghost" data-close="settingsDlg">Cancel</button>
@@ -319,9 +323,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-23"></script>
-<script src="js/api.js?v=20260828-23"></script>
-<script src="js/ui.js?v=20260828-23"></script>
-<script src="js/events.js?v=20260828-23"></script>
+<script src="js/core.js?v=20260828-24"></script>
+<script src="js/api.js?v=20260828-24"></script>
+<script src="js/ui.js?v=20260828-24"></script>
+<script src="js/events.js?v=20260828-24"></script>
 </body>
 </html>

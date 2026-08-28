@@ -27,6 +27,7 @@ const DEFAULTS = {
   density: "grid",
   browseMode: "cars",
   stockCrawl: true,                        // trickle-resolve color-variant stock in the background
+  largePalette: false,                     // color swatches as pills below the picture (vs dots inside)
   theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light"
 };
 /* Connection facts (verified via browser console, 2026-07-25):
