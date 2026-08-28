@@ -195,10 +195,15 @@ function cardCarouselMarkup(pics,label){
   const dots=pics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
   return `<button class="navarr prev" data-shot="-1" aria-label="Previous ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><button class="navarr next" data-shot="1" aria-label="Next ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><div class="dots">${dots}</div><span class="shots">1/${pics.length}</span>`;
 }
-/* finn.com-style mini color palette; clicking a dot opens that color's detail */
+/* finn.com-style mini color palette; clicking a swatch previews that color.
+   Single-color cars show their one color so the absence of choice is explicit. */
 function paletteHtml(c, limit=6){
-  const list = Array.isArray(c.color_list) ? c.color_list : [];
-  if (list.length < 2) return "";
+  let list = Array.isArray(c.color_list) ? c.color_list.filter(Boolean) : [];
+  if (!list.length && c.color && (c.color.specific || c.color.color_hex)){
+    list = [{ uid: c.uid ?? carKey(c), color_specific: c.color.specific, color_hex: c.color.color_hex }];
+  }
+  if (!list.length) return "";
+  const single = list.length === 1;
   const selfUid = String(c.uid ?? carKey(c));
   const shown = list.slice(0, limit);
   const more = list.length - shown.length;
@@ -206,7 +211,7 @@ function paletteHtml(c, limit=6){
     const uid = cl && cl.uid!=null ? String(cl.uid) : "";
     const on = uid===selfUid;
     const name = cl.color_specific || "Color";
-    return `<button class="cpal${on?" on":""}" data-pal="${esc(uid)}" title="${esc(name)}${on?" — shown":""}" aria-label="Show ${esc(name)}" aria-pressed="${on}"${vehicleColorStyle(cl.color_hex)}></button>`;
+    return `<button class="cpal${on?" on":""}" data-pal="${esc(uid)}" title="${esc(name)}${single?" — only color":on?" — shown":""}" aria-label="Show ${esc(name)}" aria-pressed="${on}"${vehicleColorStyle(cl.color_hex)}></button>`;
   }).join("")}${more>0?`<span class="cpal-more">+${more}</span>`:""}</div>`;
 }
 /* In-place color preview on result/version cards: swap the carousel to the
