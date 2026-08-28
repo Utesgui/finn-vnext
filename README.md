@@ -79,10 +79,13 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   version's full color set. Stock totals fold in every color variant the app has resolved
   so far and carry a **+** while some colors are still unknown (the API lists one config
   per version; its color siblings are separate configs whose stock isn't in the listing
-  payload). A **background stock crawler** (Settings toggle, on by default) gently
-  resolves the missing colors — one request every 3 seconds while the tab is visible,
-  cached for 12 hours in a small localStorage DB — until "+" counts become exact totals,
-  live-updating the visible cards and stats.
+  payload). A **background stock crawler** (Settings toggle, on by default) resolves
+  the missing colors with a small worker pool — two parallel requests with a
+  half-second pause, only while the tab is visible, cached for 12 hours in a small
+  localStorage DB — until "+" counts become exact totals, live-updating the visible
+  cards and stats. Colors the API doesn't list yet count as resolved (shown as "–"
+  in the detail chips instead of blocking the total). Result cards and version cards
+  show a finn.com-style **color palette**: click a dot to open that exact color variant.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are
