@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Stock snapshot"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +19,9 @@ concurrency:
 
 jobs:
   deploy:
+    # bot commits from the snapshot workflow can't fire `push` events —
+    # the workflow_run trigger deploys them; skip when the snapshot failed
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

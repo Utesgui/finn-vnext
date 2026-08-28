@@ -2,7 +2,8 @@ name: Stock snapshot
 
 # Gently refreshes data/stock-snapshot.json so the deployed app starts with a
 # warm sibling-stock cache. Scheduled workflows run from the default branch
-# only. The commit to main retriggers the Pages deployment automatically.
+# only. The Pages workflow listens for this one via workflow_run, because
+# pushes made with GITHUB_TOKEN don't fire `push` events.
 
 on:
   schedule:
