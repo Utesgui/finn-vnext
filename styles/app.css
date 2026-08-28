@@ -413,9 +413,9 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
   background: color-mix(in srgb, var(--cp-danger) 8%, transparent);
   color: var(--cp-danger); font-weight: 650; text-decoration: line-through;
 }
-.checklist { display: flex; flex-direction: column; gap: 0.1rem; max-block-size: 240px; overflow: auto; }
+.checklist { display: flex; flex-direction: column; gap: 0; max-block-size: 240px; overflow: auto; }
 .checkrow {
-  display: flex; align-items: center; gap: 0.55rem; min-block-size: 36px; padding: 0.35rem 0.45rem;
+  display: flex; align-items: center; gap: 0.55rem; min-block-size: 30px; padding: 0.2rem 0.45rem;
   border-radius: var(--cp-r-sm); color: var(--cp-text-muted); font-size: 0.78rem; cursor: pointer;
   transition: background 0.12s var(--ease-out), color 0.12s var(--ease-out);
 }

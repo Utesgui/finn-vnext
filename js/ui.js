@@ -281,9 +281,11 @@ function variantMatchesFilters(cl){
    Single-color cars show their one color so the absence of choice is explicit. */
 function paletteHtml(c, limit=6){
   const selfUid = String(c.uid ?? carKey(c));
-  let list = Array.isArray(c.color_list)
-    ? c.color_list.filter(cl=>cl && (String(cl.uid)===selfUid || variantMatchesFilters(cl)))
-    : [];
+  const rawList = Array.isArray(c.color_list) ? c.color_list.filter(Boolean) : [];
+  // the listed color is filtered like any other — the card auto-presents a
+  // matching sibling when its own color fails the active filters
+  let list = rawList.filter(cl=>variantMatchesFilters(cl));
+  if (!list.length) list = rawList;   // nothing known to match: fail open
   if (!list.length && c.color && (c.color.specific || c.color.color_hex)){
     list = [{ uid: c.uid ?? carKey(c), color_specific: c.color.specific, color_hex: c.color.color_hex }];
   }
@@ -424,11 +426,10 @@ function modelCardEl(group){
   {
     const seen = new Set();
     outer: for (const v of group.versions){
-      const vSelf = String(v.uid ?? carKey(v));
       for (const cl of (Array.isArray(v.color_list)?v.color_list:[])){
         const name = (cl && cl.color_specific) || "";
         if (!name || seen.has(name)) continue;
-        if (String(cl && cl.uid)!==vSelf && !variantMatchesFilters(cl)) continue;
+        if (!variantMatchesFilters(cl)) continue;
         const sib = state.cars.find(x=>String(x.uid??"")===String(cl && cl.uid));
         const url = sib ? galleryPics(sib)[0] : (cl && cl.picture_front_url);
         if (typeof url !== "string" || !url) continue;
