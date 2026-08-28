@@ -209,6 +209,43 @@ function paletteHtml(c, limit=6){
     return `<button class="cpal${on?" on":""}" data-pal="${esc(uid)}" title="${esc(name)}${on?" — shown":""}" aria-label="Show ${esc(name)}" aria-pressed="${on}"${vehicleColorStyle(cl.color_hex)}></button>`;
   }).join("")}${more>0?`<span class="cpal-more">+${more}</span>`:""}</div>`;
 }
+/* In-place color preview on result/version cards: swap the carousel to the
+   chosen color and remember it so opening the card targets that variant. */
+function applyCardPalette(card, btn){
+  const key = card.dataset.key || card.dataset.version;
+  const c = state.cars.find(x=>carKey(x)===key);
+  if (!c) return;
+  const uid = btn.dataset.pal || "";
+  const selfUid = String(c.uid ?? carKey(c));
+  const cl = (Array.isArray(c.color_list)?c.color_list:[]).find(x=>String(x&&x.uid)===uid);
+  card._palUid = uid && uid!==selfUid ? uid : null;
+  card.querySelectorAll(".cpal").forEach(x=>{ x.classList.toggle("on", x===btn); x.setAttribute("aria-pressed", String(x===btn)); });
+  const nameEl = card.querySelector("[data-pal-name]");
+  if (nameEl && cl && cl.color_specific) nameEl.textContent = cl.color_specific;
+  let newPics = null;
+  if (!card._palUid) newPics = galleryPics(c);
+  else {
+    const sibling = state.cars.find(x=>String(x.uid??"")===uid);
+    if (sibling) newPics = galleryPics(sibling);
+    else {
+      const vp = (Array.isArray(cl&&cl.pictures)&&cl.pictures.length ? cl.pictures.map(p=>(p&&p.url)||p) : [cl&&cl.picture_front_url])
+        .filter(u=>typeof u==="string"&&u);
+      if (vp.length) newPics = vp;
+    }
+  }
+  if (!newPics){ toast(`${(cl&&cl.color_specific)||"This color"} isn't listed yet — open the card for what's known`); return; }
+  card._pics = newPics; card._shot = 0;
+  const hero = card.querySelector("img.hero");
+  if (hero){
+    hero.classList.remove("loaded");
+    hero.addEventListener("error", ()=>{ hero.src = PLACEHOLDER; }, {once:true});
+    hero.src = newPics[0] || PLACEHOLDER;
+  }
+  const dots = card.querySelector(".dots");
+  if (dots) dots.innerHTML = newPics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
+  const shots = card.querySelector(".shots");
+  if (shots) shots.textContent = `1/${newPics.length}`;
+}
 function modelCardEl(group){
   const c = group.representative;
   const versionLabel = group.versions.length===1 ? "version" : "versions";
@@ -263,7 +300,11 @@ function versionCardEl(c){
   el.className = "version-card"; el.dataset.version = key;
   const title = c.trim_name || c.equipment_line || (c.config&&c.config.name) || c.engine || "Standard";
   const openLabel=`Open ${carName(c)} ${title}, ${stockText(inventory)?stockText(inventory)+", ":""}${fmtEur(price)} per month`;
-  const meta = [c.engine,displayValue("drive",c.config_drive),c.color&&c.color.specific].filter(Boolean).join(" · ");
+  const metaParts = [c.engine, displayValue("drive",c.config_drive)].filter(Boolean);
+  const metaColor = c.color && c.color.specific;
+  const metaHtml = metaParts.length || metaColor
+    ? `${esc(metaParts.join(" · "))}${metaColor?`${metaParts.length?" · ":""}<span data-pal-name>${esc(metaColor)}</span>`:""}`
+    : esc([displayValue("fuel",c.fuel),displayValue("body",c.cartype)].filter(Boolean).join(" · "));
   const chips = [
     Array.isArray(c.color_list)&&c.color_list.length>1?`${c.color_list.length} colors`:null,
     c.model_year,
@@ -280,9 +321,9 @@ function versionCardEl(c){
       ${cardCarouselMarkup(pics,"version")}
     </div>
     <div class="vbody">
-      <div class="vtitle">${esc(title)}</div>
-      <div class="vmeta">${esc(meta||[displayValue("fuel",c.fuel),displayValue("body",c.cartype)].filter(Boolean).join(" · "))}</div>
       ${paletteHtml(c)}
+      <div class="vtitle">${esc(title)}</div>
+      <div class="vmeta">${metaHtml}</div>
       <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${vsi.total==null?"":`<span class="stock-chip" title="${vsi.known?"Customer-visible stock across all colors of this version":"Stock across resolved colors — some colors not yet fetched"}; availability dates still apply">${fmtNum(vsi.total)}${vsi.known?"":"+"} ${vsi.total===1&&vsi.known?"car":"cars"}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
@@ -339,7 +380,7 @@ function cardEl(c){
     c.power ? {ic:"i-gauge", txt:`${Math.round(c.power*1.35962)} PS`} : null,
     c.seats ? {ic:"i-users", txt:c.seats} : null
   ].filter(x=>x&&x.txt);
-  const subtitle = [c.trim_name || c.equipment_line || (c.config&&c.config.name) || c.engine, displayValue("body",c.cartype)]
+  const subtitle = [c.trim_name || c.equipment_line || (c.config&&c.config.name) || c.engine, displayValue("body",c.cartype), c.model_year]
     .filter(Boolean).join(" · ");
   const pics = galleryPics(c);
   const logo = brandLogo(c);
@@ -362,15 +403,15 @@ function cardEl(c){
         <span class="shots">1/${pics.length}</span>`:""}
     </div>
     <div class="cbody">
+      ${paletteHtml(c)}
       <div class="chead">
         ${logo?`<img class="blogo" src="${esc(logo)}" alt="" loading="lazy" onerror="this.remove()">`:""}
         <div class="txt">
-          <div class="ctitle"><span class="bm">${esc(carName(c))}</span>${c.model_year?`<span class="yr">${esc(c.model_year)}</span>`:""}</div>
+          <div class="ctitle"><span class="bm">${esc(carName(c))}</span></div>
           <div class="ctrim">${esc(subtitle)}</div>
         </div>
         ${inventory==null?"":`<div class="card-stock" title="Customer-visible stock for this configuration; availability date still applies"><strong>${fmtNum(inventory)}</strong><span>${inventory===1?"car":"cars"}</span></div>`}
       </div>
-      ${paletteHtml(c)}
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
       <div class="cfoot">
         <div class="price">
