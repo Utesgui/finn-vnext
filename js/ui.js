@@ -386,14 +386,26 @@ function setCardPreviewState(card, on, cl){
   }
 }
 /* When the displayed (listed) color itself fails the active term filter but a
-   sibling color matches, present that sibling on the card automatically. */
+   sibling color is KNOWN to match, present that sibling on the card automatically. */
 function autoSelectMatchingColor(card, c){
   const termsF = state.f.terms.map(Number);
   if (!termsF.length || !card) return;
   const ownTm = carTermsList(c);
   if (termsF.some(t=>ownTm.includes(t))) return;
   const selfUid = String(c.uid ?? carKey(c));
-  const match = (Array.isArray(c.color_list)?c.color_list:[]).find(cl=>cl && String(cl.uid)!==selfUid && variantMatchesFilters(cl));
+  const knownTerms = cl => {
+    const uid = cl && cl.uid!=null ? String(cl.uid) : null;
+    if (!uid) return null;
+    const full = state.cars.find(x=>String(x.uid??"")===uid) || cachedConfigByUid(uid);
+    if (full) return carTermsList(full);
+    const rec = siblingStockRec(uid);
+    return rec && Array.isArray(rec.tm) ? rec.tm : null;
+  };
+  const match = (Array.isArray(c.color_list)?c.color_list:[]).find(cl=>{
+    if (!cl || String(cl.uid)===selfUid) return false;
+    const tm = knownTerms(cl);
+    return Array.isArray(tm) && termsF.some(t=>tm.includes(t)) && variantMatchesFilters(cl);
+  });
   if (!match || match.uid==null) return;
   const btn = card.querySelector(`.cpal[data-pal="${CSS.escape(String(match.uid))}"]`);
   if (btn) applyCardPalette(card, btn);

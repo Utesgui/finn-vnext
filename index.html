@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-19"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-19">
+<script src="js/domain.js?v=20260828-20"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-20">
 </head>
 <body>
 
@@ -110,7 +110,7 @@
         <div class="checklist" id="brandList"></div>
       </div>
     </details>
-    <details open><summary>Body type</summary><div class="fbody"><div class="chips" id="typeChips"></div></div></details>
+    <details><summary>Body type</summary><div class="fbody"><div class="chips" id="typeChips"></div></div></details>
     <details open><summary>Monthly price</summary>
       <div class="fbody">
         <div class="rangerow">
@@ -122,15 +122,14 @@
         <div class="dualrange" id="priceRange" role="group" aria-label="Monthly price range"></div>
         <div class="rangeout" id="priceOut"></div>
         <div class="chips top-gap" id="priceQuick">
-          <button class="chip" data-pq="200">≤ 200 €</button>
-          <button class="chip" data-pq="300">≤ 300 €</button>
           <button class="chip" data-pq="400">≤ 400 €</button>
-          <button class="chip" data-pq="500">≤ 500 €</button>
+          <button class="chip" data-pq="600">≤ 600 €</button>
+          <button class="chip" data-pq="800">≤ 800 €</button>
         </div>
       </div>
     </details>
     <details><summary>Gearshift</summary><div class="fbody"><div class="chips" id="gearChips"></div></div></details>
-    <details><summary>Power</summary>
+    <details open><summary>Power</summary>
       <div class="fbody">
         <div class="dualrange" id="powerRange" role="group" aria-label="Power range"></div>
         <div class="rangeout" id="powerOut">any</div>
@@ -142,7 +141,7 @@
         <div class="rangeout" id="rangeOut">any</div>
       </div>
     </details>
-    <details><summary>Term length</summary>
+    <details open><summary>Term length</summary>
       <div class="fbody">
         <div class="dualrange" id="termRange" role="group" aria-label="Contract term range"></div>
         <div class="rangeout" id="termOut">any</div>
@@ -313,9 +312,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-19"></script>
-<script src="js/api.js?v=20260828-19"></script>
-<script src="js/ui.js?v=20260828-19"></script>
-<script src="js/events.js?v=20260828-19"></script>
+<script src="js/core.js?v=20260828-20"></script>
+<script src="js/api.js?v=20260828-20"></script>
+<script src="js/ui.js?v=20260828-20"></script>
+<script src="js/events.js?v=20260828-20"></script>
 </body>
 </html>

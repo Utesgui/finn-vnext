@@ -220,7 +220,7 @@ a { color: var(--cp-link); text-decoration-thickness: 1px; text-underline-offset
   padding: 0 !important; margin: -1px !important; overflow: hidden !important;
   clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important;
 }
-.field-full { inline-size: 100%; margin-block-end: 0.5rem; }
+.field-full { inline-size: 100%; margin-block-end: 0.4rem; }
 .section-gap { block-size: 0.5rem; }
 .top-gap { margin-block-start: 0.55rem; }
 .ic {
@@ -393,7 +393,7 @@ aside summary::after {
   opacity: 0.55; transform: rotate(-45deg); transition: transform 0.2s var(--ease-out), opacity 0.15s var(--ease-out);
 }
 aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1px); opacity: 0.85; }
-.fbody { padding: 0.1rem 0.1rem 1rem; }
+.fbody { padding: 0.1rem 0.1rem 0.7rem; }
 .chips, .swatches { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .chip, .qf, .statchip, .af, .favtoggle {
   border: 1px solid var(--cp-border); background: var(--cp-surface); color: var(--cp-text-muted);
