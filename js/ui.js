@@ -527,13 +527,21 @@ function applyWide(){
     if (btn){ btn.hidden = true; btn.classList.remove("on"); }
     return;
   }
-  const idx = Math.min(Number(state.cfg.wide) || 0, stages.length - 1);
+  const idx = state.cfg.wide==null ? wideAutoIdx(stages) : Math.min(Number(state.cfg.wide) || 0, stages.length - 1);
   document.body.style.setProperty("--layout-w", idx === stages.length - 1 ? "100%" : stages[idx] + "px");
   if (btn){
     btn.hidden = false;
     btn.classList.toggle("on", idx > 0);
     btn.title = `Cycle page width (${idx+1}/${stages.length}: ${idx===0?"standard":idx===stages.length-1?"full":fmtNum(stages[idx])+"px"})`;
   }
+}
+/* untouched setting: pick the stage nearest ~72% of the screen (capped) —
+   standard up to WQHD 16:9, the literal middle on ultrawides and 4K */
+function wideAutoIdx(stages){
+  const target = Math.min(3200, Math.max(WIDE_BASE, window.innerWidth * 0.72));
+  let best = 0;
+  stages.forEach((s,i)=>{ if (Math.abs(s-target) < Math.abs(stages[best]-target)) best = i; });
+  return best;
 }
 function wideLabel(){
   const stages = wideStages();

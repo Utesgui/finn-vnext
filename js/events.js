@@ -211,7 +211,9 @@ function wireEvents(){
   $("#exportBtn").addEventListener("click", exportCsv);
   $("#themeBtn").addEventListener("click", toggleTheme);
   $("#wideBtn").addEventListener("click", ()=>{
-    state.cfg.wide = ((Number(state.cfg.wide)||0) + 1) % wideStages().length;
+    const stages = wideStages();
+    const cur = state.cfg.wide==null ? wideAutoIdx(stages) : Math.min(Number(state.cfg.wide)||0, stages.length-1);
+    state.cfg.wide = (cur + 1) % stages.length;
     saveCfg(); applyWide();
     toast(wideLabel());
   });

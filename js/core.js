@@ -28,7 +28,7 @@ const DEFAULTS = {
   browseMode: "cars",
   stockCrawl: true,                        // trickle-resolve color-variant stock in the background
   largePalette: false,                     // color swatches as pills below the picture (vs dots inside)
-  wide: 0,                                 // page width: 0 standard · 1 wide · 2 full
+  wide: null,                              // page width stage; null = auto per screen
   uiScale: 100,                            // UI zoom percent (70–150)
   theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light"
 };
