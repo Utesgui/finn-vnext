@@ -81,7 +81,10 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   update monthly price, baseline delta, selected price-table row and full contract total.
   It also includes key-spec highlights, technical pricing, all equipment categories shown
   as stacked sections, named option **packages**, tire type & size, interior color,
-  color availability, finn.com offer link, plus **Open PDF** and reliable
+  and an **interactive color switcher** below the gallery: click a color chip to jump
+  to that variant with its own photos, pricing and availability (resolved from the
+  local catalog, or fetched live via `config_id` when the sibling isn't loaded),
+  finn.com offer link, plus **Open PDF** and reliable
   **Download PDF** actions. **←/→ navigation** stays within the selected model when opened
   through the version picker, with a back-to-versions action; direct results continue to
   navigate the full filtered list.

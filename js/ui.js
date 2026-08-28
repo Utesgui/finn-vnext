@@ -544,7 +544,8 @@ function openDetail(c, options={}){
   state.detailIdx = detailList.findIndex(x=>carKey(x)===state.detailKey);
   const dlg = $("#detailDlg");
   dlg.setAttribute("aria-label", `${carName(c)} ${c.trim_name||""} details`.trim());
-  const pics = galleryPics(c).map(url=>({url}));
+  const pics0 = galleryPics(c).map(url=>({url}));
+  let pics = pics0;
   const link = finnLink(c);
   const eq = c.equipment||{};
   const delim = c.equipment_delimiter || ";";
@@ -591,7 +592,17 @@ function openDetail(c, options={}){
   const initialDelta = initialQuote&&advertisedPrice!=null ? initialQuote.price-advertisedPrice : 0;
   const quoteDeltaText = delta => delta>0 ? `+${fmtEur(delta)} / month vs ${fmtEur(advertisedPrice)} starting price` : delta<0 ? `${fmtEur(Math.abs(delta))} less / month vs ${fmtEur(advertisedPrice)} starting price` : `Matches the ${fmtEur(advertisedPrice)} starting price`;
   const configPdf = configPdfLink(c);
-  const colors = Array.isArray(c.color_list) ? c.color_list.slice(0,12) : [];
+  const colorList = Array.isArray(c.color_list) ? c.color_list.slice(0,12) : [];
+  const colorVariants = colorList.map(cl=>{
+    const uid = cl.uid!=null ? String(cl.uid) : null;
+    const isSelf = uid!=null ? String(c.uid??carKey(c))===uid : (!!c.color&&c.color.specific===cl.color_specific);
+    const catalogCar = !isSelf&&uid ? state.cars.find(x=>String(x.uid??"")===uid||carKey(x)===uid) : null;
+    return {
+      name: cl.color_specific||"Unnamed color", hex: cl.color_hex, date: cl.availability_date,
+      uid, pics: Array.isArray(cl.pictures)?cl.pictures.map(p=>(p&&p.url)||p).filter(u=>typeof u==="string"):[],
+      catalogCar, isSelf
+    };
+  });
   const highlights = [
     evRange(c)?{ic:"i-bolt",k:"EV range",v:fmtNum(evRange(c))+" km"}:{ic:"i-fuel",k:"Fuel",v:displayValue("fuel",c.fuel)},
     c.gearshift?{ic:"i-gear",k:"Gearshift",v:displayValue("gear",c.gearshift)}:null,
@@ -621,7 +632,8 @@ function openDetail(c, options={}){
       <div class="detail-hero">
         <div class="gallery detail-gallery">
           <div class="main"><img id="galMain" alt="${esc(carName(c))}"></div>
-          ${pics.length>1?`<div class="thumbs">${pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="${esc(carName(c))} view ${i+1}">`).join("")}</div>`:""}
+          <div class="thumbs" data-gal-thumbs></div>
+          ${colorVariants.length?`<div class="detail-colorbar" role="group" aria-label="Color variants">${colorVariants.map((v,i)=>`<button class="detail-color${v.isSelf?" on":""}" data-color-idx="${i}" title="${esc(v.name)}${v.date?` · available from ${esc(fmtDate(v.date))}`:""}${v.catalogCar?" · open this color":v.isSelf?"":v.pics.length?" · preview photos":""}" aria-pressed="${v.isSelf}"><span class="sw"${vehicleColorStyle(v.hex)}></span><span class="name">${esc(v.name)}</span><span class="date">${esc(fmtDate(v.date))}</span></button>`).join("")}</div>`:""}
         </div>
         <div class="detail-summary">
           <div class="detail-availability"><span>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</span>${inventory==null?'<span>Configure your subscription</span>':`<span class="detail-stock" title="Customer-visible stock for this configuration; availability date still applies"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg><strong>${fmtNum(inventory)}</strong> ${inventory===1?"car":"cars"}</span>`}</div>
@@ -664,21 +676,54 @@ function openDetail(c, options={}){
         ${packages.length?`<div class="equipment-packages">${packages.map(([name,items])=>`<div class="equipment-package"><div class="pkg-head"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg><b>${esc(name)}</b><span class="pkg-tag">package</span></div>${items?`<p>${esc(items)}</p>`:""}</div>`).join("")}</div>`:""}
         <div class="detail-equipment">${equipmentGroups.length?equipmentGroups.map((g,i)=>`<section class="equipment-panel" aria-labelledby="eqHeading${i}"><div class="equipment-panel-head"><svg class="ic" aria-hidden="true"><use href="#${g.icon}"/></svg><div><h4 class="title" id="eqHeading${i}">${esc(g.title)}</h4><p>${esc(g.description)}</p></div><span class="count">${g.items.length} included</span></div><ul class="equipment-list">${g.items.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></section>`).join(""):'<div class="detail-price-note">No equipment details provided by the API.</div>'}</div>
       </section>
-      ${colors.length?`<section class="detail-panel"><div class="detail-panel-head"><div><h3>Color availability</h3><p>${colors.length} variants supplied for this configuration</p></div></div><div class="detail-colors">${colors.map(cl=>`<div class="detail-color"><span class="sw"${vehicleColorStyle(cl.color_hex)}></span><span class="name">${esc(cl.color_specific||"Unnamed color")}</span><span class="date">${esc(fmtDate(cl.availability_date))}</span></div>`).join("")}</div></section>`:""}
       <div class="detail-meta">config ${esc(c.config_id)} · ${esc(c.id||"no product id")}${c._firstSeen?` · first seen ${esc(fmtDateTime(c._firstSeen))}`:""}</div>
     </div>`;
   const main = dlg.querySelector("#galMain");
   const setMain = i => { main.src = pics[i] && pics[i].url ? pics[i].url : PLACEHOLDER; };
-  setMain(0);
   main.addEventListener("error", ()=>{ main.src=PLACEHOLDER; }, {once:true});
-  dlg.querySelectorAll("[data-gal]").forEach(t=>{
-    t.src = pics[Number(t.dataset.gal)].url;
-    t.addEventListener("error", ()=>{ t.src=PLACEHOLDER; }, {once:true});
-    t.addEventListener("click", ()=>{
-      dlg.querySelectorAll("[data-gal]").forEach(x=>x.classList.remove("on"));
-      t.classList.add("on"); setMain(Number(t.dataset.gal));
+  const renderGallery = () => {
+    const wrap = dlg.querySelector("[data-gal-thumbs]");
+    wrap.innerHTML = pics.length>1 ? pics.map((p,i)=>`<img data-gal="${i}" class="${i===0?"on":""}" alt="${esc(carName(c))} view ${i+1}">`).join("") : "";
+    wrap.querySelectorAll("[data-gal]").forEach(t=>{
+      t.src = pics[Number(t.dataset.gal)].url;
+      t.addEventListener("error", ()=>{ t.src=PLACEHOLDER; }, {once:true});
+      t.addEventListener("click", ()=>{
+        wrap.querySelectorAll("[data-gal]").forEach(x=>x.classList.remove("on"));
+        t.classList.add("on"); setMain(Number(t.dataset.gal));
+      });
     });
-  });
+    setMain(0);
+  };
+  renderGallery();
+  dlg.querySelectorAll("[data-color-idx]").forEach(b=>b.addEventListener("click", ()=>{
+    const v = colorVariants[Number(b.dataset.colorIdx)];
+    if (!v || b.getAttribute("aria-busy")==="true") return;
+    if (v.isSelf){
+      pics = pics0; renderGallery();
+      dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
+      return;
+    }
+    // A sibling config in the catalog carries the real data — switch to it.
+    if (v.catalogCar){ openDetail(v.catalogCar, {keepContext:true}); return; }
+    if (v.uid){
+      const openedKey = carKey(c);
+      b.setAttribute("aria-busy","true");
+      fetchConfigByUid(v.uid).then(car=>{
+        b.removeAttribute("aria-busy");
+        if (!dlg.open || state.detailKey!==openedKey) return;   // dialog moved on meanwhile
+        if (car){ openDetail(car, {keepContext:true}); return; }
+        applyVariantPics(v, b);
+      });
+      return;
+    }
+    applyVariantPics(v, b);
+  }));
+  function applyVariantPics(v, b){
+    if (!v.pics.length){ toast(`${v.name} is not currently offered — no data supplied`); return; }
+    pics = v.pics.map(url=>({url}));
+    renderGallery();
+    dlg.querySelectorAll("[data-color-idx]").forEach(x=>{ x.classList.toggle("on", x===b); x.setAttribute("aria-pressed", String(x===b)); });
+  }
   const updateDetailQuote = () => {
     quotePrices = priceList(c,quoteKm);
     if(!quotePrices.some(x=>x.term===quoteTerm)){

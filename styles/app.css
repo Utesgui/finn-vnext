@@ -1064,11 +1064,19 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 }
 .detail-price-table .selected-tag { color: var(--cp-accent); }
 .detail-km-note { margin-block-start: 0.55rem; color: var(--cp-text-muted); font-size: 0.7rem; line-height: 1.55; text-wrap: pretty; }
-.detail-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.42rem; }
+.gallery .thumbs:empty { display: none; }
+.detail-colorbar { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-block-start: 0.55rem; }
 .detail-color {
   display: flex; align-items: center; gap: 0.5rem; min-inline-size: 0; border: 1px solid var(--cp-border);
   border-radius: var(--cp-r-md); background: var(--cp-surface-soft); padding: 0.5rem 0.6rem; font-size: 0.7rem;
+  text-align: start;
+  transition: border-color 0.15s var(--ease-out), background 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out), transform 0.12s var(--ease-spring);
 }
+button.detail-color:hover { border-color: var(--cp-border-strong); background: var(--cp-surface); box-shadow: var(--cp-shadow-sm); }
+button.detail-color:active { transform: scale(0.97); }
+.detail-color.on { border-color: var(--cp-ink); background: var(--cp-surface); box-shadow: inset 0 0 0 1px var(--cp-ink); }
+.detail-color.on .name { font-weight: 700; }
+.detail-color[aria-busy="true"] { opacity: 0.55; pointer-events: none; }
 .detail-color .sw {
   flex: none; inline-size: 22px; block-size: 22px; border: 1px solid var(--cp-border-strong); border-radius: 50%;
   background: var(--vehicle-color, var(--cp-border-strong)); box-shadow: inset 0 0 0 2px var(--cp-surface);

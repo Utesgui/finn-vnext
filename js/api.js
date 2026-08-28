@@ -54,6 +54,23 @@ function trackPrices(){
     try{ localStorage.setItem(SEEN_LS, JSON.stringify(db)); }catch(e){}
   }
 
+/* ---------------- single-config lookup (color variants) ---------------- */
+const configFetchCache = new Map();
+async function fetchConfigByUid(uid){
+  const key = `${uid}:${state.cfg.biz?"b":"c"}`;
+  if (configFetchCache.has(key)) return configFetchCache.get(key);
+  let car = null;
+  try{
+    const json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
+      config_id: String(uid), is_for_business: state.cfg.biz, pricing_type: "normal", limit: 3
+    })), state.cfg.actor, {timeoutMs: PROBE_TIMEOUT_MS});
+    const results = Array.isArray(json && json.results) ? json.results : [];
+    car = results.find(x=>String(x.uid??x.config_id)===String(uid)) || results[0] || null;
+  }catch(e){ /* variant simply not resolvable right now */ }
+  configFetchCache.set(key, car);
+  return car;
+}
+
 /* ---------------- API layer ---------------- */
 const REQUEST_TIMEOUT_MS = 30000;
 const PROBE_TIMEOUT_MS = 6000;
