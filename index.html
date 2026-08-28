@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-7"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-7">
+<script src="js/domain.js?v=20260828-8"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-8">
 </head>
 <body>
 
@@ -292,6 +292,10 @@
       </select>
       <div class="hint">The app pages through the catalog and then filters instantly in the browser.</div>
     </div>
+    <div class="set-row">
+      <label class="checkrow"><input type="checkbox" id="setCrawl"> Background stock refinement</label>
+      <div class="hint">Each color of a version is its own configuration with its own stock. When enabled, the app gently resolves them (one request every 3 seconds while the tab is visible) so "+" counts become exact totals. Results are cached for 12 hours.</div>
+    </div>
   </div>
   <div class="dfoot">
     <button class="ghost" data-close="settingsDlg">Cancel</button>
@@ -303,9 +307,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-7"></script>
-<script src="js/api.js?v=20260828-7"></script>
-<script src="js/ui.js?v=20260828-7"></script>
-<script src="js/events.js?v=20260828-7"></script>
+<script src="js/core.js?v=20260828-8"></script>
+<script src="js/api.js?v=20260828-8"></script>
+<script src="js/ui.js?v=20260828-8"></script>
+<script src="js/events.js?v=20260828-8"></script>
 </body>
 </html>

@@ -56,10 +56,13 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
   matching configurations. Both model cards and individual version cards retain their own
   photo carousel; the version grid also exposes prices, specs, availability, favorites and
   compare actions before entering full details. Model cards count colors across each
-  version's full color set and mark stock totals with **+** when hidden color variants
-  carry additional stock (the API lists one config per version; its color siblings are
-  separate configs whose stock isn't in the listing payload). Version cards show their
-  own units plus a color count.
+  version's full color set. Stock totals fold in every color variant the app has resolved
+  so far and carry a **+** while some colors are still unknown (the API lists one config
+  per version; its color siblings are separate configs whose stock isn't in the listing
+  payload). A **background stock crawler** (Settings toggle, on by default) gently
+  resolves the missing colors — one request every 3 seconds while the tab is visible,
+  cached for 12 hours in a small localStorage DB — until "+" counts become exact totals,
+  live-updating the visible cards and stats.
 - **Instant client-side filtering** — fuel, brand (searchable), body type, monthly price
   (inputs + slider), gearshift, power (kW/PS), electric range, term length, seats, doors,
   color swatches, deals, towbar, "available within 4 weeks", real photos. Most facets are

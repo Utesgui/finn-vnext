@@ -54,6 +54,87 @@ function trackPrices(){
     try{ localStorage.setItem(SEEN_LS, JSON.stringify(db)); }catch(e){}
   }
 
+/* ---------------- sibling color stock DB (persisted, trickle-filled) ----------
+   Each color of a version is its own config; the catalog payload only carries the
+   listed config's stock. Every config we resolve (color clicks, detail chips, or
+   the gentle background crawler below) lands here so "+" counts can become exact
+   totals. ~2k uids ≈ a few dozen KB in localStorage. */
+const SIBLING_LS = "finnvnext.siblingstock.v1";
+const SIBLING_TTL_MS = 12 * 60 * 60 * 1000;
+const SIBLING_CRAWL_DELAY_MS = 3000;   // one request every 3 s — deliberately gentle
+let siblingDb = null;
+function loadSiblingDb(){
+  if (siblingDb) return siblingDb;
+  try{ siblingDb = JSON.parse(localStorage.getItem(SIBLING_LS)||"{}") || {}; }catch(e){ siblingDb = {}; }
+  return siblingDb;
+}
+function saveSiblingDb(){ try{ localStorage.setItem(SIBLING_LS, JSON.stringify(loadSiblingDb())); }catch(e){} }
+function rememberSiblingStock(car, {defer=false}={}){
+  if (!car) return;
+  const uid = String(car.uid ?? car.config_id ?? "");
+  if (!uid) return;
+  loadSiblingDb()[uid] = { n: stockCount(car), t: Date.now() };
+  if (!defer) saveSiblingDb();
+}
+function siblingStockRec(uid){ return loadSiblingDb()[String(uid)] || null; }
+function absorbCatalogStock(){
+  for (const c of state.cars) rememberSiblingStock(c, {defer:true});
+  saveSiblingDb();
+}
+/* Effective stock of one version across all of its colors (own + known siblings). */
+function versionStockInfo(c){
+  const own = stockCount(c);
+  const list = Array.isArray(c.color_list) ? c.color_list : [];
+  if (list.length <= 1) return { total: own, known: true };
+  const selfUid = String(c.uid ?? carKey(c));
+  let total = 0, known = true, any = false;
+  for (const cl of list){
+    const uid = cl && cl.uid!=null ? String(cl.uid) : null;
+    if (uid === selfUid){ if (own!=null){ total += own; any = true; } continue; }
+    const rec = uid ? siblingStockRec(uid) : null;
+    if (rec && rec.n!=null){ total += rec.n; any = true; }
+    else known = false;
+  }
+  if (!any && own!=null){ total = own; any = true; }
+  return { total: any ? total : null, known };
+}
+let crawlGen = 0, crawlTimer = null;
+function startSiblingCrawl(){
+  crawlGen++; clearTimeout(crawlTimer);
+  if (state.cfg.stockCrawl === false) return;
+  const gen = crawlGen, db = loadSiblingDb(), now = Date.now(), seen = new Set();
+  const queue = [];
+  for (const c of state.cars){
+    const list = Array.isArray(c.color_list) ? c.color_list : [];
+    if (list.length <= 1) continue;
+    const selfUid = String(c.uid ?? carKey(c));
+    for (const cl of list){
+      const uid = cl && cl.uid!=null ? String(cl.uid) : null;
+      if (!uid || uid===selfUid || seen.has(uid)) continue;
+      seen.add(uid);
+      const rec = db[uid];
+      if (!rec || (now - rec.t) > SIBLING_TTL_MS) queue.push(uid);
+    }
+  }
+  if (!queue.length) return;
+  let fetched = 0, misses = 0;
+  const step = () => {
+    if (gen !== crawlGen) return;
+    if (document.hidden){ crawlTimer = setTimeout(step, 15000); return; }   // pause in background tabs
+    const uid = queue.shift();
+    if (uid == null){ if (typeof updateStockDisplays==="function") updateStockDisplays(); return; }
+    fetchConfigByUid(uid).then(car=>{
+      if (gen !== crawlGen) return;
+      misses = car ? 0 : misses+1;
+      if (misses >= 6) return;   // repeated failures — likely offline, stop quietly
+      fetched++;
+      if (fetched % 8 === 0 && typeof updateStockDisplays==="function") updateStockDisplays();
+      crawlTimer = setTimeout(step, SIBLING_CRAWL_DELAY_MS);
+    });
+  };
+  crawlTimer = setTimeout(step, 5000);
+}
+
 /* ---------------- single-config lookup (color variants) ---------------- */
 const configFetchCache = new Map();
 async function fetchConfigByUid(uid){
@@ -68,6 +149,7 @@ async function fetchConfigByUid(uid){
     car = results.find(x=>String(x.uid??x.config_id)===String(uid)) || results[0] || null;
   }catch(e){ /* variant simply not resolvable right now */ }
   configFetchCache.set(key, car);
+  rememberSiblingStock(car);
   return car;
 }
 
@@ -220,6 +302,8 @@ function commitCatalog(cars,{cached=false}={}){
   state.cars=cars;
   trackPrices();
   trackFirstSeen();
+  absorbCatalogStock();
+  startSiblingCrawl();
   state.facets=buildFacets(state.cars);
   buildFilterUI();
   // Default to electric on an unfiltered first visit; shared URLs remain exact.

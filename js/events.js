@@ -193,6 +193,7 @@ function wireEvents(){
     state.cfg.proxy = $("#setProxy").value.trim();
     state.cfg.view  = $("#setView").value;
     state.cfg.limit = Number($("#setLimit").value)||200;
+    state.cfg.stockCrawl = $("#setCrawl").checked;
     saveCfg();
     $("#settingsDlg").close();
     loadCatalog({force:true});

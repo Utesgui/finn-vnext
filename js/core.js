@@ -26,6 +26,7 @@ const DEFAULTS = {
   km: 500,                                 // monthly mileage package (500 is included in base price)
   density: "grid",
   browseMode: "cars",
+  stockCrawl: true,                        // trickle-resolve color-variant stock in the background
   theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light"
 };
 /* Connection facts (verified via browser console, 2026-07-25):
