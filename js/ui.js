@@ -506,12 +506,36 @@ function balancePalettes(){
     el.style.inlineSize = `${Math.ceil(width) + 2}px`;
   });
 }
-/* page width: 0 standard · 1 wide · 2 full */
+/* page width stages, adapted to the real viewport: only offer steps that
+   differ meaningfully (~900px apart), up to 4 on ultrawides. The middle
+   stages are literal fractions between standard and full. */
+const WIDE_BASE = 1780;
+function wideStages(){
+  const full = window.innerWidth;
+  if (full <= WIDE_BASE + 300) return [WIDE_BASE];          // FHD & below: one width
+  const n = Math.min(4, Math.max(2, 1 + Math.round((full - WIDE_BASE) / 900)));
+  return Array.from({length: n}, (_,i)=>Math.round(WIDE_BASE + i * (full - WIDE_BASE) / (n - 1)));
+}
 function applyWide(){
-  const w = Number(state.cfg.wide) || 0;
-  document.body.dataset.wide = String(w);
+  const stages = wideStages();
   const btn = $("#wideBtn");
-  if (btn) btn.classList.toggle("on", w > 0);
+  if (stages.length < 2){
+    document.body.style.removeProperty("--layout-w");
+    if (btn){ btn.hidden = true; btn.classList.remove("on"); }
+    return;
+  }
+  const idx = Math.min(Number(state.cfg.wide) || 0, stages.length - 1);
+  document.body.style.setProperty("--layout-w", idx === stages.length - 1 ? "100%" : stages[idx] + "px");
+  if (btn){
+    btn.hidden = false;
+    btn.classList.toggle("on", idx > 0);
+    btn.title = `Cycle page width (${idx+1}/${stages.length}: ${idx===0?"standard":idx===stages.length-1?"full":fmtNum(stages[idx])+"px"})`;
+  }
+}
+function wideLabel(){
+  const stages = wideStages();
+  const idx = Math.min(Number(state.cfg.wide) || 0, stages.length - 1);
+  return idx===0 ? "Standard width" : idx===stages.length-1 ? "Full width" : `Wide · ${fmtNum(stages[idx])}px`;
 }
 /* In-place color preview on result/version cards: swap the carousel to the
    chosen color and remember it so opening the card targets that variant. */

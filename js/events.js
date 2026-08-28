@@ -209,10 +209,11 @@ function wireEvents(){
   $("#exportBtn").addEventListener("click", exportCsv);
   $("#themeBtn").addEventListener("click", toggleTheme);
   $("#wideBtn").addEventListener("click", ()=>{
-    state.cfg.wide = ((Number(state.cfg.wide)||0) + 1) % 3;
+    state.cfg.wide = ((Number(state.cfg.wide)||0) + 1) % wideStages().length;
     saveCfg(); applyWide();
-    toast(["Standard width","Wide layout","Full width"][state.cfg.wide]);
+    toast(wideLabel());
   });
+  window.addEventListener("resize", debounce(applyWide, 200));
   $("#helpBtn").addEventListener("click", ()=>$("#helpDlg").showModal());
   $("#favToggle").addEventListener("click", ()=>{
     state.f.favOnly = !state.f.favOnly;
