@@ -615,12 +615,12 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .card .imgwrap img.hero, .version-card .vimg > img { inline-size: 100%; block-size: 100%; object-fit: contain; }
 .card .imgwrap img.hero {
   padding: 0.55rem; opacity: 0;
-  transform: scale(var(--hero-scale, 1));
+  transform: translateY(var(--hero-ty, 0%)) scale(var(--hero-scale, 1));
   transition: opacity 0.3s var(--ease-out), transform 0.4s var(--ease-out);
 }
 .card .imgwrap img.hero.loaded { opacity: 1; }
-.card:hover .imgwrap img.hero { transform: scale(calc(var(--hero-scale, 1) * 1.03)); }
-.version-card .vimg > img { padding: 0.45rem; transform: scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
+.card:hover .imgwrap img.hero { transform: translateY(var(--hero-ty, 0%)) scale(calc(var(--hero-scale, 1) * 1.03)); }
+.version-card .vimg > img { padding: 0.45rem; transform: translateY(var(--hero-ty, 0%)) scale(var(--hero-scale, 1)); transition: transform 0.4s var(--ease-out); }
 .badges {
   position: absolute; inset-block-start: 0.65rem; inset-inline-start: 0.65rem; z-index: 4;
   display: flex; flex-wrap: wrap; gap: 0.3rem; max-inline-size: calc(100% - 8.6rem); pointer-events: none;
@@ -896,6 +896,45 @@ dialog[open] { display: flex; flex-direction: column; animation: dialogIn 0.28s 
 .dhead .x { margin-inline-start: auto; }
 .dbody { flex: 1 1 auto; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 1.1rem; }
 .dgrid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1rem; }
+/* ---------- Lightbox gallery ------------------------------------------------ */
+.lightbox {
+  inline-size: calc(100vw - 1.6rem); max-inline-size: 1680px;
+  block-size: calc(100vh - 1.6rem); max-block-size: none;
+  padding: 0.9rem;
+}
+.lightbox .lb-main {
+  position: relative; flex: 1 1 auto; min-block-size: 0; overflow: hidden;
+  display: grid; place-items: center;
+  border: 1px solid var(--cp-border); border-radius: var(--cp-r-xl);
+  background: linear-gradient(180deg, var(--cp-bg-elevated), var(--cp-surface-soft));
+}
+.lightbox .lb-main img {
+  inline-size: 100%; block-size: 100%; object-fit: contain; padding: 1rem;
+  cursor: zoom-in; transition: transform 0.25s var(--ease-out);
+}
+.lightbox .lb-main img.zoomed { transform: scale(2.4); cursor: zoom-out; }
+.lightbox .navarr { opacity: 1; inline-size: 44px; block-size: 44px; }
+.lightbox .navarr.prev { inset-inline-start: 0.9rem; }
+.lightbox .navarr.next { inset-inline-end: 0.9rem; }
+.lb-close { position: absolute; inset-block-start: 1.4rem; inset-inline-end: 1.4rem; z-index: 6; }
+.lb-count {
+  position: absolute; inset-block-start: 0.75rem; inset-inline-start: 0.75rem; z-index: 5;
+  border: 1px solid color-mix(in srgb, var(--cp-border) 70%, transparent); border-radius: 999px;
+  background: var(--cp-panel-strong); backdrop-filter: blur(8px); color: var(--cp-text-muted);
+  padding: 0.14rem 0.55rem; font-size: 0.72rem; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.lb-thumbs {
+  display: flex; flex: none; justify-content: safe center; gap: 0.45rem;
+  overflow-x: auto; padding-block-start: 0.75rem; scrollbar-width: thin;
+}
+.lb-thumbs img {
+  inline-size: 96px; block-size: 64px; flex: none; object-fit: contain; padding: 0.2rem;
+  border: 1px solid var(--cp-border); border-radius: 12px;
+  background: var(--cp-surface-soft); cursor: pointer; opacity: 0.65;
+  transition: opacity 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+}
+.lb-thumbs img:hover { opacity: 1; }
+.lb-thumbs img.on { border-color: var(--cp-text); opacity: 1; }
 .gallery .main {
   overflow: hidden; aspect-ratio: 16 / 9; border: 1px solid var(--cp-border);
   border-radius: var(--cp-r-lg); background: linear-gradient(180deg, var(--cp-bg-elevated), var(--cp-surface-soft));
@@ -1036,9 +1075,15 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .detail-body { padding: 1.1rem; scrollbar-gutter: stable; }
 .detail-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); align-items: start; gap: 1.1rem; }
 .detail-gallery .main { position: relative; aspect-ratio: 16 / 11; border-radius: var(--cp-r-xl); }
-.detail-gallery .main img { position: relative; z-index: 1; padding: 0.5rem; }
+.detail-gallery .main img {
+  position: relative; z-index: 1; padding: 0.5rem;
+  transform: scale(var(--hero-scale, 1)); transition: transform 0.35s var(--ease-out);
+}
 .detail-gallery .main .navarr { z-index: 3; }
 .detail-gallery .main:hover .navarr { opacity: 1; }
+.detail-gallery .main .lb-open {
+  inset-block-start: auto; inset-block-end: 0.6rem; inset-inline-end: 0.6rem; transform: none;
+}
 .detail-gallery .thumbs { display: grid; grid-auto-flow: column; grid-auto-columns: 76px; }
 .detail-gallery .thumbs img { inline-size: 76px; block-size: 52px; }
 .detail-summary {

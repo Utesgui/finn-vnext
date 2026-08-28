@@ -22,14 +22,15 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-24"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-24">
+<script src="js/domain.js?v=20260828-25"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-25">
 </head>
 <body>
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
@@ -241,6 +242,16 @@
 
 <dialog id="versionsDlg" aria-label="Model versions"></dialog>
 <dialog id="detailDlg" aria-label="Vehicle details"></dialog>
+<dialog id="lightboxDlg" class="lightbox" aria-label="Large image gallery">
+  <button class="iconbtn x lb-close" data-close="lightboxDlg" aria-label="Close gallery"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+  <div class="lb-main">
+    <img id="lbMain" alt="Vehicle photo">
+    <button class="navarr prev" data-lb-step="-1" aria-label="Previous photo (←)"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+    <button class="navarr next" data-lb-step="1" aria-label="Next photo (→)"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+    <span class="lb-count" id="lbCount"></span>
+  </div>
+  <div class="lb-thumbs" id="lbThumbs"></div>
+</dialog>
 <dialog id="cmpDlg" aria-label="Vehicle comparison"></dialog>
 
 <dialog id="helpDlg" aria-label="Keyboard shortcuts">
@@ -323,9 +334,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-24"></script>
-<script src="js/api.js?v=20260828-24"></script>
-<script src="js/ui.js?v=20260828-24"></script>
-<script src="js/events.js?v=20260828-24"></script>
+<script src="js/core.js?v=20260828-25"></script>
+<script src="js/api.js?v=20260828-25"></script>
+<script src="js/ui.js?v=20260828-25"></script>
+<script src="js/events.js?v=20260828-25"></script>
 </body>
 </html>

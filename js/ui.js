@@ -374,50 +374,93 @@ async function openFromHash(){
   }
 }
 /* Cars occupy wildly different fractions of their renders — measure the
-   content box on a tiny CORS canvas and scale small ones up to balance.
-   One probe per URL; every <img> showing that URL gets the result. */
-function normalizeHeroScale(img){
+   content box once per URL on a tiny CORS canvas, then scale/shift each
+   <img> so the car fills its frame WITHOUT sliding under the overlay
+   buttons (top strip) or the color dots (bottom strip). */
+function measureImageContent(src){
+  const cache = measureImageContent._cache || (measureImageContent._cache = new Map());
+  if (cache.has(src)) return cache.get(src);
+  const p = new Promise(resolve=>{
+    const probe = new Image();
+    probe.crossOrigin = "anonymous";
+    probe.onload = () => {
+      try{
+        const w = 64, h = 40;
+        const cv = measureImageContent._cv || (measureImageContent._cv = document.createElement("canvas"));
+        cv.width = w; cv.height = h;
+        const ctx = cv.getContext("2d", {willReadFrequently: true});
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(probe, 0, 0, w, h);
+        const d = ctx.getImageData(0, 0, w, h).data;
+        let minX = w, minY = h, maxX = -1, maxY = -1;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+          const i = (y*w + x) * 4;
+          if (d[i+3] > 16 && !(d[i] > 242 && d[i+1] > 242 && d[i+2] > 242)){
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX < minX || maxY < minY){ resolve({fw:1, fh:1, cy:0.5}); return; }
+        resolve({ fw:(maxX-minX+1)/w, fh:(maxY-minY+1)/h, cy:(minY+maxY+1)/2/h });
+      }catch(e){ cache.delete(src); resolve(null); }   // tainted — retry later
+    };
+    probe.onerror = () => { cache.delete(src); resolve(null); };
+    probe.src = src;
+  });
+  cache.set(src, p);
+  return p;
+}
+const HERO_PROFILES = {
+  /* cards: content ends up spanning ~[0.27..0.85] of the box height, clear of
+     the 34px button strip above and the color dots below */
+  card:   { max: 1.35, tw: 0.94, th: 0.58, center: 0.56, clamp: 0.14 },
+  detail: { max: 1.30, tw: 0.94, th: 0.84, center: 0.50, clamp: 0 }
+};
+function normalizeHeroScale(img, profile="card"){
   const src = img.currentSrc || img.src;
   if (!src || src.startsWith("data:")) return;
-  const cache = normalizeHeroScale._cache || (normalizeHeroScale._cache = new Map());
-  const pending = normalizeHeroScale._pending || (normalizeHeroScale._pending = new Map());
-  const apply = (el, s) => { if (el.isConnected && (el.currentSrc||el.src)===src) el.style.setProperty("--hero-scale", s); };
-  if (cache.has(src)){ apply(img, cache.get(src)); return; }
-  if (pending.has(src)){ pending.get(src).push(img); return; }
-  pending.set(src, [img]);
-  const done = scale => {
-    const imgs = pending.get(src) || [];
-    pending.delete(src);
-    if (scale==null) return;                 // failed — a later load may retry
-    cache.set(src, scale);
-    imgs.forEach(el=>apply(el, scale));
+  measureImageContent(src).then(mm=>{
+    if (!mm || !img.isConnected || (img.currentSrc||img.src)!==src) return;
+    const p = HERO_PROFILES[profile] || HERO_PROFILES.card;
+    const s = Math.max(1, Math.min(p.max, p.tw/mm.fw, p.th/mm.fh));
+    let ty = 0;
+    if (p.clamp > 0 && s > 1.001){
+      ty = p.center - 0.5 - (mm.cy - 0.5)*s;
+      ty = Math.max(-p.clamp, Math.min(p.clamp, ty));
+    }
+    img.style.setProperty("--hero-scale", s.toFixed(3));
+    img.style.setProperty("--hero-ty", (ty*100).toFixed(2)+"%");
+  });
+}
+/* Fullscreen zoomable gallery: large stage, thumb strip, arrows, click-to-zoom
+   (origin follows the pointer while zoomed). Works above the detail dialog. */
+function openLightbox(pics, idx=0, alt="Vehicle photo", onNavigate){
+  const urls = (pics||[]).map(p=>typeof p==="string"?p:p&&p.url).filter(Boolean);
+  if (!urls.length) return;
+  const dlg = $("#lightboxDlg"), img = $("#lbMain"), thumbs = $("#lbThumbs");
+  let i = Math.min(Math.max(idx,0), urls.length-1);
+  img.alt = alt;
+  const unzoom = ()=>{ img.classList.remove("zoomed"); img.style.transformOrigin = ""; };
+  const set = n => {
+    i = ((n % urls.length) + urls.length) % urls.length;
+    unzoom();
+    img.src = urls[i];
+    $("#lbCount").textContent = `${i+1} / ${urls.length}`;
+    thumbs.querySelectorAll("img").forEach((t,ix)=>t.classList.toggle("on", ix===i));
+    const on = thumbs.querySelector("img.on");
+    if (on) on.scrollIntoView({block:"nearest", inline:"nearest"});
+    if (onNavigate) onNavigate(i);
   };
-  const probe = new Image();
-  probe.crossOrigin = "anonymous";
-  probe.onload = () => {
-    try{
-      const w = 64, h = 40;
-      const cv = normalizeHeroScale._cv || (normalizeHeroScale._cv = document.createElement("canvas"));
-      cv.width = w; cv.height = h;
-      const ctx = cv.getContext("2d", {willReadFrequently: true});
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(probe, 0, 0, w, h);
-      const d = ctx.getImageData(0, 0, w, h).data;
-      let minX = w, minY = h, maxX = -1, maxY = -1;
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
-        const i = (y*w + x) * 4;
-        if (d[i+3] > 16 && !(d[i] > 242 && d[i+1] > 242 && d[i+2] > 242)){
-          if (x < minX) minX = x; if (x > maxX) maxX = x;
-          if (y < minY) minY = y; if (y > maxY) maxY = y;
-        }
-      }
-      if (maxX < minX || maxY < minY){ done("1"); return; }
-      const fill = Math.max((maxX-minX+1)/w, (maxY-minY+1)/h);
-      done(Math.min(1.4, Math.max(1, 0.9/fill)).toFixed(3));
-    }catch(e){ done(null); /* canvas tainted — keep natural size */ }
-  };
-  probe.onerror = () => done(null);
-  probe.src = src;
+  thumbs.innerHTML = urls.length>1 ? urls.map((u,ix)=>`<img data-lb="${ix}" alt="${esc(alt)} view ${ix+1}" loading="lazy">`).join("") : "";
+  thumbs.querySelectorAll("img").forEach(t=>{
+    t.src = urls[Number(t.dataset.lb)];
+    t.addEventListener("error", ()=>{ t.src = PLACEHOLDER; }, {once:true});
+    t.addEventListener("click", ()=>set(Number(t.dataset.lb)));
+  });
+  dlg.querySelectorAll("[data-lb-step]").forEach(b=>{ b.hidden = urls.length<2; });
+  dlg._step = d => { if (urls.length<2) return false; set(i+d); return true; };
+  set(i);
+  if (!dlg.open) dlg.showModal();
 }
 /* finn.com-style mini color palette; clicking a swatch previews that color.
    Single-color cars show their one color so the absence of choice is explicit. */
@@ -1085,6 +1128,7 @@ function openDetail(c, options={}){
             <img id="galMain" alt="${esc(carName(c))}">
             <button class="navarr prev" data-gal-step="-1" aria-label="Previous photo (←)"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
             <button class="navarr next" data-gal-step="1" aria-label="Next photo (→)"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+            <button class="navarr lb-open" data-lb-open aria-label="Open large gallery" title="Large view"><svg class="ic" aria-hidden="true"><use href="#i-expand"/></svg></button>
           </div>
           <div class="thumbs" data-gal-thumbs></div>
           ${colorVariants.length?`<div class="detail-colorbar" role="group" aria-label="Color variants">${colorVariants.map((v,i)=>`<button class="detail-color${v.isSelf?" on":""}" data-color-idx="${i}" title="${esc(v.name)}${v.date?` · available from ${esc(fmtDate(v.date))}`:""}${v.catalogCar?" · open this color":v.isSelf?"":v.pics.length?" · preview photos":""}" aria-pressed="${v.isSelf}"><span class="sw"${vehicleColorStyle(v.hex)}></span><span class="name">${esc(v.name)}</span><span class="date">${esc(fmtDate(v.date))}</span></button>`).join("")}</div>`:""}
@@ -1135,6 +1179,11 @@ function openDetail(c, options={}){
     dlg.querySelectorAll("[data-gal]").forEach((t,idx)=>t.classList.toggle("on", idx===galIdx));
   };
   main.addEventListener("error", ()=>{ main.src=PLACEHOLDER; }, {once:true});
+  main.addEventListener("load", ()=>normalizeHeroScale(main, "detail"));
+  const openGalleryLightbox = () => openLightbox(pics, galIdx, carName(c), i=>setMain(i));
+  main.style.cursor = "zoom-in";
+  main.addEventListener("click", openGalleryLightbox);
+  dlg.querySelector("[data-lb-open]").addEventListener("click", e=>{ e.stopPropagation(); openGalleryLightbox(); });
   const galStep = dir => {
     if (pics.length < 2) return false;
     setMain(galIdx + dir);

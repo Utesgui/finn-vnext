@@ -23,7 +23,17 @@ function wireEvents(){
   document.addEventListener("keydown", e=>{
     const typing = /input|select|textarea/i.test(document.activeElement.tagName);
     if (e.key==="/" && !typing){ e.preventDefault(); $("#q").focus(); }
-    if (e.key==="Escape"){ $$( "dialog[open]" ).forEach(d=>d.close()); setDrawer(false); setUtilityMenu(false); }
+    if (e.key==="Escape"){
+      const lb = $("#lightboxDlg");
+      if (lb.open){ e.preventDefault(); lb.close(); }   // keep the detail dialog behind it open
+      else { $$( "dialog[open]" ).forEach(d=>d.close()); setDrawer(false); setUtilityMenu(false); }
+    }
+    if ($("#lightboxDlg").open && (e.key==="ArrowLeft" || e.key==="ArrowRight")){
+      e.preventDefault();
+      const lb = $("#lightboxDlg");
+      if (lb._step) lb._step(e.key==="ArrowLeft" ? -1 : 1);
+      return;
+    }
     const detailOpen = $("#detailDlg").open;
     if (detailOpen && e.key==="ArrowLeft"){
       e.preventDefault();
@@ -39,10 +49,25 @@ function wireEvents(){
     if (e.key==="?" && !typing){ e.preventDefault(); $("#helpDlg").showModal(); }
   });
   // click on the dimmed backdrop closes a dialog
-  ["versionsDlg","detailDlg","cmpDlg","settingsDlg","helpDlg"].forEach(id=>{
+  ["versionsDlg","detailDlg","cmpDlg","settingsDlg","helpDlg","lightboxDlg"].forEach(id=>{
     const d = $("#"+id);
     d.addEventListener("click", e=>{ if (e.target === d) d.close(); });
   });
+  // lightbox: arrows step, click zooms into the pointer, pointer pans while zoomed
+  $("#lightboxDlg").addEventListener("click", e=>{
+    const st = e.target.closest("[data-lb-step]");
+    if (st){ e.stopPropagation(); const lb=$("#lightboxDlg"); if (lb._step) lb._step(Number(st.dataset.lbStep)); }
+  });
+  const lbOrigin = e => {
+    const img = $("#lbMain"), r = img.getBoundingClientRect();
+    img.style.transformOrigin = `${((e.clientX-r.left)/r.width*100).toFixed(2)}% ${((e.clientY-r.top)/r.height*100).toFixed(2)}%`;
+  };
+  $("#lbMain").addEventListener("click", e=>{
+    const img = $("#lbMain");
+    if (img.classList.contains("zoomed")){ img.classList.remove("zoomed"); img.style.transformOrigin=""; }
+    else { lbOrigin(e); img.classList.add("zoomed"); }
+  });
+  $("#lbMain").addEventListener("mousemove", e=>{ if ($("#lbMain").classList.contains("zoomed")) lbOrigin(e); });
   // mobile filter drawer
   const setDrawer = open => {
     document.body.classList.toggle("drawer-open", open);
