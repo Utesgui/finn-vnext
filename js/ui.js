@@ -501,7 +501,7 @@ function balancePalettes(){
     const items = [...el.children];
     if (items.length < 3 || el.clientHeight <= 26) return;   // fits on one line
     const k = Math.ceil(items.length / 2);
-    const gap = 4.8;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 4.8;
     const width = items.slice(0, k).reduce((s,it)=>s+it.getBoundingClientRect().width, 0) + (k-1)*gap;
     el.style.inlineSize = `${Math.ceil(width) + 2}px`;
   });
@@ -536,6 +536,14 @@ function wideLabel(){
   const stages = wideStages();
   const idx = Math.min(Number(state.cfg.wide) || 0, stages.length - 1);
   return idx===0 ? "Standard width" : idx===stages.length-1 ? "Full width" : `Wide · ${fmtNum(stages[idx])}px`;
+}
+/* UI zoom: scales the rem root so the whole design follows (70–150%) */
+function applyUiScale(){
+  const pct = Math.min(150, Math.max(70, Math.round(Number(state.cfg.uiScale) || 100)));
+  state.cfg.uiScale = pct;
+  document.documentElement.style.setProperty("--ui-scale", String(pct / 100));
+  const val = $("#zoomVal");
+  if (val) val.value = String(pct);
 }
 /* In-place color preview on result/version cards: swap the carousel to the
    chosen color and remember it so opening the card targets that variant. */

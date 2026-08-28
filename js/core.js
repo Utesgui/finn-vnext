@@ -29,6 +29,7 @@ const DEFAULTS = {
   stockCrawl: true,                        // trickle-resolve color-variant stock in the background
   largePalette: false,                     // color swatches as pills below the picture (vs dots inside)
   wide: 0,                                 // page width: 0 standard · 1 wide · 2 full
+  uiScale: 100,                            // UI zoom percent (70–150)
   theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light"
 };
 /* Connection facts (verified via browser console, 2026-07-25):

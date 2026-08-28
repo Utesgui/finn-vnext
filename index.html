@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-30"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-30">
+<script src="js/domain.js?v=20260828-31"></script>
+<link rel="stylesheet" href="styles/app.css?v=20260828-31">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
   <symbol id="i-expand" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+  <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
@@ -88,6 +89,12 @@
       <div class="utility-actions" id="utilityActions" role="group" aria-label="Sharing and settings">
         <button class="iconbtn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
         <button class="iconbtn" id="wideBtn" title="Cycle page width: standard → wide → full" aria-label="Cycle page width"><svg class="ic" aria-hidden="true"><use href="#i-expand"/></svg></button>
+        <button class="iconbtn" id="zoomBtn" title="UI scale" aria-label="UI scale" aria-expanded="false" aria-controls="zoomCtl"><svg class="ic" aria-hidden="true"><use href="#i-zoom"/></svg></button>
+        <div class="zoomctl" id="zoomCtl" hidden role="group" aria-label="UI scale">
+          <button class="zoombtn" id="zoomDec" title="Smaller (−5%)" aria-label="Decrease UI scale">−</button>
+          <span class="zoomfield"><input id="zoomVal" inputmode="numeric" maxlength="3" value="100" aria-label="UI scale percent"><span>%</span></span>
+          <button class="zoombtn" id="zoomInc" title="Larger (+5%)" aria-label="Increase UI scale">+</button>
+        </div>
         <button class="iconbtn" id="exportBtn" title="Export current results as CSV" aria-label="Export CSV"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
         <button class="iconbtn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
         <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
@@ -335,9 +342,9 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-30"></script>
-<script src="js/api.js?v=20260828-30"></script>
-<script src="js/ui.js?v=20260828-30"></script>
-<script src="js/events.js?v=20260828-30"></script>
+<script src="js/core.js?v=20260828-31"></script>
+<script src="js/api.js?v=20260828-31"></script>
+<script src="js/ui.js?v=20260828-31"></script>
+<script src="js/events.js?v=20260828-31"></script>
 </body>
 </html>

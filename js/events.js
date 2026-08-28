@@ -214,6 +214,25 @@ function wireEvents(){
     toast(wideLabel());
   });
   window.addEventListener("resize", debounce(applyWide, 200));
+  // UI scale: collapsible − / % / + control
+  $("#zoomBtn").addEventListener("click", e=>{
+    e.stopPropagation();
+    const ctl = $("#zoomCtl");
+    ctl.hidden = !ctl.hidden;
+    $("#zoomBtn").setAttribute("aria-expanded", String(!ctl.hidden));
+    $("#zoomBtn").classList.toggle("on", !ctl.hidden);
+    if (!ctl.hidden) $("#zoomVal").select();
+  });
+  $("#zoomCtl").addEventListener("click", e=>e.stopPropagation());
+  const setScale = pct => { state.cfg.uiScale = pct; saveCfg(); applyUiScale(); };
+  $("#zoomDec").addEventListener("click", ()=>setScale((Number(state.cfg.uiScale)||100) - 5));
+  $("#zoomInc").addEventListener("click", ()=>setScale((Number(state.cfg.uiScale)||100) + 5));
+  const commitZoomInput = () => {
+    const n = parseInt($("#zoomVal").value, 10);
+    if (Number.isFinite(n)) setScale(n); else applyUiScale();
+  };
+  $("#zoomVal").addEventListener("change", commitZoomInput);
+  $("#zoomVal").addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); commitZoomInput(); } });
   $("#helpBtn").addEventListener("click", ()=>$("#helpDlg").showModal());
   $("#favToggle").addEventListener("click", ()=>{
     state.f.favOnly = !state.f.favOnly;
@@ -249,6 +268,7 @@ function wireEvents(){
 (function boot(){
   applyTheme();
   applyWide();
+  applyUiScale();
   state.bootHash = location.hash;   // deep-link params survive the first writeHash
   // a shared/bookmarked URL restores its exact filter view (and skips the EV default)
   if (readHash()) state.evDefaulted = true;

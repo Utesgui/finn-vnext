@@ -139,6 +139,7 @@ html[data-theme="dark"] {
 * { box-sizing: border-box; }
 html {
   min-inline-size: 320px;
+  font-size: calc(16px * var(--ui-scale, 1));
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
@@ -155,7 +156,7 @@ body {
   color: var(--cp-text);
   font-family: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   font-optical-sizing: auto;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -312,6 +313,25 @@ html[data-theme="dark"] .logo .mark {
 .sclear:hover { color: var(--cp-danger); }
 .header-actions { position: relative; display: flex; align-items: center; gap: 0.3rem; }
 .utility-actions { display: flex; align-items: center; gap: 0.3rem; }
+/* collapsible UI-scale control: − / free % input / + */
+.zoomctl {
+  display: flex; align-items: center; gap: 0.1rem;
+  border: 1px solid var(--cp-border); border-radius: 999px;
+  background: var(--cp-surface); padding: 0.14rem;
+}
+.zoombtn {
+  display: grid; place-items: center; inline-size: 26px; block-size: 26px;
+  border: 0; border-radius: 50%; background: none; color: var(--cp-text-muted);
+  font-size: 0.95rem; font-weight: 700; line-height: 1;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+}
+.zoombtn:hover { background: var(--cp-surface-soft); color: var(--cp-text); }
+.zoomfield { display: flex; align-items: baseline; gap: 0.06rem; color: var(--cp-text-soft); font-size: 0.7rem; }
+.zoomfield input {
+  inline-size: 2.4rem; border: 0; background: none; padding: 0; color: var(--cp-text);
+  font-size: 0.78rem; font-weight: 650; font-variant-numeric: tabular-nums; text-align: center;
+}
+.zoomfield input:focus-visible { outline: none; border-radius: 6px; box-shadow: 0 0 0 2px var(--cp-accent); }
 .iconbtn {
   display: inline-grid; place-items: center; inline-size: 40px; block-size: 40px; padding: 0;
   border: 1px solid transparent; border-radius: var(--cp-r-md); background: transparent;
@@ -349,18 +369,16 @@ html[data-theme="dark"] .logo .mark {
 @keyframes statusPulse { 50% { opacity: 0.35; transform: scale(0.8); } }
 /* ---------- Layout + sidebar ----------------------------------------------- */
 .layout {
-  display: grid; grid-template-columns: 276px minmax(0, 1fr); align-items: start; gap: 1.5rem;
+  display: grid; grid-template-columns: 17.25rem minmax(0, 1fr); align-items: start; gap: 1.5rem;
   inline-size: min(var(--layout-w, 1780px), 100%); margin-inline: auto;
   padding: 1.4rem clamp(1rem, 2.5vw, 2.25rem) 2rem;
 }
 /* 4K-class screens (not just ultrawide 1440p): nudge the design up a size */
 @media (min-width: 3200px) and (min-height: 1800px) {
-  html { font-size: 17.5px; }
-  .grid, .version-grid { grid-template-columns: repeat(auto-fill, minmax(min(345px, 100%), 1fr)); }
+  html { font-size: calc(17.5px * var(--ui-scale, 1)); }
 }
 @media (min-width: 5000px) and (min-height: 1800px) {
-  html { font-size: 19px; }
-  .grid, .version-grid { grid-template-columns: repeat(auto-fill, minmax(min(375px, 100%), 1fr)); }
+  html { font-size: calc(19px * var(--ui-scale, 1)); }
 }
 .layout > main { min-inline-size: 0; }
 aside {
@@ -590,7 +608,7 @@ aside details[open] summary::after { transform: rotate(45deg) translate(-1px, -1
 .activef .af button { border: 0; background: none; color: inherit; padding: 0 0.05rem; line-height: 1; opacity: 0.75; }
 .activef .af button:hover { opacity: 1; }
 /* ---------- Result grid + cards -------------------------------------------- */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 1.1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr)); gap: 1.1rem; }
 .card, .version-card {
   position: relative; min-inline-size: 0; overflow: hidden; border: 1px solid var(--cp-border);
   border-radius: var(--cp-r-xl); background: var(--cp-surface); cursor: pointer;
@@ -1036,7 +1054,7 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .versions-summary .pilllet { border: 1px solid var(--cp-border); border-radius: 999px; background: var(--cp-surface); padding: 0.3rem 0.62rem; font-weight: 550; }
 .versions-summary .pilllet b { font-variant-numeric: tabular-nums; }
 .versions-summary .stock-summary { border-color: color-mix(in srgb, var(--cp-accent-secondary) 45%, transparent); color: var(--cp-accent-secondary); }
-.version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 1.1rem; }
+.version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr)); gap: 1.1rem; }
 .version-card { display: flex; flex-direction: column; }
 .version-card .vimg { aspect-ratio: 16 / 10; border-block-end: 1px solid var(--cp-border); }
 .version-card .vbody { display: flex; flex: 1; flex-direction: column; gap: 0.42rem; padding: 0.8rem 0.85rem 0.9rem; }
@@ -1353,7 +1371,7 @@ footer a:hover { color: var(--cp-accent); }
 }
 @media (max-width: 760px) {
   header { min-block-size: 0; padding: 0.65rem 1rem; }
-  #wideBtn { display: none; }
+  #wideBtn, #zoomBtn, .zoomctl { display: none; }
   .iconbtn.utility-menu-toggle { display: inline-grid; }
   .utility-actions {
     position: absolute; inset-block-start: calc(100% + 0.5rem); inset-inline-end: 0; z-index: 120;
