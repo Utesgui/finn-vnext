@@ -1158,12 +1158,19 @@ function openDetail(c, options={}){
   let quoteTerm = quotePrices.some(x=>x.term===requestedTerm) ? requestedTerm : (cheapestQuote&&cheapestQuote.term);
   state.detailQuoteKm=quoteKm; state.detailQuoteTerm=quoteTerm;
   const advertisedPrice = minPrice(c);
-  const quoteRows = (list,selectedTerm) => {
-    const cheapest = list.length ? Math.min(...list.map(x=>x.price)) : null;
-    return list.map(x=>`<tr class="${[x.price===cheapest?"best":"",x.term===selectedTerm?"selected":""].filter(Boolean).join(" ")}"><td>${x.term} months${x.price===cheapest?'<span class="best-tag">best price</span>':""}${x.term===selectedTerm?'<span class="selected-tag">selected</span>':""}</td><td class="num">${fmtEur2(x.price)}</td></tr>`).join("") || '<tr><td colspan="2">No price list returned.</td></tr>';
-  };
+  /* One-time payment (Anzahlung): pay a fixed amount once, the monthly rate
+     drops by a fixed or percentage discount. */
+  const dp = c.downpayment_prices || {};
+  const dpAmount = Number(dp.downpayment_fixed_amount) || 0;
+  const dpDiscFor = price => Number(dp.downpayment_discount_fixed) > 0
+    ? Number(dp.downpayment_discount_fixed)
+    : Number(dp.downpayment_discount_percentage) > 0 ? Math.round(price * Number(dp.downpayment_discount_percentage) / 100) : 0;
+  const dpAvailable = dpAmount > 0 && dpDiscFor(1000) > 0;
+  let dpOn = dpAvailable && options.keepContext ? !!state.detailDp : false;
+  state.detailDp = dpOn;
+  const effPrice = p => p==null ? p : (dpOn ? Math.max(0, p - dpDiscFor(p)) : p);
   const initialQuote = quotePrices.find(x=>x.term===quoteTerm) || cheapestQuote;
-  const initialDelta = initialQuote&&advertisedPrice!=null ? initialQuote.price-advertisedPrice : 0;
+  const initialDelta = initialQuote&&advertisedPrice!=null ? effPrice(initialQuote.price)-advertisedPrice : 0;
   const quoteDeltaText = delta => delta>0 ? `+${fmtEur(delta)} / month vs ${fmtEur(advertisedPrice)} starting price` : delta<0 ? `${fmtEur(Math.abs(delta))} less / month vs ${fmtEur(advertisedPrice)} starting price` : `Matches the ${fmtEur(advertisedPrice)} starting price`;
   const configPdf = configPdfLink(c);
   const colorList = Array.isArray(c.color_list) ? c.color_list.slice(0,12) : [];
@@ -1222,13 +1229,17 @@ function openDetail(c, options={}){
           <div class="detail-availability"><span>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</span>${inventory==null?'<span>Configure your subscription</span>':`<span class="detail-stock" title="Customer-visible stock for this configuration; availability date still applies"><svg class="ic" aria-hidden="true"><use href="#i-car"/></svg><strong>${fmtNum(inventory)}</strong> ${inventory===1?"car":"cars"}</span>`}</div>
           <div class="detail-configurator">
             <div class="quote-group"><div class="quote-head"><span>Monthly mileage</span><b data-quote-km-label>${fmtNum(quoteKm)} km/month</b></div><div class="quote-options" data-quote-kms role="group" aria-label="Monthly mileage">${kmChoices.map(x=>`<button class="quote-option ${x.km===quoteKm?"on":""}" data-quote-km="${x.km}" aria-pressed="${x.km===quoteKm}"><b>${fmtNum(x.km)} km</b><small>${x.fee?"+"+fmtEur(x.fee)+" / mo":"included"}</small></button>`).join("")}</div></div>
-            <div class="quote-group"><div class="quote-head"><span>Contract length</span><b data-quote-term-label>${quoteTerm?quoteTerm+" months":"on request"}</b></div><div class="quote-options" data-quote-terms role="group" aria-label="Contract length">${quotePrices.map(x=>`<button class="quote-option ${x.term===quoteTerm?"on":""}" data-quote-term="${x.term}" aria-pressed="${x.term===quoteTerm}"><b>${x.term} months</b><small>${fmtEur(x.price)} / mo</small></button>`).join("") || '<span class="detail-price-note">No selectable terms available.</span>'}</div></div>
+            <div class="quote-group"><div class="quote-head"><span>Contract length</span><b data-quote-term-label>${quoteTerm?quoteTerm+" months":"on request"}</b></div><div class="quote-options" data-quote-terms role="group" aria-label="Contract length">${quotePrices.map(x=>`<button class="quote-option ${x.term===quoteTerm?"on":""}" data-quote-term="${x.term}" aria-pressed="${x.term===quoteTerm}"><b>${x.term} months</b><small>${fmtEur(effPrice(x.price))}</small></button>`).join("") || '<span class="detail-price-note">No selectable terms available.</span>'}</div></div>
+            ${dpAvailable?`<div class="quote-group"><div class="quote-head"><span>Provision fee (one-time payment)</span><b data-dp-label>${dpOn?"paid once":"in the rate"}</b></div><div class="quote-options quote-dp" role="group" aria-label="One-time payment">
+              <button class="quote-option ${dpOn?"":"on"}" data-quote-dp="0" aria-pressed="${!dpOn}"><b>In the monthly rate</b><small>€0 today</small></button>
+              <button class="quote-option ${dpOn?"on":""}" data-quote-dp="1" aria-pressed="${dpOn}"><b>${fmtEur(dpAmount)} once</b><small data-dp-save>−${fmtEur(dpDiscFor((initialQuote&&initialQuote.price)||0))} / month</small></button>
+            </div></div>`:""}
           </div>
           <div class="detail-price-block" aria-live="polite">
-            <div class="overline" data-quote-context>${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}</div>
-            <div class="detail-price-value" data-quote-monthly>${fmtEur(initialQuote&&initialQuote.price)}<small> / month</small></div>
+            <div class="overline" data-quote-context>${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}${dpOn?` · ${fmtEur(dpAmount)} once`:""}</div>
+            <div class="detail-price-value" data-quote-monthly>${fmtEur(effPrice(initialQuote&&initialQuote.price))}<small> / month</small></div>
             <div class="quote-change ${initialDelta>0?"up":initialDelta<0?"down":"same"}" data-quote-delta>${quoteDeltaText(initialDelta)}</div>
-            <div class="quote-total" title="Monthly price multiplied by contract length"><span data-quote-total-label>Contract total · ${quoteTerm||"–"} months</span><strong data-quote-total>${initialQuote&&quoteTerm?fmtEur(initialQuote.price*quoteTerm):"–"}</strong></div>
+            <div class="quote-total" title="Monthly price multiplied by contract length${dpAvailable?", plus the one-time payment when selected":""}"><span data-quote-total-label>Contract total · ${quoteTerm||"–"} months</span><strong data-quote-total>${initialQuote&&quoteTerm?fmtEur(effPrice(initialQuote.price)*quoteTerm + (dpOn?dpAmount:0)):"–"}</strong></div>
           </div>
           <div class="detail-highlights">${highlights.map(x=>`<div class="detail-highlight"><svg class="ic" aria-hidden="true"><use href="#${x.ic}"/></svg><div><div class="hk">${esc(x.k)}</div><div class="hv">${esc(x.v)}</div></div></div>`).join("")}</div>
           ${configPdf?`<div class="detail-document"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg><div><div class="doc-title">Configuration PDF</div><div class="doc-meta">Factory specification · PDF document</div></div><div class="doc-actions"><a class="doc-open" href="${esc(configPdf)}" target="_blank" rel="noreferrer" title="Open configuration PDF in a new tab">Open PDF <svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></a><button class="doc-download" data-pdf-download title="Download configuration PDF" aria-label="Download configuration PDF"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button></div></div>`:""}
@@ -1237,17 +1248,10 @@ function openDetail(c, options={}){
           </div>
         </div>
       </div>
-      <div class="detail-content-grid">
-        <section class="detail-panel">
-          <div class="detail-panel-head"><div><h3>Technical details</h3><p>Everything important at a glance</p></div></div>
-          <div class="kv detail-kv">${kv.map(([k,v])=>`<div class="cell"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
-        </section>
-        <section class="detail-panel">
-          <div class="detail-panel-head"><div><h3>Monthly pricing</h3><p>${state.cfg.biz?"Business":"Private"} · <span data-quote-panel-km>${fmtNum(quoteKm)} km/month</span></p></div>${c._drop>0?`<span class="badge drop">▼ ${fmtEur(c._drop)}</span>`:""}</div>
-          <div class="detail-price-table"><table class="ptable"><thead><tr><th>Term</th><th>per month</th></tr></thead><tbody data-quote-table>${quoteRows(quotePrices,quoteTerm)}</tbody></table></div>
-          <div class="detail-km-note" data-quote-km-note>${kmFeeFor(c,quoteKm)?`The ${fmtNum(quoteKm)} km package adds <b>${fmtEur(kmFeeFor(c,quoteKm))} / month</b> to every term.`:`The ${fmtNum(quoteKm)} km package is included in the base monthly price.`}</div>
-        </section>
-      </div>
+      <section class="detail-panel">
+        <div class="detail-panel-head"><div><h3>Technical details</h3><p>Everything important at a glance</p></div>${c._drop>0?`<span class="badge drop">▼ ${fmtEur(c._drop)}</span>`:""}</div>
+        <div class="kv detail-kv">${kv.map(([k,v])=>`<div class="cell"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
+      </section>
       <section class="detail-panel eq">
         <div class="detail-panel-head"><div><h3>Equipment</h3><p>${equipmentCount?`${fmtNum(equipmentCount)} included features · grouped by category`:"Equipment supplied by the vehicle API"}</p></div></div>
         ${packages.length?`<div class="equipment-packages">${packages.map(([name,items])=>`<div class="equipment-package"><div class="pkg-head"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg><b>${esc(name)}</b><span class="pkg-tag">package</span></div>${items?`<p>${esc(items)}</p>`:""}</div>`).join("")}</div>`:""}
@@ -1373,27 +1377,30 @@ function openDetail(c, options={}){
       quoteTerm = cheapest&&cheapest.term;
     }
     const selected = quotePrices.find(x=>x.term===quoteTerm);
-    const delta = selected&&advertisedPrice!=null ? selected.price-advertisedPrice : 0;
-    state.detailQuoteKm=quoteKm; state.detailQuoteTerm=quoteTerm;
+    const eff = selected ? effPrice(selected.price) : null;
+    const delta = selected&&advertisedPrice!=null ? eff-advertisedPrice : 0;
+    state.detailQuoteKm=quoteKm; state.detailQuoteTerm=quoteTerm; state.detailDp=dpOn;
     dlg.querySelector("[data-quote-km-label]").textContent=`${fmtNum(quoteKm)} km/month`;
     dlg.querySelector("[data-quote-term-label]").textContent=quoteTerm?`${quoteTerm} months`:"on request";
-    dlg.querySelector("[data-quote-context]").textContent=`${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}`;
-    dlg.querySelector("[data-quote-monthly]").innerHTML=`${fmtEur(selected&&selected.price)}<small> / month</small>`;
+    dlg.querySelector("[data-quote-context]").textContent=`${quoteTerm?quoteTerm+" months · ":""}${fmtNum(quoteKm)} km/month · ${state.cfg.biz?"business":"private"}${dpOn?` · ${fmtEur(dpAmount)} once`:""}`;
+    dlg.querySelector("[data-quote-monthly]").innerHTML=`${fmtEur(eff)}<small> / month</small>`;
     const change=dlg.querySelector("[data-quote-delta]");
     change.className=`quote-change ${delta>0?"up":delta<0?"down":"same"}`; change.textContent=quoteDeltaText(delta);
-    dlg.querySelector("[data-quote-total-label]").textContent=`Contract total · ${quoteTerm||"–"} months`;
-    dlg.querySelector("[data-quote-total]").textContent=selected&&quoteTerm?fmtEur(selected.price*quoteTerm):"–";
-    dlg.querySelector("[data-quote-panel-km]").textContent=`${fmtNum(quoteKm)} km/month`;
-    dlg.querySelector("[data-quote-table]").innerHTML=quoteRows(quotePrices,quoteTerm);
-    const fee=kmFeeFor(c,quoteKm);
-    dlg.querySelector("[data-quote-km-note]").innerHTML=fee?`The ${fmtNum(quoteKm)} km package adds <b>${fmtEur(fee)} / month</b> to every term.`:`The ${fmtNum(quoteKm)} km package is included in the base monthly price.`;
+    dlg.querySelector("[data-quote-total-label]").textContent=`Contract total · ${quoteTerm||"–"} months${dpOn?" + one-time payment":""}`;
+    dlg.querySelector("[data-quote-total]").textContent=selected&&quoteTerm?fmtEur(eff*quoteTerm + (dpOn?dpAmount:0)):"–";
     dlg.querySelectorAll("[data-quote-km]").forEach(b=>{const on=Number(b.dataset.quoteKm)===quoteKm;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
-    dlg.querySelectorAll("[data-quote-term]").forEach(b=>{const term=Number(b.dataset.quoteTerm),on=term===quoteTerm,entry=quotePrices.find(x=>x.term===term);b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));const small=b.querySelector("small");if(small)small.textContent=entry?`${fmtEur(entry.price)} / mo`:"unavailable";});
+    dlg.querySelectorAll("[data-quote-term]").forEach(b=>{const term=Number(b.dataset.quoteTerm),on=term===quoteTerm,entry=quotePrices.find(x=>x.term===term);b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));const small=b.querySelector("small");if(small)small.textContent=entry?fmtEur(effPrice(entry.price)):"unavailable";});
+    const dpLabel=dlg.querySelector("[data-dp-label]");
+    if(dpLabel) dpLabel.textContent=dpOn?"paid once":"in the rate";
+    const dpSave=dlg.querySelector("[data-dp-save]");
+    if(dpSave) dpSave.textContent=`−${fmtEur(dpDiscFor((selected&&selected.price)||0))} / month`;
+    dlg.querySelectorAll("[data-quote-dp]").forEach(b=>{const on=(b.dataset.quoteDp==="1")===dpOn;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
     const block=dlg.querySelector(".detail-price-block");
     block.classList.remove("quote-pulse"); requestAnimationFrame(()=>block.classList.add("quote-pulse"));
   };
   dlg.querySelectorAll("[data-quote-km]").forEach(b=>b.addEventListener("click",()=>{quoteKm=Number(b.dataset.quoteKm);updateDetailQuote();}));
   dlg.querySelectorAll("[data-quote-term]").forEach(b=>b.addEventListener("click",()=>{quoteTerm=Number(b.dataset.quoteTerm);updateDetailQuote();}));
+  dlg.querySelectorAll("[data-quote-dp]").forEach(b=>b.addEventListener("click",()=>{dpOn=b.dataset.quoteDp==="1";updateDetailQuote();}));
   const pdfDownload = dlg.querySelector("[data-pdf-download]");
   if(pdfDownload) pdfDownload.addEventListener("click",()=>downloadConfigPdf(c,pdfDownload));
   const prev = dlg.querySelector("#dPrev"), next = dlg.querySelector("#dNext");
