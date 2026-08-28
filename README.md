@@ -26,8 +26,9 @@ Two workflows support a static deployment from the default branch:
 - `.github/workflows/deploy-pages.yml` publishes the app to GitHub Pages on every
   push to `main` (enable **Settings → Pages → Source: GitHub Actions** once).
 - `.github/workflows/stock-snapshot.yml` runs `scripts/snapshot-stock.mjs` three times
-  a day: it pages the catalog and gently resolves every color-sibling config (one
-  request every ~2 s) into `data/stock-snapshot.json`, committing only on change.
+  a day: it pages the catalog and resolves every color-sibling config with a small
+  worker pool (default 4 × one request every 250 ms — a full sweep takes about two
+  minutes) into `data/stock-snapshot.json`, committing only on change.
   The client hydrates its local sibling-stock DB from that file at boot, so even a
   first-ever visit starts with warm stock data; local setups without the file just
   skip it. Scheduled workflows only run once the branch is merged to `main`.

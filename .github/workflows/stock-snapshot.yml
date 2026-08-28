@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Build snapshot (one request every ~2 s)
+      - name: Build snapshot (worker pool, ~2 min sweep)
         run: node scripts/snapshot-stock.mjs
       - name: Commit snapshot if changed
         run: |

@@ -195,6 +195,20 @@ function cardCarouselMarkup(pics,label){
   const dots=pics.slice(0,8).map((p,i)=>`<i class="${i===0?"on":""}"></i>`).join("");
   return `<button class="navarr prev" data-shot="-1" aria-label="Previous ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><button class="navarr next" data-shot="1" aria-label="Next ${esc(label)} photo"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><div class="dots">${dots}</div><span class="shots">1/${pics.length}</span>`;
 }
+/* finn.com-style mini color palette; clicking a dot opens that color's detail */
+function paletteHtml(c, limit=6){
+  const list = Array.isArray(c.color_list) ? c.color_list : [];
+  if (list.length < 2) return "";
+  const selfUid = String(c.uid ?? carKey(c));
+  const shown = list.slice(0, limit);
+  const more = list.length - shown.length;
+  return `<div class="cpalette" role="group" aria-label="Available colors">${shown.map(cl=>{
+    const uid = cl && cl.uid!=null ? String(cl.uid) : "";
+    const on = uid===selfUid;
+    const name = cl.color_specific || "Color";
+    return `<button class="cpal${on?" on":""}" data-pal="${esc(uid)}" title="${esc(name)}${on?" — shown":""}" aria-label="Show ${esc(name)}" aria-pressed="${on}"${vehicleColorStyle(cl.color_hex)}></button>`;
+  }).join("")}${more>0?`<span class="cpal-more">+${more}</span>`:""}</div>`;
+}
 function modelCardEl(group){
   const c = group.representative;
   const versionLabel = group.versions.length===1 ? "version" : "versions";
@@ -268,6 +282,7 @@ function versionCardEl(c){
     <div class="vbody">
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${esc(meta||[displayValue("fuel",c.fuel),displayValue("body",c.cartype)].filter(Boolean).join(" · "))}</div>
+      ${paletteHtml(c)}
       <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${vsi.total==null?"":`<span class="stock-chip" title="${vsi.known?"Customer-visible stock across all colors of this version":"Stock across resolved colors — some colors not yet fetched"}; availability dates still apply">${fmtNum(vsi.total)}${vsi.known?"":"+"} ${vsi.total===1&&vsi.known?"car":"cars"}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
@@ -300,13 +315,13 @@ function openVersions(group){
   if(!dlg.open) dlg.showModal();
   dlg.querySelector(".dbody").scrollTop = 0;
 }
-function openVersionDetail(key){
+function openVersionDetail(key, colorUid){
   const group = findModelGroup(state.activeGroupKey);
   if(!group) return;
   const c = group.versions.find(x=>carKey(x)===key);
   if(!c) return;
   $("#versionsDlg").close();
-  openDetail(c,{list:group.versions,groupKey:group.key});
+  openDetail(c,{list:group.versions,groupKey:group.key,colorUid});
 }
 function cardEl(c){
   const key = carKey(c);
@@ -355,6 +370,7 @@ function cardEl(c){
         </div>
         ${inventory==null?"":`<div class="card-stock" title="Customer-visible stock for this configuration; availability date still applies"><strong>${fmtNum(inventory)}</strong><span>${inventory===1?"car":"cars"}</span></div>`}
       </div>
+      ${paletteHtml(c)}
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
       <div class="cfoot">
         <div class="price">
@@ -763,21 +779,34 @@ function openDetail(c, options={}){
   // (from the catalog when listed, otherwise via a cached config_id lookup).
   const setChipStock = (i,n) => {
     const btn = dlg.querySelector(`[data-color-idx="${i}"]`);
-    if (!btn || n==null) return;
+    if (!btn) return;
     let s = btn.querySelector(".stock");
     if (!s){ s = document.createElement("span"); s.className = "stock"; btn.appendChild(s); }
-    s.textContent = `${fmtNum(n)} ${n===1?"car":"cars"}`;
-    s.title = "Customer-visible stock for this color";
+    if (n==null){
+      s.textContent = "–"; s.classList.add("none");
+      s.title = "Not listed by the API yet — no stock to show";
+    } else {
+      s.textContent = `${fmtNum(n)} ${n===1?"car":"cars"}`; s.classList.remove("none");
+      s.title = "Customer-visible stock for this color";
+    }
   };
   const stockOpenKey = carKey(c);
   colorVariants.forEach((v,i)=>{
     if (v.isSelf){ setChipStock(i, stockCount(c)); return; }
     const source = v.catalogCar ? Promise.resolve(v.catalogCar) : (v.uid ? fetchConfigByUid(v.uid) : Promise.resolve(null));
     source.then(car=>{
-      if (!dlg.open || state.detailKey!==stockOpenKey || !car) return;
-      setChipStock(i, stockCount(car));
+      if (!dlg.open || state.detailKey!==stockOpenKey) return;
+      setChipStock(i, car ? stockCount(car) : null);
     });
   });
+  if (options.colorUid){
+    const wantedIdx = colorVariants.findIndex(v=>v.uid===String(options.colorUid));
+    const wanted = wantedIdx>=0 ? colorVariants[wantedIdx] : null;
+    if (wanted && !wanted.isSelf){
+      const btn = dlg.querySelector(`[data-color-idx="${wantedIdx}"]`);
+      if (btn) btn.click();
+    }
+  }
   const updateDetailQuote = () => {
     quotePrices = priceList(c,quoteKm);
     if(!quotePrices.some(x=>x.term===quoteTerm)){

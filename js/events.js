@@ -74,6 +74,8 @@ function wireEvents(){
   $("#versionsDlg").addEventListener("click",e=>{
     const shot=e.target.closest("[data-shot]");
     if(shot){e.stopPropagation();stepShot(shot.closest(".version-card"),Number(shot.dataset.shot));return;}
+    const pal=e.target.closest("[data-pal]");
+    if(pal){e.stopPropagation();openVersionDetail(pal.closest("[data-version]").dataset.version, pal.dataset.pal);return;}
     const opener=e.target.closest("[data-open-version]");
     if(opener){openVersionDetail(opener.closest("[data-version]").dataset.version);return;}
     if(e.target.closest("button")) return;
@@ -147,6 +149,14 @@ function wireEvents(){
   $("#grid").addEventListener("click", e=>{
     const shot = e.target.closest("[data-shot]");
     if (shot){ e.stopPropagation(); stepShot(shot.closest(".card"), Number(shot.dataset.shot)); return; }
+    const pal = e.target.closest("[data-pal]");
+    if (pal){
+      e.stopPropagation();
+      const holder = pal.closest("[data-key]");
+      const c = holder && state.cars.find(x=>carKey(x)===holder.dataset.key);
+      if (c) openDetail(c, {colorUid: pal.dataset.pal});
+      return;
+    }
     const fav = e.target.closest("[data-fav]");
     if (fav){ e.stopPropagation(); toggleFav(fav.dataset.fav); return; }
     const cmp = e.target.closest("[data-cmp]");

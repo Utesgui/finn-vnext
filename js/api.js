@@ -61,7 +61,8 @@ function trackPrices(){
    totals. ~2k uids ≈ a few dozen KB in localStorage. */
 const SIBLING_LS = "finnvnext.siblingstock.v1";
 const SIBLING_TTL_MS = 12 * 60 * 60 * 1000;
-const SIBLING_CRAWL_DELAY_MS = 3000;   // one request every 3 s — deliberately gentle
+const SIBLING_CRAWL_DELAY_MS = 500;   // per-worker pause — still deliberately gentle
+const SIBLING_CRAWL_WORKERS = 2;
 let siblingDb = null;
 function loadSiblingDb(){
   if (siblingDb) return siblingDb;
@@ -92,13 +93,15 @@ function versionStockInfo(c){
     const uid = cl && cl.uid!=null ? String(cl.uid) : null;
     if (uid === selfUid){ if (own!=null){ total += own; any = true; } continue; }
     const rec = uid ? siblingStockRec(uid) : null;
-    if (rec && rec.n!=null){ total += rec.n; any = true; }
+    if (rec){ // resolved: n may be null when the API has no such config (yet) — counts as known zero
+      if (rec.n!=null){ total += rec.n; any = true; }
+    }
     else known = false;
   }
   if (!any && own!=null){ total = own; any = true; }
   return { total: any ? total : null, known };
 }
-let crawlGen = 0, crawlTimer = null;
+let crawlGen = 0;
 /* Hydrate the sibling-stock DB from the snapshot the GitHub Actions bot
    publishes alongside the app. Optional — local dev setups simply 404 here. */
 async function hydrateStockSnapshot(){
@@ -125,7 +128,7 @@ async function hydrateStockSnapshot(){
   }catch(e){ /* snapshot is an optional enhancement */ }
 }
 function startSiblingCrawl(){
-  crawlGen++; clearTimeout(crawlTimer);
+  crawlGen++;
   if (state.cfg.stockCrawl === false) return;
   const gen = crawlGen, db = loadSiblingDb(), now = Date.now(), seen = new Set();
   const queue = [];
@@ -142,22 +145,22 @@ function startSiblingCrawl(){
     }
   }
   if (!queue.length) return;
-  let fetched = 0, misses = 0;
-  const step = () => {
+  fetchConfigByUid.failures = 0;
+  let fetched = 0;
+  const worker = () => {
     if (gen !== crawlGen) return;
-    if (document.hidden){ crawlTimer = setTimeout(step, 15000); return; }   // pause in background tabs
+    if (document.hidden){ setTimeout(worker, 15000); return; }   // pause in background tabs
     const uid = queue.shift();
     if (uid == null){ if (typeof updateStockDisplays==="function") updateStockDisplays(); return; }
-    fetchConfigByUid(uid).then(car=>{
+    fetchConfigByUid(uid).then(()=>{
       if (gen !== crawlGen) return;
-      misses = car ? 0 : misses+1;
-      if (misses >= 6) return;   // repeated failures — likely offline, stop quietly
+      if (fetchConfigByUid.failures >= 6) return;   // repeated failures — likely offline, stop quietly
       fetched++;
-      if (fetched % 8 === 0 && typeof updateStockDisplays==="function") updateStockDisplays();
-      crawlTimer = setTimeout(step, SIBLING_CRAWL_DELAY_MS);
+      if (fetched % 10 === 0 && typeof updateStockDisplays==="function") updateStockDisplays();
+      setTimeout(worker, SIBLING_CRAWL_DELAY_MS);
     });
   };
-  crawlTimer = setTimeout(step, 5000);
+  for (let i = 0; i < SIBLING_CRAWL_WORKERS; i++) setTimeout(worker, 3000 + i*700);
 }
 
 /* ---------------- single-config lookup (color variants) ---------------- */
@@ -165,18 +168,27 @@ const configFetchCache = new Map();
 async function fetchConfigByUid(uid){
   const key = `${uid}:${state.cfg.biz?"b":"c"}`;
   if (configFetchCache.has(key)) return configFetchCache.get(key);
-  let car = null;
   try{
     const json = await tryFetch(proxied(carsUrl(state.cfg.base, state.cfg.actor, {
       config_id: String(uid), is_for_business: state.cfg.biz, pricing_type: "normal", limit: 3
     })), state.cfg.actor, {timeoutMs: PROBE_TIMEOUT_MS});
     const results = Array.isArray(json && json.results) ? json.results : [];
-    car = results.find(x=>String(x.uid??x.config_id)===String(uid)) || results[0] || null;
-  }catch(e){ /* variant simply not resolvable right now */ }
-  configFetchCache.set(key, car);
-  rememberSiblingStock(car);
-  return car;
+    const car = results.find(x=>String(x.uid??x.config_id)===String(uid)) || results[0] || null;
+    configFetchCache.set(key, car);
+    fetchConfigByUid.failures = 0;
+    if (car) rememberSiblingStock(car);
+    else { // the API genuinely has no such config (yet) — remember the resolved miss
+      loadSiblingDb()[String(uid)] = {n:null, t:Date.now()};
+      saveSiblingDb();
+    }
+    return car;
+  }catch(e){
+    // network/server trouble: do NOT cache, so the variant is retried later
+    fetchConfigByUid.failures = (fetchConfigByUid.failures||0) + 1;
+    return null;
+  }
 }
+fetchConfigByUid.failures = 0;
 
 /* ---------------- API layer ---------------- */
 const REQUEST_TIMEOUT_MS = 30000;

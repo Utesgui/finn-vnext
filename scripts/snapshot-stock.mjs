@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /* Stock snapshot bot — fetches the FINN catalog plus every color-sibling config
    and writes data/stock-snapshot.json for the client to hydrate its local
-   sibling-stock DB from. Deliberately gentle: one sibling request every ~2 s,
-   backoff on server errors, hard runtime cap. Node 20+, no dependencies. */
+   sibling-stock DB from. A small worker pool (default 4 × one request every
+   250 ms) sweeps all siblings in a couple of minutes; backoff on server
+   errors, hard runtime cap. Node 20+, no dependencies. */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 
 const BASE = process.env.FINN_BASE || "https://www.finn.com/api";
 const ACTOR = process.env.FINN_ACTOR || "finn-vnext";
 const OUT = new URL("../data/stock-snapshot.json", import.meta.url);
 const PAGE_LIMIT = 200;
-const SIBLING_DELAY_MS = Number(process.env.SNAPSHOT_DELAY_MS || 2000);
-const MAX_RUNTIME_MS = Number(process.env.SNAPSHOT_MAX_MS || 70 * 60 * 1000);
+const SIBLING_DELAY_MS = Number(process.env.SNAPSHOT_DELAY_MS || 250);
+const CONCURRENCY = Math.max(1, Number(process.env.SNAPSHOT_CONCURRENCY || 4));
+const MAX_RUNTIME_MS = Number(process.env.SNAPSHOT_MAX_MS || 30 * 60 * 1000);
 const MAX_CONSECUTIVE_FAILURES = 8;
 
 const startedAt = Date.now();
@@ -64,25 +66,32 @@ async function main() {
     }
   console.log(`siblings to resolve: ${siblings.size}`);
 
-  // 3) Trickle-fetch each sibling config until done or out of budget.
-  let fetched = 0, failures = 0;
-  for (const uid of siblings) {
-    if (Date.now() - startedAt > MAX_RUNTIME_MS) { console.log("runtime budget reached — stopping early"); break; }
-    try {
-      const json = await api({ config_id: uid, is_for_business: true, pricing_type: "normal", limit: 3 });
-      const results = Array.isArray(json.results) ? json.results : [];
-      const car = results.find(x => String(x.uid ?? x.config_id) === uid) || results[0] || null;
-      stock[uid] = { n: car ? stockOf(car) : null, t: Date.now() };
-      failures = 0;
-      if (++fetched % 50 === 0) console.log(`…${fetched}/${siblings.size} siblings`);
-    } catch (e) {
-      failures++;
-      console.warn(`uid ${uid}: ${e.message}`);
-      if (failures >= MAX_CONSECUTIVE_FAILURES) { console.error("too many consecutive failures — aborting sweep"); break; }
-      await sleep(10000);
+  // 3) Resolve siblings with a small worker pool until done or out of budget.
+  const pending = [...siblings];
+  let fetched = 0, failures = 0, aborted = false;
+  async function worker() {
+    for (;;) {
+      if (aborted || Date.now() - startedAt > MAX_RUNTIME_MS) return;
+      const uid = pending.shift();
+      if (uid == null) return;
+      try {
+        const json = await api({ config_id: uid, is_for_business: true, pricing_type: "normal", limit: 3 });
+        const results = Array.isArray(json.results) ? json.results : [];
+        const car = results.find(x => String(x.uid ?? x.config_id) === uid) || results[0] || null;
+        stock[uid] = { n: car ? stockOf(car) : null, t: Date.now() };
+        failures = 0;
+        if (++fetched % 100 === 0) console.log(`…${fetched}/${siblings.size} siblings`);
+      } catch (e) {
+        failures++;
+        console.warn(`uid ${uid}: ${e.message}`);
+        if (failures >= MAX_CONSECUTIVE_FAILURES) { console.error("too many consecutive failures — aborting sweep"); aborted = true; return; }
+        await sleep(10000);
+      }
+      await sleep(SIBLING_DELAY_MS);
     }
-    await sleep(SIBLING_DELAY_MS);
   }
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  if (Date.now() - startedAt > MAX_RUNTIME_MS) console.log("runtime budget reached — stopping early");
 
   // 4) Drop entries that vanished from the color graph entirely (keeps the file small).
   const known = new Set([...listed.keys(), ...siblings]);
