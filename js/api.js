@@ -353,6 +353,9 @@ async function probeEndpoint(signal){
 
 function commitCatalog(cars,{cached=false}={}){
   state.cars=cars;
+  state.catalogAt=Date.now();
+  state.historyPromise=null;
+  if(state.cfg.showTrends) void loadPriceHistory();
   trackPrices();
   trackFirstSeen();
   absorbCatalogStock();
@@ -488,6 +491,20 @@ function showBanner(err){
   $("#openSettings2").addEventListener("click", openSettings);
 }
 function hideBanner(){ $("#banner").classList.remove("show"); }
+
+/* ---------------- price history (published by the snapshot bot) ---------------- */
+function loadPriceHistory(){
+  if(!state.historyPromise){
+    state.historyPromise=fetch("data/price-history.json",{cache:"no-store"})
+      .then(res=>res.ok?res.json():null)
+      .catch(()=>null)
+      .then(file=>{
+        state.historyIndex=file&&file.cars&&typeof file.cars==="object"?file.cars:{};
+        refreshCardTrends();
+      });
+  }
+  return state.historyPromise;
+}
 
 /* ---------------- facets ---------------- */
 function buildFacets(cars){

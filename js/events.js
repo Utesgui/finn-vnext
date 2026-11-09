@@ -245,6 +245,12 @@ function wireEvents(){
     if (state.f.favOnly && !state.favs.size){ state.f.favOnly=false; toast("No favorites yet — tap the heart on a vehicle card"); return; }
     renderFavCount(); apply();
   });
+  $("#trendToggle").addEventListener("click", ()=>{
+    state.cfg.showTrends = !state.cfg.showTrends; saveCfg();
+    syncTrendToggle();
+    if(state.cfg.showTrends) void loadPriceHistory();
+    refreshCardTrends();
+  });
   $("#settingsBtn").addEventListener("click", openSettings);
   $("#setSave").addEventListener("click", ()=>{
     const pasted = $("#setPaste").value.trim();
@@ -283,6 +289,7 @@ function wireEvents(){
   syncBrowseMode();
   $$("#densitySeg button").forEach(b=>{ const on=b.dataset.den===(state.cfg.density||"grid"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
   renderFavCount();
+  syncTrendToggle();
   wireEvents();
   ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ state.userTouched = true; }, {once:true, capture:true}));
   hydrateStockSnapshot();

@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-/* Stock snapshot bot — fetches the FINN catalog plus every color-sibling config
-   and writes data/stock-snapshot.json for the client to hydrate its local
-   sibling-stock DB from. A small worker pool (default 4 × one request every
+/* Stock snapshot bot — fetches the FINN catalog plus every color-sibling config,
+   writes data/stock-snapshot.json for the client to hydrate its local
+   sibling-stock DB from, and appends price changes to data/price-history.json
+   for the price charts. A small worker pool (default 4 × one request every
    250 ms) sweeps all siblings in a couple of minutes; backoff on server
    errors, hard runtime cap. Node 20+, no dependencies. */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import domain from "../js/domain.js";
 
 const BASE = process.env.FINN_BASE || "https://www.finn.com/api";
 const ACTOR = process.env.FINN_ACTOR || "finn-vnext";
 const OUT = new URL("../data/stock-snapshot.json", import.meta.url);
+const HISTORY_OUT = new URL("../data/price-history.json", import.meta.url);
 const PAGE_LIMIT = 200;
 const SIBLING_DELAY_MS = Number(process.env.SNAPSHOT_DELAY_MS || 250);
 const CONCURRENCY = Math.max(1, Number(process.env.SNAPSHOT_CONCURRENCY || 4));
@@ -43,7 +46,23 @@ function termsOf(car) {
   return [...terms].sort((a, b) => a - b);
 }
 
+/* A damaged history must fail the run: restarting empty would erase it. */
+async function readPriceHistory() {
+  try {
+    return JSON.parse(await readFile(HISTORY_OUT, "utf8")).cars;
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
+}
+
 async function main() {
+  const priceHistory = await readPriceHistory();
+  const recordPrice = (car, ts) => {
+    const key = String(car.config_id ?? car.id ?? car.uid); // same key as carKey() in the app
+    const next = domain.recordPriceObservation(priceHistory[key], car.price, ts);
+    if (next) priceHistory[key] = next;
+  };
   let previous = { stock: {} };
   try { previous = JSON.parse(await readFile(OUT, "utf8")); } catch { /* first run */ }
   const stock = { ...(previous.stock || {}) };
@@ -61,7 +80,10 @@ async function main() {
     if (results.length < PAGE_LIMIT || offset > 8000) break;
     await sleep(400);
   }
-  for (const [uid, car] of listed) stock[uid] = { n: stockOf(car), t: now, tm: termsOf(car) };
+  for (const [uid, car] of listed) {
+    stock[uid] = { n: stockOf(car), t: now, tm: termsOf(car) };
+    recordPrice(car, now);
+  }
   console.log(`catalog: ${listed.size} listed configs`);
 
   // 2) Collect sibling color uids that are not listed themselves.
@@ -86,6 +108,7 @@ async function main() {
         const results = Array.isArray(json.results) ? json.results : [];
         const car = results.find(x => String(x.uid ?? x.config_id) === uid) || results[0] || null;
         stock[uid] = car ? { n: stockOf(car), t: Date.now(), tm: termsOf(car) } : { n: null, t: Date.now() };
+        if (car) recordPrice(car, now);
         failures = 0;
         if (++fetched % 100 === 0) console.log(`…${fetched}/${siblings.size} siblings`);
       } catch (e) {
@@ -112,6 +135,7 @@ async function main() {
   };
   await mkdir(new URL("../data/", import.meta.url), { recursive: true });
   await writeFile(OUT, JSON.stringify(snapshot));
+  await writeFile(HISTORY_OUT, JSON.stringify({ generatedAt: snapshot.generatedAt, cars: priceHistory }));
   console.log(`wrote ${snapshot.entries} entries (${fetched} sibling fetches this run)`);
 }
 

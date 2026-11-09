@@ -52,6 +52,21 @@ test("API reliability and cache guards remain enabled", () => {
   assert.match(api, /indexedDB\.open/);
 });
 
+test("price history stays wired from bot to panel", () => {
+  const html = read("index.html");
+  const ui = read("js/ui.js");
+  const bot = read("scripts/snapshot-stock.mjs");
+  const history = html.indexOf('src="js/history.js');
+  assert.ok(html.indexOf('src="js/api.js') < history && history < html.indexOf('src="js/ui.js'));
+  assert.match(html, /id="trendToggle"/);
+  assert.match(ui, /\$\{priceHistoryPanelMarkup\(\)\}\s*<\/div>\s*<section class="detail-panel">/);
+  assert.equal((ui.match(/<div class="card-trend" data-trend><\/div>/g) || []).length, 3);
+  assert.match(bot, /recordPrice\(car, now\)/);
+  assert.match(bot, /writeFile\(HISTORY_OUT/);
+  assert.match(read(".github/workflows/stock-snapshot.yml"), /git add data\/stock-snapshot\.json data\/price-history\.json/);
+  assert.equal(fs.existsSync(path.join(root, "data", "price-history.json")), true);
+});
+
 test("documentation warns that noindex is not authentication", () => {
   const readme = read("README.md");
   assert.match(readme, /not authentication/i);

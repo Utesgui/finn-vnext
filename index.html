@@ -22,8 +22,8 @@
     if (meta) meta.content = theme === "dark" ? "#0d0f12" : "#f5f4f1";
   })();
 </script>
-<script src="js/domain.js?v=20260828-35"></script>
-<link rel="stylesheet" href="styles/app.css?v=20260828-35">
+<script src="js/domain.js?v=20261109-1"></script>
+<link rel="stylesheet" href="styles/app.css?v=20261109-1">
 </head>
 <body>
 
@@ -58,6 +58,7 @@
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.59 13.41 12 22l-9-9V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="3 7 9 7 9 13 15 13 15 18 21 18"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
 </svg>
 
@@ -198,6 +199,9 @@
         </div>
         <button class="favtoggle" id="favToggle" aria-pressed="false" title="Show favorites only">
           <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg> <span id="favCount">0</span>
+        </button>
+        <button class="favtoggle trend-toggle" id="trendToggle" aria-pressed="false" title="Show the price trend of the last 30 days on each card">
+          <svg class="ic" aria-hidden="true"><use href="#i-trend"/></svg> Trend
         </button>
         <div class="sortwrap" title="Monthly mileage package — surcharge is included in all displayed prices">
           <label for="kmSel">Km/mo</label>
@@ -341,9 +345,10 @@
   FINN vNext · live data from the FINN Product API · <a href="https://docs.product-api.finn.com/" target="_blank" rel="noreferrer">API documentation</a> · internal fleet exploration
 </footer>
 
-<script src="js/core.js?v=20260828-35"></script>
-<script src="js/api.js?v=20260828-35"></script>
-<script src="js/ui.js?v=20260828-35"></script>
-<script src="js/events.js?v=20260828-35"></script>
+<script src="js/core.js?v=20261109-1"></script>
+<script src="js/api.js?v=20261109-1"></script>
+<script src="js/history.js?v=20261109-1"></script>
+<script src="js/ui.js?v=20261109-1"></script>
+<script src="js/events.js?v=20261109-1"></script>
 </body>
 </html>

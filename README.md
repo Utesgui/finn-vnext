@@ -32,6 +32,10 @@ Two workflows support a static deployment from the default branch:
   The client hydrates its local sibling-stock DB from that file at boot, so even a
   first-ever visit starts with warm stock data; local setups without the file just
   skip it. Scheduled workflows only run once the branch is merged to `main`.
+  The same run appends price changes to `data/price-history.json`, which feeds the
+  price history in the detail view (per day or week) and the optional **Trend** line
+  on the cards. A fresh catalog load in the browser adds its prices as the newest
+  point for that session only; a static host has nowhere to store them centrally.
 
 On Pages there is no `proxy.py`, so API calls use the configured CORS proxy.
 Mind the access-control warning below: public Pages makes the tool publicly
@@ -58,6 +62,7 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 - `js/domain.js` — pure, tested filters/pricing/availability/stock logic
 - `js/core.js` — shared configuration, state, helpers, and equipment utilities
 - `js/api.js` — price tracking, API loading, caching, and catalog facets
+- `js/history.js` — price-history chart in the detail view and trend lines on the cards
 - `js/ui.js` — filtering, rendering, dialogs, comparison, export, and URL state
 - `js/events.js` — event wiring and application boot
 - `tests/domain.test.js` — Node test suite
@@ -65,6 +70,10 @@ deployment must sit behind an identity-aware gateway, VPN, or equivalent access 
 
 ## Features
 
+- **Price history** — per-configuration chart in days or weeks with low/high, change list
+  and hover readout, following the selected term, mileage package and pricing mode. The
+  **Trend** switch adds a compact 30-day line to every card; model cards follow their
+  cheapest matching version.
 - **Marketplace-style result cards** — brand logo, photo carousel with dots + counter
   (browse a car's photos without opening it), icon spec row (drivetrain / gearbox / PS /
   seats), prominent monthly price with the all-inclusive note, and availability status.

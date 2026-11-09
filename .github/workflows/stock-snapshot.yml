@@ -1,7 +1,7 @@
 name: Stock snapshot
 
 # Gently refreshes data/stock-snapshot.json so the deployed app starts with a
-# warm sibling-stock cache. Scheduled workflows run from the default branch
+# warm sibling-stock cache, and extends data/price-history.json. Scheduled workflows run from the default branch
 # only. The Pages workflow listens for this one via workflow_run, because
 # pushes made with GITHUB_TOKEN don't fire `push` events.
 
@@ -29,5 +29,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/stock-snapshot.json
+          git add data/stock-snapshot.json data/price-history.json
           git diff --cached --quiet || { git commit -m "chore: refresh stock snapshot"; git push; }

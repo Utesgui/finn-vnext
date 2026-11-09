@@ -26,6 +26,8 @@ const DEFAULTS = {
   km: 500,                                 // monthly mileage package (500 is included in base price)
   density: "grid",
   browseMode: "cars",
+  historyRange: "day",
+  showTrends: false,                       // compact 30-day price trend on result cards
   stockCrawl: true,                        // trickle-resolve color-variant stock in the background
   largePalette: false,                     // color swatches as pills below the picture (vs dots inside)
   wide: null,                              // page width stage; null = auto per screen
@@ -75,6 +77,10 @@ const state = {
   detailGroupKey: null,
   detailQuoteKm: null,
   detailQuoteTerm: null,
+  historyObserver: null,   // redraws the history chart when its size changes
+  historyIndex: null,      // published price histories by car key
+  historyPromise: null,    // the running or finished load of that file
+  catalogAt: 0,            // when the current catalog was committed
   activeGroupKey: null,
   loadGen: 0,            // increments per load; stale in-flight loads bail out
   loadController: null,  // actively aborts superseded network work

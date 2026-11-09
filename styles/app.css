@@ -1121,7 +1121,10 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
 .dnav .iconbtn { border-color: var(--cp-border); }
 .dpos { margin-inline-end: 0.15rem; color: var(--cp-text-soft); font-size: 0.7rem; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-body { padding: 1.1rem; scrollbar-gutter: stable; }
-.detail-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); align-items: start; gap: 1.1rem; }
+.detail-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, 0.8fr); grid-template-rows: auto 1fr; grid-template-areas: "gallery summary" "history summary"; align-items: start; gap: 1.1rem; }
+.detail-hero .detail-gallery { grid-area: gallery; min-inline-size: 0; }
+.detail-hero .detail-summary { grid-area: summary; }
+.detail-hero .detail-history { display: flex; flex-direction: column; grid-area: history; align-self: stretch; min-inline-size: 0; margin-block-start: 0; }
 .detail-gallery .main { position: relative; aspect-ratio: 16 / 11; border-radius: var(--cp-r-xl); }
 .detail-gallery .main img {
   position: relative; z-index: 1; padding: 0.5rem;
@@ -1235,6 +1238,34 @@ dialog#helpDlg { inline-size: min(460px, calc(100vw - 2rem)); }
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .detail-price-table .selected-tag { color: var(--cp-accent); }
+.favtoggle.trend-toggle.on .ic { fill: none; }
+.card-trend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.5rem; min-block-size: 26px; color: var(--cp-text-muted); font-size: 0.75rem; }
+.card-trend:empty { display: none; }
+.card-trend svg { flex: none; }
+.card-trend .delta { color: var(--cp-text); font-weight: 700; white-space: nowrap; }
+.card-trend .delta i { font-style: normal; }
+.card-trend .delta .down { color: var(--cp-success); }
+.card-trend .delta .up { color: var(--cp-warning); }
+.card-trend .period { margin-inline-start: auto; white-space: nowrap; }
+.ph-body { display: flex; flex: 1 1 auto; flex-direction: column; min-block-size: 96px; }
+.detail-kv.ph-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-block-end: 0.75rem; }
+.ph-chart { position: relative; flex: 1 1 auto; min-block-size: 200px; border-radius: var(--cp-r-md); touch-action: pan-y; }
+.ph-chart svg { position: absolute; inset: 0; display: block; inline-size: 100%; block-size: 100%; }
+@media (min-width: 961px) { .ph-chart { min-block-size: 150px; } }
+@media (max-width: 640px) { .detail-kv.ph-stats { grid-template-columns: 1fr 1fr; } }
+.ph-grid { stroke: var(--cp-border); stroke-width: 1; }
+.ph-axis { fill: var(--cp-text-soft); font-size: 12px; }
+.ph-end { fill: var(--cp-text); font-size: 12px; font-weight: 700; }
+.ph-line { fill: none; stroke: var(--cp-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ph-dot { fill: var(--cp-accent); stroke: var(--cp-surface); stroke-width: 2; }
+.ph-cross { stroke: var(--cp-border-strong); stroke-width: 1; visibility: hidden; }
+.ph-tip { position: absolute; inset-block-start: 0; inset-inline-start: 0; border: 1px solid var(--cp-border); border-radius: var(--cp-r-md); background: var(--cp-surface); box-shadow: var(--cp-shadow-sm); color: var(--cp-text-muted); font-size: 0.75rem; padding: 0.3rem 0.5rem; pointer-events: none; visibility: hidden; white-space: nowrap; }
+.ph-tip b { display: block; color: var(--cp-text); font-size: 0.85rem; }
+.ph-changes { flex: none; margin-block-start: 0.6rem; font-size: 0.75rem; }
+.ph-changes > summary { color: var(--cp-text-muted); cursor: pointer; font-weight: 650; }
+.ph-changes .detail-price-table { margin-block-start: 0.5rem; }
+.ph-changes .quote-change { margin-block-start: 0; font-size: 0.75rem; }
+.ph-note { margin: 0.55rem 0 0; color: var(--cp-text-muted); font-size: 0.75rem; line-height: 1.55; }
 .detail-km-note { margin-block-start: 0.55rem; color: var(--cp-text-muted); font-size: 0.7rem; line-height: 1.55; text-wrap: pretty; }
 .gallery .thumbs:empty { display: none; }
 .detail-colorbar { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-block-start: 0.55rem; }
@@ -1396,6 +1427,7 @@ footer a:hover { color: var(--cp-accent); }
   }
   body.cmp-open .fab { inset-block-end: max(5.5rem, calc(env(safe-area-inset-bottom) + 5rem)); }
   .detail-hero, .detail-content-grid { grid-template-columns: minmax(0, 1fr); }
+  .detail-hero { grid-template-rows: none; grid-template-areas: "gallery" "summary" "history"; }
   .detail-kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {

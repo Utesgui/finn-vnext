@@ -616,6 +616,8 @@ function applyCardPalette(card, btn){
       stockEl.querySelector("strong").textContent = fmtNum(n);
       stockEl.querySelector("span").textContent = n===1?"car":"cars";
     }
+    card._trendCars = [src];
+    paintCardTrend(card);
   };
   if (!card._palUid) applyCarData(c);
   else {
@@ -736,6 +738,7 @@ function modelCardEl(group){
         ${group.stockCount==null?"":`<div class="card-stock" title="${group.stockPartial?"Stock across listed configurations and resolved color variants — some colors not yet fetched":"Customer-visible stock across all colors of the matching versions"}; availability dates still apply"><strong>${fmtNum(group.stockCount)}${group.stockPartial?"+":""}</strong><span>${group.stockCount===1&&!group.stockPartial?"car":"cars"}</span></div>`}
       </div>
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
+      <div class="card-trend" data-trend></div>
       <div class="cfoot">
         <div class="price"><div class="from">from · ${fmtNum(state.cfg.km)} km/mo</div><div class="val">${fmtEur(group.priceMin)}<small> /month</small></div><div class="incl">across matching versions</div></div>
         <div class="avail"><div>${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div><span class="model-cta">Explore versions <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></span></div>
@@ -746,6 +749,7 @@ function modelCardEl(group){
   img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
   img.src = pics[0] || PLACEHOLDER;
   el._pics=pics; el._shot=0;
+  el._trendCars=group.versions; paintCardTrend(el);
   return el;
 }
 function versionCardEl(c){
@@ -788,6 +792,7 @@ function versionCardEl(c){
       <div class="vtitle">${esc(title)}</div>
       <div class="vmeta">${metaHtml}</div>
       <div class="vchips">${c._isNew?`<span class="new-chip" title="First seen by this tool on ${esc(fmtDateTime(c._firstSeen))}">new</span>`:""}${vsi.total==null?"":`<span class="stock-chip" title="${vsi.known?"Customer-visible stock across all colors of this version":"Stock across resolved colors — some colors not yet fetched"}; availability dates still apply">${fmtNum(vsi.total)}${vsi.known?"":"+"} ${vsi.total===1&&vsi.known?"car":"cars"}</span>`}${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="card-trend" data-trend></div>
       <div class="vfoot"><div class="vprice">${fmtEur(price)}<small> /month</small></div><div class="vavail">${av.txt==="available now"?'<span class="now">available now</span>':esc(av.txt)}</div></div>
     </div>`;
   const img = el.querySelector(".vimg>img");
@@ -795,6 +800,7 @@ function versionCardEl(c){
   img.addEventListener("error",()=>{img.src=PLACEHOLDER;},{once:true});
   img.src = pics[0] || PLACEHOLDER;
   el._pics=pics; el._shot=0;
+  el._trendCars=[c]; paintCardTrend(el);
   return el;
 }
 function findModelGroup(key){ return state.modelGroups.find(g=>g.key===key); }
@@ -890,6 +896,7 @@ function cardEl(c){
         ${inventory==null?"":`<div class="card-stock" title="Customer-visible stock for this configuration; availability date still applies"><strong>${fmtNum(inventory)}</strong><span>${inventory===1?"car":"cars"}</span></div>`}
       </div>
       <div class="specrow">${specs.map(s=>`<span class="spec ${s.cls||""}"><svg class="ic" aria-hidden="true"><use href="#${s.ic}"/></svg><span>${esc(s.txt)}</span></span>`).join("")}</div>
+      <div class="card-trend" data-trend></div>
       <div class="cfoot">
         <div class="price">
           <div class="from">from · ${fmtNum(state.cfg.km)} km/mo</div>
@@ -907,6 +914,7 @@ function cardEl(c){
   img.addEventListener("error", ()=>{ img.src = PLACEHOLDER; }, {once:true});
   img.src = pics.length ? pics[0] : PLACEHOLDER;
   el._pics = pics; el._shot = 0;
+  el._trendCars = [c]; paintCardTrend(el);
   return el;
 }
 /* de-duplicated photo URLs for a car, newest-first as delivered by the API */
@@ -1247,6 +1255,7 @@ function openDetail(c, options={}){
             ${link?`<a class="linkout" href="${esc(link)}" target="_blank" rel="noreferrer">View offer on finn.com <svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></a>`:'<span></span>'}
           </div>
         </div>
+        ${priceHistoryPanelMarkup()}
       </div>
       <section class="detail-panel">
         <div class="detail-panel-head"><div><h3>Technical details</h3><p>Everything important at a glance</p></div>${c._drop>0?`<span class="badge drop">▼ ${fmtEur(c._drop)}</span>`:""}</div>
@@ -1362,6 +1371,7 @@ function openDetail(c, options={}){
       setChipStock(i, car ? stockCount(car) : null);
     });
   });
+  const renderHistory = initPriceHistory(dlg,c,()=>({km:quoteKm,term:quoteTerm,oneTime:dpOn}));
   if (options.colorUid){
     const wantedIdx = colorVariants.findIndex(v=>v.uid===String(options.colorUid));
     const wanted = wantedIdx>=0 ? colorVariants[wantedIdx] : null;
@@ -1397,6 +1407,7 @@ function openDetail(c, options={}){
     dlg.querySelectorAll("[data-quote-dp]").forEach(b=>{const on=(b.dataset.quoteDp==="1")===dpOn;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
     const block=dlg.querySelector(".detail-price-block");
     block.classList.remove("quote-pulse"); requestAnimationFrame(()=>block.classList.add("quote-pulse"));
+    renderHistory();
   };
   dlg.querySelectorAll("[data-quote-km]").forEach(b=>b.addEventListener("click",()=>{quoteKm=Number(b.dataset.quoteKm);updateDetailQuote();}));
   dlg.querySelectorAll("[data-quote-term]").forEach(b=>b.addEventListener("click",()=>{quoteTerm=Number(b.dataset.quoteTerm);updateDetailQuote();}));

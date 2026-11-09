@@ -153,6 +153,126 @@
     return { date, days, availableNow: days <= 0, soon: days <= 28 };
   }
 
+  const PRICE_SNAPSHOT_KEY = /^(?:b2[bc]|extra)_\d+$/;
+
+  /* Monthly rates and mileage fees in a stable key order; null without a rate. */
+  function normalizePriceSnapshot(price) {
+    if (!price || typeof price !== "object") return null;
+    const output = {};
+    for (const key of Object.keys(price).sort()) {
+      const value = price[key];
+      if (PRICE_SNAPSHOT_KEY.test(key) && typeof value === "number" && Number.isFinite(value) && value >= 0) output[key] = value;
+    }
+    return Object.keys(output).some(key => key.startsWith("b2")) ? output : null;
+  }
+
+  /* Adds one observation to a change-only history without mutating it. Used by
+     the snapshot bot and, for the session's live catalog, by the browser. */
+  function recordPriceObservation(history, rawPrice, ts) {
+    const price = normalizePriceSnapshot(rawPrice);
+    if (!price) return history || null;
+    if (!history) return { firstSeen: ts, lastSeen: ts, changes: [{ t: ts, price }] };
+    if (ts <= history.lastSeen) return history;
+    const last = history.changes[history.changes.length - 1];
+    const unchanged = last && JSON.stringify(last.price) === JSON.stringify(price);
+    return {
+      firstSeen: history.firstSeen,
+      lastSeen: ts,
+      changes: unchanged ? history.changes : [...history.changes, { t: ts, price }]
+    };
+  }
+
+  function historyBuckets(granularity, now, count) {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const date = now.getDate();
+    const size = granularity === "week" ? 7 : 1;
+    const anchor = granularity === "week" ? date - (now.getDay() + 6) % 7 : date; // Monday-based weeks
+    const buckets = [];
+    for (let index = count - 1; index >= 0; index--) {
+      const offset = anchor - index * size;
+      buckets.push({
+        start: new Date(year, month, offset).getTime(),
+        end: new Date(year, month, offset + size).getTime(),
+        price: null
+      });
+    }
+    return buckets;
+  }
+
+  function summarizeBuckets(buckets) {
+    const values = buckets.filter(bucket => bucket.price != null).map(bucket => bucket.price);
+    if (!values.length) return { current: null, low: null, high: null, delta: null };
+    const current = values[values.length - 1];
+    return { current, low: Math.min(...values), high: Math.max(...values), delta: current - values[0] };
+  }
+
+  /* Rebuilds a chart series from stored price snapshots. Each snapshot is run
+     through minPrice, so the history honours the selected term, mileage and
+     pricing mode exactly like the live price. A bucket holds its closing price. */
+  function priceHistorySeries(history, options = {}) {
+    const granularity = options.granularity === "week" ? "week" : "day";
+    const count = options.count || (granularity === "week" ? 26 : 30);
+    const now = options.now instanceof Date ? options.now : new Date();
+    const terms = Array.isArray(options.terms) && options.terms.length
+      ? options.terms.map(Number)
+      : options.term ? [Number(options.term)] : null;
+    const entries = ((history && history.changes) || [])
+      .map(entry => ({
+        t: Number(entry.t),
+        price: minPrice({ price: entry.price }, { km: options.km, business: options.business, terms })
+      }))
+      .filter(entry => Number.isFinite(entry.t))
+      .sort((a, b) => a.t - b.t);
+    const lastSeen = history ? Number(history.lastSeen) : NaN;
+    const buckets = historyBuckets(granularity, now, count);
+    for (const bucket of buckets) {
+      if (Number.isFinite(lastSeen) && bucket.start > lastSeen) continue;
+      const cutoff = Math.min(bucket.end - 1, now.getTime());
+      for (const entry of entries) {
+        if (entry.t > cutoff) break;
+        bucket.price = entry.price;
+      }
+    }
+    const windowStart = buckets[0].start;
+    const changes = [];
+    let previous = null;
+    for (const entry of entries) {
+      if (entry.price == null) continue;
+      if (previous != null && entry.price !== previous && entry.t >= windowStart) {
+        changes.push({ t: entry.t, from: previous, to: entry.price, delta: entry.price - previous });
+      }
+      previous = entry.price;
+    }
+    changes.reverse();
+    return { granularity, buckets, changes, ...summarizeBuckets(buckets) };
+  }
+
+  /* Model cards advertise the cheapest version, so their trend follows it too. */
+  function lowestHistorySeries(seriesList) {
+    if (!seriesList.length) return null;
+    const buckets = seriesList[0].buckets.map((bucket, index) => {
+      const prices = seriesList.map(series => series.buckets[index].price).filter(price => price != null);
+      return { ...bucket, price: prices.length ? Math.min(...prices) : null };
+    });
+    return { granularity: seriesList[0].granularity, buckets, changes: [], ...summarizeBuckets(buckets) };
+  }
+
+  /* Whole-euro y-axis around the observed range; flat prices still get a band. */
+  function historyAxis(low, high) {
+    const padding = Math.max((high - low) * 0.15, Math.abs(high) * 0.02, 5);
+    const lower = low - padding;
+    const upper = high + padding;
+    const rough = (upper - lower) / 4;
+    const magnitude = 10 ** Math.floor(Math.log10(rough));
+    const step = [1, 2, 5, 10].map(factor => factor * magnitude).find(candidate => candidate >= rough);
+    const min = Math.max(0, Math.floor(lower / step) * step);
+    const max = Math.ceil(upper / step) * step;
+    const ticks = [];
+    for (let tick = min; tick <= max; tick += step) ticks.push(tick);
+    return { min, max, ticks };
+  }
+
   function encodeViewState({ filters = freshFilters(), km = 500, browseMode = "cars", sort = "reco" } = {}) {
     const params = new URLSearchParams();
     if (filters.q) params.set("q", filters.q);
@@ -226,6 +346,11 @@
     minPrice,
     parseAvailableDate,
     availabilityInfo,
+    normalizePriceSnapshot,
+    recordPriceObservation,
+    priceHistorySeries,
+    lowestHistorySeries,
+    historyAxis,
     encodeViewState,
     decodeViewState
   };
