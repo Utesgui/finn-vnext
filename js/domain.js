@@ -11,7 +11,11 @@
     ["te", "terms"], ["se", "seats"], ["do", "doors"], ["co", "colors"]
   ];
   const SORT_KEYS = new Set(["reco", "added-desc", "price-asc", "price-desc", "drop-desc", "power-desc", "range-desc", "avail-asc", "name-asc"]);
-  const MILEAGE_PACKAGES = new Set([500, 1000, 1500, 2000, 2500, 3000, 3500]);
+  const MILEAGE_PACKAGES = new Set([500, 1000, 1500, 2000, 2500, 3000, 4000, 5000]);
+  const VAT_FACTOR = 1.19;
+  /* The API publishes mileage fees gross only; finn.com shows business customers
+     the rounded net amount, so the same conversion applies here. */
+  const feeForMode = (fee, business) => business ? Math.round(fee / VAT_FACTOR) : fee;
 
   function freshFilters() {
     return {
@@ -71,21 +75,22 @@
     return known ? total : null;
   }
 
-  function kmPackages(car) {
+  function kmPackages(car, options = {}) {
     const price = car && car.price || {};
     return Object.keys(price)
       .filter(key => /^extra_\d+$/.test(key))
       .map(key => ({ km: Number(key.slice(6)), fee: Number(price[key]) }))
       .filter(entry => Number.isFinite(entry.km) && entry.km > 0 && Number.isFinite(entry.fee))
+      .map(entry => ({ km: entry.km, fee: feeForMode(entry.fee, options.business === true) }))
       .sort((a, b) => a.km - b.km);
   }
 
-  function kmFeeFor(car, km) {
+  function kmFeeFor(car, km, options = {}) {
     const price = car && car.price || {};
     const raw = price["extra_" + km];
     const exact = Number(raw);
-    if (raw != null && raw !== "" && Number.isFinite(exact)) return exact;
-    const packages = kmPackages(car);
+    if (raw != null && raw !== "" && Number.isFinite(exact)) return feeForMode(exact, options.business === true);
+    const packages = kmPackages(car, options);
     if (!packages.length) return 0;
     let best = null;
     for (const entry of packages) {
@@ -98,7 +103,7 @@
     const km = Number(options.km) || 500;
     const business = options.business !== false;
     const price = car && car.price || {};
-    const kmFee = kmFeeFor(car, km);
+    const kmFee = kmFeeFor(car, km, { business });
     const terms = new Set((Array.isArray(car && car.available_terms) ? car.available_terms : []).map(Number));
     Object.keys(price).forEach(key => {
       const match = key.match(/^b2[bc]_(\d+)$/);
@@ -340,6 +345,7 @@
     cycleFacet,
     stockCount,
     aggregateStock,
+    isMileagePackage: km => MILEAGE_PACKAGES.has(Number(km)),
     kmPackages,
     kmFeeFor,
     priceList,

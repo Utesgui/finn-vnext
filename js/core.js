@@ -95,6 +95,7 @@ function loadCfg(){
   catch(e){ cfg = Object.assign({}, DEFAULTS); }
   const requested = new URLSearchParams(location.search).get("scoutTheme");
   if (requested === "light" || requested === "dark") cfg.theme = requested;
+  if (!FinnDomain.isMileagePackage(cfg.km)) cfg.km = DEFAULTS.km; // e.g. a saved package FINN doesn't offer
   return cfg;
 }
 function saveCfg(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state.cfg)); }catch(e){} }
@@ -186,11 +187,11 @@ function priceList(c, km=state.cfg.km){
 /* monthly surcharge for the selected km package (extra_500/extra_1000/…);
    falls back to the closest available package when the exact one is missing */
 function kmFeeFor(c, km){
-  return FinnDomain.kmFeeFor(c,km);
+  return FinnDomain.kmFeeFor(c,km,{business:state.cfg.biz});
 }
 /* Optional extra-kilometer packages: price.extra_500 / extra_1000 / ... = fee/month */
 function kmPackages(c){
-  return FinnDomain.kmPackages(c);
+  return FinnDomain.kmPackages(c,{business:state.cfg.biz});
 }
 function minPrice(c, terms, km=state.cfg.km){
   return FinnDomain.minPrice(c,{terms,km,business:state.cfg.biz});

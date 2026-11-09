@@ -46,11 +46,28 @@ test("price calculation applies mileage fees and pricing mode", () => {
     price: { b2b_12: 400, b2b_24: 350, b2c_12: 480, b2c_24: 420, extra_500: 0, extra_1000: 30 }
   };
   assert.deepEqual(domain.priceList(car, { km: 1000, business: true }), [
-    { term: 12, price: 430 },
-    { term: 24, price: 380 }
+    { term: 12, price: 425 },
+    { term: 24, price: 375 }
   ]);
   assert.equal(domain.minPrice(car, { km: 1000, business: false }), 450);
   assert.equal(domain.minPrice(car, { km: 500, business: true, terms: [12] }), 400);
+});
+
+test("mileage fees are gross and converted to rounded net for business", () => {
+  const car = { price: { b2b_12: 1323, b2c_12: 1574, extra_500: 0, extra_1000: 59, extra_2000: 579 } };
+  assert.equal(domain.minPrice(car, { km: 1000, business: true }), 1323 + 50);
+  assert.equal(domain.minPrice(car, { km: 1000, business: false }), 1574 + 59);
+  assert.deepEqual(domain.kmPackages(car, { business: true }).map(entry => entry.fee), [0, 50, 487]);
+  assert.deepEqual(domain.kmPackages(car).map(entry => entry.fee), [0, 59, 579]);
+  assert.equal(domain.kmFeeFor(car, 1500, { business: true }), 50, "falls back to the closest lower package");
+});
+
+test("only mileage packages FINN offers are accepted", () => {
+  assert.equal(domain.isMileagePackage(3000), true);
+  assert.equal(domain.isMileagePackage(3500), false);
+  assert.equal(domain.decodeViewState("#km=3500").km, null);
+  assert.equal(domain.decodeViewState("#km=4000").km, 4000);
+  assert.equal(domain.decodeViewState("#" + domain.encodeViewState({ km: 5000 })).km, 5000);
 });
 
 test("shareable view state round-trips filters and controls", () => {
@@ -123,7 +140,8 @@ test("history follows selected term, mileage package and pricing mode", () => {
   const price = options => domain.priceHistorySeries(history, { count: 1, now: new Date(at(9)), ...options }).current;
   assert.equal(price({ term: 12, km: 500, business: true }), 400);
   assert.equal(price({ term: 24, km: 500, business: true }), 350);
-  assert.equal(price({ term: 12, km: 1000, business: true }), 445);
+  assert.equal(price({ term: 12, km: 1000, business: true }), 438);
+  assert.equal(price({ term: 12, km: 1000, business: false }), 525);
   assert.equal(price({ term: 12, km: 500, business: false }), 480);
 });
 

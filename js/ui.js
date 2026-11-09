@@ -962,7 +962,7 @@ function renderQuickBar(){
   if (ev)   items.push({ic:"i-bolt",  label:"Electric",   on:inList(f.fuels,ev),    covers:`fuel:${ev}`, go:()=>flip(f.fuels,ev)});
   if (auto) items.push({ic:"i-gear",  label:"Automatic",  on:inList(f.gears,auto),  covers:`gear:${auto}`, go:()=>flip(f.gears,auto)});
   items.push({ic:"i-car",      label:"Towbar (AHK)", on:f.hitch, covers:"hitch", go:()=>{f.hitch=!f.hitch;$("#fltHitch").checked=f.hitch;}});
-  const kmCap = ({500:300, 1000:350, 1500:400, 2000:450, 2500:500, 3000:550, 3500:600})[state.cfg.km] || 300;
+  const kmCap = ({500:300, 1000:350, 1500:400, 2000:450, 2500:500, 3000:550, 4000:650, 5000:750})[state.cfg.km] || 300;
   items.push({ic:"i-tag",      label:`under ${kmCap} €`, on:f.priceMax===kmCap, covers:`priceMax:${kmCap}`, go:()=>setPriceMax(f.priceMax===kmCap?null:kmCap)});
   items.push({ic:"i-calendar", label:"≤ 4 weeks",   on:f.soon, covers:"soon", go:()=>{f.soon=!f.soon;$("#fltNow").checked=f.soon;}});
   items.push({ic:"i-shield",   label:"Deals",       on:f.deals, covers:"deals", go:()=>{f.deals=!f.deals;$("#fltDeals").checked=f.deals;}});
